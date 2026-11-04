@@ -747,3 +747,33 @@ tr.muted td { opacity: 0.55; }
 .ud-stats.cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .ud-stats.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 @media (max-width: 600px) { .ud-stats.cols-4, .ud-stats.cols-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* ---------- Backoffice no celular ---------- */
+.admin-two { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.chart, .chart-box { min-width: 0; }
+.chart-box { overflow: hidden; }
+.card:has(> table.admin-table) { overflow-x: auto; }
+.admin-filters > .row { flex-wrap: wrap; }
+@media (max-width: 1000px) { .admin-two { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 700px) {
+  .admin-top { padding: 10px 14px; gap: 8px; }
+  .admin-top > b { flex: 1; }
+  .admin-tabs { order: 3; flex: 0 0 100%; min-width: 0; }
+  .admin-tabs .tab { flex: none; }
+  .admin-main { padding: 16px 14px 60px; }
+  .admin-filters input { width: 100%; }
+  .admin-filters > .row { width: 100%; }
+  .admin-filters .tabs.compact { max-width: 100%; overflow-x: auto; }
+  .hide-m { display: none; }
+  .admin-table td, .admin-table th { padding: 8px 6px; }
+  .kpi-tile b { font-size: 20px; }
+  .hbar-row { grid-template-columns: 90px minmax(0, 1fr) auto; }
+}
+@media (max-width: 600px) {
+  .wo-card { top: 4%; min-width: 0; max-width: 47%; padding: 5px 8px; }
+  .wo-corner { font-size: 9px; letter-spacing: 1px; white-space: nowrap; }
+  .wo-name { font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .wo-info { font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .wo-owner { display: none; }
+  .wo-vs { top: 58%; font-size: 52px; }
+}

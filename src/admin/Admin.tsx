@@ -198,10 +198,10 @@ function Users() {
           <thead>
             <tr>
               <th>Jogador</th>
-              <th>Cadastro</th>
+              <th className="hide-m">Cadastro</th>
               <th>Último acesso</th>
-              <th className="right">Galos</th>
-              <th className="right">Nível máx.</th>
+              <th className="right hide-m">Galos</th>
+              <th className="right hide-m">Nível máx.</th>
               <th className="right">Ovos</th>
               <th className="right">Gastou</th>
               <th></th>
@@ -214,10 +214,10 @@ function Users() {
                   <b>{r.name}</b>
                   <div className="tiny muted">{r.email}</div>
                 </td>
-                <td className="tiny">{dt(r.created_at)}</td>
+                <td className="tiny hide-m">{dt(r.created_at)}</td>
                 <td className="tiny">{ago(r.last_seen)}</td>
-                <td className="right">{r.roosters}</td>
-                <td className="right">{r.maxLevel || '—'}</td>
+                <td className="right hide-m">{r.roosters}</td>
+                <td className="right hide-m">{r.maxLevel || '—'}</td>
                 <td className="right">{n(r.ovos)}</td>
                 <td className="right">{r.spent ? brl(r.spent) : '—'}</td>
                 <td>{r.banned_at ? <span className="status-perdeu tiny">⛔ Bloqueado</span> : r.spent ? <span className="status-ganhou tiny">💎 Pagante</span> : null}</td>
@@ -488,10 +488,10 @@ function Orders() {
               <th>Data</th>
               <th>Jogador</th>
               <th>Produto</th>
-              <th>Meio</th>
+              <th className="hide-m">Meio</th>
               <th className="right">Valor</th>
               <th>Status</th>
-              <th>Pedido</th>
+              <th className="hide-m">Pedido</th>
               <th></th>
             </tr>
           </thead>
@@ -501,14 +501,14 @@ function Orders() {
                 <td className="tiny">{dt(o.created_at)}</td>
                 <td className="tiny">{o.email}</td>
                 <td>{o.name}</td>
-                <td className="tiny">
+                <td className="tiny hide-m">
                   {methodLabel(o.method)} <span className="muted">({o.provider})</span>
                 </td>
                 <td className="right">{brl(o.amount_cents)}</td>
                 <td>
                   <span className={`tiny status-${o.status === 'pago' ? 'ganhou' : o.status === 'pendente' ? 'pendente' : 'perdeu'}`}>{o.status}</span>
                 </td>
-                <td className="tiny muted mono">{o.id.slice(0, 8)}</td>
+                <td className="tiny muted mono hide-m">{o.id.slice(0, 8)}</td>
                 <td>
                   {o.status === 'pendente' && (
                     <button

@@ -47,10 +47,16 @@ export function RoosterSvg({ breedId, skin, equipped = {}, flip, anim = 'idle', 
   return (
     <svg
       viewBox="0 0 220 220"
-      width={size}
-      height={size}
+      // Tamanho fluido (ex.: "100%"): largura do contêiner e altura proporcional (o viewBox é quadrado).
+      // Evita o Safari do iPhone inflar o SVG quando a altura do pai não é definida.
+      width={typeof size === 'number' ? size : undefined}
+      height={typeof size === 'number' ? size : undefined}
       className={`rooster ${fx ? `fx-${fx}` : ''} ${className}`}
-      style={{ transform: flip ? 'scaleX(-1)' : undefined, overflow: 'visible' }}
+      style={{
+        transform: flip ? 'scaleX(-1)' : undefined,
+        overflow: 'visible',
+        ...(typeof size === 'number' ? {} : { width: size, height: 'auto', aspectRatio: '1 / 1', maxWidth: '100%' }),
+      }}
     >
       <defs>
         <clipPath id={`body-${uid}`}>
