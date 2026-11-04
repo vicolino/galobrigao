@@ -1,0 +1,100 @@
+import { useState } from 'react'
+import { Sidebar } from './components/Sidebar'
+import { Toasts, useHashRoute } from './components/ui'
+import { fmt } from './game/rooster'
+import { useGame } from './game/store'
+import { Apostas } from './pages/Apostas'
+import { Galinheiro } from './pages/Galinheiro'
+import { Liga } from './pages/Liga'
+import { Loja } from './pages/Loja'
+import { Luta } from './pages/Luta'
+import { Missoes } from './pages/Missoes'
+import { AuthScreen, ResetScreen, StarterScreen } from './pages/Onboarding'
+import { Legal } from './pages/Legal'
+import { ChallengeAlert, Desafios } from './pages/Desafios'
+import { Admin } from './admin/Admin'
+import { Perfil } from './pages/Perfil'
+import { Rinha } from './pages/Rinha'
+import { APP_NAME } from './brand'
+
+export default function App() {
+  const { state, phase, wallet, user, pubConfig } = useGame()
+  const [hidden, setHidden] = useState(() => {
+    try {
+      return localStorage.getItem('aviso-fechado') ?? ''
+    } catch {
+      return ''
+    }
+  })
+  const route = useHashRoute()
+  const [menu, setMenu] = useState(false)
+
+  const publicPath = route.split('?')[0]
+  if (publicPath === '/termos' || publicPath === '/privacidade') return <Legal doc={publicPath === '/termos' ? 'termos' : 'privacidade'} />
+  if (publicPath === '/redefinir') return <ResetScreen />
+  if (phase === 'carregando') return <div className="onboarding"><div className="spinner big" /></div>
+  if (phase === 'login') return (<><AuthScreen /><Toasts /></>)
+  if (publicPath.startsWith('/admin')) return (<><Admin tab={publicPath.split('/')[2]} /><Toasts /></>)
+  if (pubConfig?.maintenance.on && !user?.isAdmin)
+    return (
+      <div className="onboarding">
+        <div className="ob-card center">
+          <div className="prize-emoji">🚧</div>
+          <h2>Em manutenção</h2>
+          <p className="muted">{pubConfig.maintenance.message}</p>
+          <button className="btn" onClick={() => location.reload()}>Tentar de novo</button>
+        </div>
+      </div>
+    )
+  if (phase === 'inicio' || !state) return (<><StarterScreen /><Toasts /></>)
+
+  const [, section, param] = route.split('?')[0].split('/')
+  let page
+  switch (section) {
+    case 'rinha': page = <Rinha />; break
+    case 'desafios': page = <Desafios />; break
+    case 'apostas': page = <Apostas />; break
+    case 'luta': page = <Luta />; break
+    case 'missoes': page = <Missoes />; break
+    case 'liga': page = <Liga />; break
+    case 'loja': page = <Loja tab={param} />; break
+    case 'perfil': page = <Perfil />; break
+    default: page = <Galinheiro selectedId={param} />
+  }
+
+  return (
+    <div className="layout">
+      <header className="mobile-bar">
+        <button className="icon-btn" onClick={() => setMenu(true)} aria-label="Menu">☰</button>
+        <b>🐓 {APP_NAME}</b>
+        <span className="tiny">🌽 {fmt(wallet!.milho)} · 🥚 {fmt(wallet!.ovos)}</span>
+      </header>
+      <Sidebar route={route} open={menu} onClose={() => setMenu(false)} />
+      <main className="main">
+        {pubConfig?.maintenance.on && <div className="announce announce-alerta">🚧 Modo manutenção ligado — só administradores conseguem jogar.</div>}
+        {pubConfig?.announcement.text && hidden !== pubConfig.announcement.text && (
+          <div className={`announce announce-${pubConfig.announcement.kind}`}>
+            <span>{pubConfig.announcement.kind === 'promo' ? '🎉' : pubConfig.announcement.kind === 'alerta' ? '⚠️' : '📢'} {pubConfig.announcement.text}</span>
+            <button
+              className="icon-btn"
+              aria-label="Fechar aviso"
+              onClick={() => {
+                setHidden(pubConfig.announcement.text)
+                try {
+                  localStorage.setItem('aviso-fechado', pubConfig.announcement.text)
+                } catch {
+                  /* sem armazenamento */
+                }
+              }}
+            >
+              ✕
+            </button>
+          </div>
+        )}
+        <div className="container" key={section}>{page}</div>
+      </main>
+      <ChallengeAlert />
+      <Toasts />
+    </div>
+  )
+}
