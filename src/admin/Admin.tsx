@@ -253,17 +253,27 @@ function UserDetail({ id, onClose, onChange }: { id: string | null; onClose: () 
   }, [load])
 
   return (
-    <Modal open={!!id} onClose={onClose} title={d ? `👤 ${d.user.name}` : 'Carregando...'} wide>
+    <Modal open={!!id} onClose={onClose} title={d ? '👤 Jogador' : 'Carregando...'} wide>
       {d && (
         <div className="user-detail">
-          <div className="kpi-grid small">
-            <Kpi label="E-mail" value={d.user.email} />
-            <Kpi label="Cadastro" value={dt(d.user.createdAt)} />
-            <Kpi label="Último acesso" value={ago(d.user.lastSeen)} />
-            <Kpi label="Dias jogados" value={n(d.activeDays)} />
-            <Kpi label="Desafios disputados" value={n(d.pvpFights)} />
-            <Kpi label="Limite mensal" value={brl(d.user.monthlyLimitCents)} />
-            <Kpi label="🎁 Crédito MVP" value={brl(d.user.mvpCreditCents)} />
+          <div className="ud-head">
+            <div className="ud-avatar">{d.user.name.slice(0, 1).toUpperCase()}</div>
+            <div className="grow">
+              <h2>{d.user.name}</h2>
+              <div className="ud-email">{d.user.email}</div>
+              <div className="tiny muted">
+                Cadastro em {dt(d.user.createdAt)} · último acesso {ago(d.user.lastSeen)}
+              </div>
+            </div>
+            {d.user.bannedAt ? <span className="ud-badge bad">⛔ Bloqueado</span> : d.orders.some((o) => o.status === 'pago' && o.method !== 'credito') ? <span className="ud-badge good">💎 Pagante</span> : null}
+          </div>
+
+          <h3>Conta</h3>
+          <div className="ud-stats cols-4">
+            <Stat label="📅 Dias jogados" value={n(d.activeDays)} />
+            <Stat label="🤝 Desafios" value={n(d.pvpFights)} />
+            <Stat label="💳 Limite mensal" value={brl(d.user.monthlyLimitCents)} />
+            <Stat label="🎁 Crédito MVP" value={brl(d.user.mvpCreditCents)} />
           </div>
           {d.user.bannedAt && (
             <div className="warn">
@@ -273,16 +283,17 @@ function UserDetail({ id, onClose, onChange }: { id: string | null; onClose: () 
 
           {d.game ? (
             <>
-              <div className="kpi-grid small">
-                <Kpi label="🌽 Milho" value={n(d.game.milho)} />
-                <Kpi label="🥚 Ovos" value={n(d.game.ovos)} />
-                <Kpi label="👑 VIP até" value={d.game.vipUntil > Date.now() ? dt(d.game.vipUntil) : 'Não'} />
-                <Kpi label="🏆 Pontos de liga" value={n(d.game.leaguePoints)} />
-                <Kpi label="⚔️ Lutas / vitórias" value={`${d.game.stats.fights ?? 0} / ${d.game.stats.wins ?? 0}`} />
-                <Kpi label="🎨 Skins" value={String(d.game.skins.length)} />
+              <h3>Jogo</h3>
+              <div className="ud-stats cols-3">
+                <Stat label="🌽 Milho" value={n(d.game.milho)} />
+                <Stat label="🥚 Ovos" value={n(d.game.ovos)} />
+                <Stat label="👑 VIP até" value={d.game.vipUntil > Date.now() ? dt(d.game.vipUntil) : 'Não'} />
+                <Stat label="🏆 Pontos de liga" value={n(d.game.leaguePoints)} />
+                <Stat label="⚔️ Lutas / vitórias" value={`${d.game.stats.fights ?? 0} / ${d.game.stats.wins ?? 0}`} />
+                <Stat label="🎨 Skins" value={String(d.game.skins.length)} />
               </div>
               <h3>Galos</h3>
-              <table className="table">
+              <table className="table ud-table">
                 <tbody>
                   {d.game.roosters.map((r) => (
                     <tr key={r.id}>
@@ -308,15 +319,17 @@ function UserDetail({ id, onClose, onChange }: { id: string | null; onClose: () 
           {d.orders.length === 0 ? (
             <p className="muted tiny">Nenhuma compra.</p>
           ) : (
-            <table className="table">
+            <table className="table ud-table">
               <tbody>
                 {d.orders.map((o) => (
                   <tr key={o.id}>
                     <td className="tiny">{dt(o.created_at)}</td>
                     <td>{CATALOG.find((c) => c.id === o.sku)?.name ?? o.sku}</td>
-                    <td className="tiny">{o.method === 'pix' ? '⚡ Pix' : '💳 Cartão'}</td>
+                    <td className="tiny">{methodLabel(o.method)}</td>
                     <td className="right">{brl(o.amount_cents)}</td>
-                    <td className="tiny">{o.status}</td>
+                    <td>
+                      <span className={`tiny status-${o.status === 'pago' ? 'ganhou' : o.status === 'pendente' ? 'pendente' : 'perdeu'}`}>{o.status}</span>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -327,7 +340,7 @@ function UserDetail({ id, onClose, onChange }: { id: string | null; onClose: () 
             <div className="card admin-action">
               <h3>🎁 Ajustar saldo</h3>
               <p className="tiny muted">Use para compensar problemas (ex.: pagamento aprovado sem entrega). Valores negativos tiram. Fica registrado na auditoria.</p>
-              <div className="row gap wrap">
+              <div className="grant-grid">
                 <label className="field">
                   <span>🥚 Ovos</span>
                   <input type="number" value={ovos} onChange={(e) => setOvos(Number(e.target.value))} />
@@ -340,7 +353,7 @@ function UserDetail({ id, onClose, onChange }: { id: string | null; onClose: () 
                   <span>🎁 Crédito MVP (R$)</span>
                   <input type="number" step="1" value={credit} onChange={(e) => setCredit(Number(e.target.value))} />
                 </label>
-                <label className="field grow">
+                <label className="field grant-reason">
                   <span>Motivo (obrigatório)</span>
                   <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Ex.: compensação pedido #1234" />
                 </label>
@@ -417,6 +430,17 @@ function UserDetail({ id, onClose, onChange }: { id: string | null; onClose: () 
   )
 }
 
+const methodLabel = (m: string) => (m === 'pix' ? '⚡ Pix' : m === 'credito' ? '🎁 Crédito MVP' : '💳 Cartão')
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="ud-stat" title={`${label}: ${value}`}>
+      <span>{label}</span>
+      <b>{value}</b>
+    </div>
+  )
+}
+
 // ---------------- Pedidos ----------------
 
 function Orders() {
@@ -478,7 +502,7 @@ function Orders() {
                 <td className="tiny">{o.email}</td>
                 <td>{o.name}</td>
                 <td className="tiny">
-                  {o.method === 'pix' ? '⚡ Pix' : '💳 Cartão'} <span className="muted">({o.provider})</span>
+                  {methodLabel(o.method)} <span className="muted">({o.provider})</span>
                 </td>
                 <td className="right">{brl(o.amount_cents)}</td>
                 <td>
