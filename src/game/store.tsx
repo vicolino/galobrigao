@@ -88,6 +88,7 @@ function useGameEngine() {
   const [match, setMatch] = useState<Match | null>(null)
   const [pvp, setPvp] = useState<PvpPoll | null>(null)
   const [pubConfig, setPubConfig] = useState<PublicConfig | null>(null)
+  const [updateReady, setUpdateReady] = useState(false)
   const [pvpDone, setPvpDone] = useState<ChallengeView[]>([])
   // Saldo mostrado durante a luta (para não entregar o resultado antes da hora)
   const [held, setHeld] = useState<{ milho: number; ovos: number } | null>(null)
@@ -210,11 +211,21 @@ function useGameEngine() {
         .then((c) => {
           setLiveConfig({ ...live, ...c })
           setPubConfig(c)
+          // Saiu versão nova: recarrega sozinho, menos no meio de uma luta (aí mostra um aviso)
+          if (c.build && c.build !== __BUILD_ID__) {
+            if (window.location.hash.startsWith('#/luta')) setUpdateReady(true)
+            else window.location.reload()
+          }
         })
         .catch(() => null)
     void load()
     const t = setInterval(load, 60_000)
-    return () => clearInterval(t)
+    const onShow = () => document.visibilityState === 'visible' && load()
+    document.addEventListener('visibilitychange', onShow)
+    return () => {
+      clearInterval(t)
+      document.removeEventListener('visibilitychange', onShow)
+    }
   }, [])
 
   // Sessão inicial
@@ -760,7 +771,7 @@ async function shop<T = unknown>(op: ShopOp, sound?: () => void): Promise<Result
     },
   }
 
-  return { state, actions, toasts, toast, match, phase, user, provider, paymentsLive, pvp, pvpDone, pubConfig, wallet: held ?? (state ? { milho: state.milho, ovos: state.ovos } : null), isVip: state ? isVip(state) : false }
+  return { state, actions, toasts, toast, match, phase, user, provider, paymentsLive, updateReady, pvp, pvpDone, pubConfig, wallet: held ?? (state ? { milho: state.milho, ovos: state.ovos } : null), isVip: state ? isVip(state) : false }
 }
 
 /** Monta a luta para assistir a partir de um desafio resolvido. */

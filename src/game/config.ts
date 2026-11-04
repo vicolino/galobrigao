@@ -65,4 +65,4 @@ export const effectiveCatalog = () => CATALOG.map((s) => effectiveSku(s.id)!)
 
 /** Parte da configuração que o navegador precisa conhecer. */
 export const publicConfig = (c: AppConfig) => ({ rewards: c.rewards, pvp: c.pvp, announcement: c.announcement, maintenance: c.maintenance, mvp: c.mvp })
-export type PublicConfig = ReturnType<typeof publicConfig>
+export type PublicConfig = ReturnType<typeof publicConfig> & { build?: string | null }

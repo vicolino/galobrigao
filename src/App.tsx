@@ -18,7 +18,7 @@ import { Rinha } from './pages/Rinha'
 import { APP_NAME } from './brand'
 
 export default function App() {
-  const { state, phase, wallet, user, pubConfig } = useGame()
+  const { state, phase, wallet, user, pubConfig, updateReady } = useGame()
   const [hidden, setHidden] = useState(() => {
     try {
       return localStorage.getItem('aviso-fechado') ?? ''
@@ -71,6 +71,14 @@ export default function App() {
       </header>
       <Sidebar route={route} open={menu} onClose={() => setMenu(false)} />
       <main className="main">
+        {updateReady && (
+          <div className="announce announce-promo">
+            <span>🔄 Saiu uma versão nova do jogo.</span>
+            <button className="btn btn-sm btn-primary" onClick={() => location.reload()}>
+              Atualizar
+            </button>
+          </div>
+        )}
         {pubConfig?.maintenance.on && <div className="announce announce-alerta">🚧 Modo manutenção ligado — só administradores conseguem jogar.</div>}
         {pubConfig?.announcement.text && hidden !== pubConfig.announcement.text && (
           <div className={`announce announce-${pubConfig.announcement.kind}`}>

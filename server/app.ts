@@ -1,4 +1,6 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { SKU_BY_ID, SPEND_LIMITS, type Sku } from '../src/game/catalog'
 import { effectiveCatalog, effectiveSku, live, publicConfig } from '../src/game/config'
@@ -74,6 +76,19 @@ function grantMvp(u: UserRow): UserRow {
 }
 
 const paymentsLive = () => providerName() !== 'sandbox' || sandboxAllowed()
+
+/** Versão publicada (dist/build.json), relida no máximo a cada 30 s. */
+let buildCache = { id: null as string | null, at: 0 }
+function currentBuild() {
+  if (Date.now() - buildCache.at > 30_000) {
+    try {
+      buildCache = { id: JSON.parse(readFileSync(join(process.cwd(), 'dist', 'build.json'), 'utf8')).id, at: Date.now() }
+    } catch {
+      buildCache = { id: null, at: Date.now() }
+    }
+  }
+  return buildCache.id
+}
 
 /** Em manutenção, só administradores jogam e compram. */
 function blockIfMaintenance(u: UserRow) {
@@ -248,7 +263,7 @@ export async function handle(req: Req, res: Res) {
   loadConfig()
   try {
     // ----- Configuração pública (aviso, manutenção, recompensas) -----
-    if (path === '/api/config' && method === 'GET') return json(res, 200, publicConfig(live))
+    if (path === '/api/config' && method === 'GET') return json(res, 200, { ...publicConfig(live), build: isProd() ? currentBuild() : null })
 
     // ----- Backoffice -----
     if (path.startsWith('/api/admin/')) {
