@@ -26,7 +26,7 @@ import { setAudio, sfx } from './sound'
 import type { Accessory, Bet, BetPick, GameState, MissionKind, Rooster, Slot } from './types'
 import { api, ApiError, type ApiUser } from '../api'
 import { FEED_COOLDOWN, STAR_COST, type ShopOp } from './premium'
-import type { ChallengeView, PvpPoll } from './pvp'
+import { challengeTtl, type ChallengeView, type PvpPoll } from './pvp'
 import { DAILY_OVOS, arenaOvos } from './rewards'
 import { live, setLiveConfig, type PublicConfig } from './config'
 
@@ -86,6 +86,8 @@ function useGameEngine() {
   const dirty = useRef(false)
   const [toasts, setToasts] = useState<Toast[]>([])
   const [match, setMatch] = useState<Match | null>(null)
+  const matchRef = useRef(match)
+  matchRef.current = match
   const [pvp, setPvp] = useState<PvpPoll | null>(null)
   const [pubConfig, setPubConfig] = useState<PublicConfig | null>(null)
   const [updateReady, setUpdateReady] = useState(false)
@@ -168,23 +170,40 @@ function useGameEngine() {
     adopt(await api.getSave())
   }, [adopt, flush])
 
-  // Desafios: sinal de "online" + novidades a cada 4s
+  // Desafios: sinal de "online" + novidades a cada 4s (1,5s enquanto espera resposta)
   useEffect(() => {
     if (phase !== 'jogo') return
     let alive = true
+    let timer: ReturnType<typeof setTimeout> | undefined
     const tickPvp = async () => {
+      let waiting = false
       try {
         const p = await api.pvpPoll()
         if (!alive) return
         setPvp(p)
+        waiting = !!p.outgoing
         if (p.updates.length) {
+          // Só abre a luta sozinho se o desafio é recente (não um de ontem visto agora)
+          const accepted = p.updates.find((u) => u.status === 'aceito' && Date.now() - u.createdAt < challengeTtl() + 60_000)
+          // Já está assistindo outra luta? Não interrompe: só avisa.
+          const watching = !!matchRef.current && location.hash.startsWith('#/luta')
+          if (accepted && !watching) {
+            const before = ref.current
+            if (before) setHeld({ milho: before.milho, ovos: before.ovos })
+          }
           if (p.updates.some((u) => u.status === 'aceito')) await reloadFromServer()
           for (const u of p.updates) {
             if (u.status === 'aceito') {
-              const won = u.result?.winner === 0
-              toast(`🤝 ${u.toName} aceitou! ${u.a.name} ${won ? 'VENCEU' : 'perdeu'} o desafio. Veja em Desafios.`, won ? 'ok' : 'info')
+              if (u === accepted && !watching) {
+                toast(`🤝 ${u.toName} aceitou o desafio! Que comece a briga!`, 'ok')
+                setMatch(pvpMatch(u))
+                location.hash = '#/luta'
+              } else {
+                const won = u.result?.winner === 0
+                toast(`🤝 ${u.toName} aceitou! ${u.a.name} ${won ? 'VENCEU' : 'perdeu'} o desafio. Reveja em Desafios.`, won ? 'ok' : 'info')
+                sfx.bell()
+              }
               setPvpDone((d) => [u, ...d].slice(0, 10))
-              sfx.bell()
             } else if (u.status === 'recusado') toast(`${u.toName} recusou o desafio.`, 'info')
             else if (u.status === 'expirado') toast(`${u.toName} não respondeu a tempo.`, 'info')
             else if (u.status === 'cancelado' && u.reason) toast(`Desafio cancelado: ${u.reason}`, 'info')
@@ -194,12 +213,12 @@ function useGameEngine() {
       } catch {
         /* sem conexão: tenta de novo */
       }
+      if (alive) timer = setTimeout(tickPvp, waiting ? 1500 : 4000)
     }
     void tickPvp()
-    const t = setInterval(tickPvp, 4000)
     return () => {
       alive = false
-      clearInterval(t)
+      clearTimeout(timer)
     }
   }, [phase]) // eslint-disable-line react-hooks/exhaustive-deps
 
