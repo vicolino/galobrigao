@@ -138,7 +138,8 @@ export function AuthScreen() {
 // ---------------- Escolha do primeiro galo ----------------
 
 export function StarterScreen() {
-  const { actions, toast, user } = useGame()
+  const { actions, toast, user, pubConfig } = useGame()
+  const mvp = !!pubConfig?.mvp.on
   const [items, setItems] = useState<CatalogItem[]>([])
   const [avatar, setAvatar] = useState(AVATARS[0])
   const [buying, setBuying] = useState<CatalogItem | null>(null)
@@ -163,6 +164,11 @@ export function StarterScreen() {
         <div className="center">
           <h1 className="title-font">Bem-vindo, {user?.name}! 🐣</h1>
           <p className="muted">Escolha como começar. Galos melhores ganham mais lutas e sobem de nível mais rápido.</p>
+          {mvp && (
+            <div className="mvp-banner">
+              🎁 <b>MODO MVP:</b> você ganhou <b>{brl(user?.mvpCreditCents ?? 0)}</b> de crédito de teste para gastar na loja. Escolha um kit abaixo!
+            </div>
+          )}
           <div className="avatar-pick center-row">
             {AVATARS.map((a) => (
               <button key={a} className={`avatar ${a === avatar ? 'selected' : ''}`} onClick={() => setAvatar(a)}>
@@ -212,7 +218,7 @@ export function StarterScreen() {
                   {it.tools && <li>🧰 {Object.entries(it.tools).map(([t, q]) => `${TOOL_BY_ID[t].emoji}×${q}`).join(' ')}</li>}
                 </ul>
                 <button className="btn btn-gold full btn-lg" onClick={() => setBuying(it)}>
-                  ⚡ {brl(it.priceCents)} no Pix
+                  {mvp ? `🎁 Usar crédito · ${brl(it.priceCents)}` : `⚡ ${brl(it.priceCents)} no Pix`}
                 </button>
               </div>
             )

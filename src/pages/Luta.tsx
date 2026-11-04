@@ -2,13 +2,15 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { RoosterSvg, type Anim } from '../components/RoosterSvg'
 import { Bar, Empty, StyleTag, go } from '../components/ui'
 import { MAX_STA, simulate } from '../game/battle'
-import { TOOL_BY_ID } from '../game/data'
+import { BREED_BY_ID, TOOL_BY_ID } from '../game/data'
 import { fmt } from '../game/rooster'
 import { sfx } from '../game/sound'
 import { useGame } from '../game/store'
-import type { BattleEvent } from '../game/types'
+import type { BattleEvent, Rooster } from '../game/types'
 
 const BASE_MS = 1150
+/** Duração da entrada dos lutadores (acompanha a vinheta de 6 tempos a 128 BPM). */
+const INTRO_MS = 2900
 
 export function Luta() {
   const { match, actions } = useGame()
@@ -20,6 +22,24 @@ export function Luta() {
   const [shake, setShake] = useState(false)
   const [bubble, setBubble] = useState<string | null>(null)
   const logRef = useRef<HTMLOListElement>(null)
+  const [intro, setIntro] = useState(true)
+
+  // Entrada estilo UFC antes de cada luta
+  useEffect(() => {
+    if (!match) return
+    setIdx(0)
+    setIntro(true)
+    sfx.walkout()
+    const vs = setTimeout(() => {
+      setShake(true)
+      setTimeout(() => setShake(false), 400)
+    }, 1400)
+    const t = setTimeout(() => setIntro(false), INTRO_MS)
+    return () => {
+      clearTimeout(t)
+      clearTimeout(vs)
+    }
+  }, [match])
 
   const events = result?.events ?? []
   const done = idx >= events.length
@@ -27,10 +47,10 @@ export function Luta() {
 
   // Avança a narração
   useEffect(() => {
-    if (!result || done) return
-    const t = setTimeout(() => setIdx((i) => i + 1), idx === 0 ? 700 : BASE_MS / speed)
+    if (!result || done || intro) return
+    const t = setTimeout(() => setIdx((i) => i + 1), idx === 0 ? 300 : BASE_MS / speed)
     return () => clearTimeout(t)
-  }, [idx, speed, result, done])
+  }, [idx, speed, result, done, intro])
 
   // Efeitos visuais de cada evento
   useEffect(() => {
@@ -123,6 +143,7 @@ export function Luta() {
   }
 
   const skip = () => {
+    setIntro(false)
     setSpeed(1)
     setIdx(events.length)
   }
@@ -178,10 +199,11 @@ export function Luta() {
           <div className="straw" />
         </div>
 
-        {bubble && <div className={`bubble ${bubble === 'K.O.!' ? 'ko' : ''}`}>{bubble}</div>}
+        {intro && <Walkout a={match.a} b={match.b} />}
+        {bubble && !intro && <div className={`bubble ${bubble === 'K.O.!' ? 'ko' : ''}`}>{bubble}</div>}
 
         {[0, 1].map((side) => (
-          <div key={side} className={`fighter fighter-${side} ${anims[side] === 'attack' ? 'lunge' : ''}`}>
+          <div key={side} className={`fighter fighter-${side} ${anims[side] === 'attack' ? 'lunge' : ''} ${intro ? `enter-${side}` : ''}`}>
             <RoosterSvg breedId={side === 0 ? match.a.breedId : match.b.breedId} skin={side === 0 ? match.a.skin : match.b.skin} equipped={side === 0 ? match.a.equipped : match.b.equipped} flip={side === 1} anim={anims[side]} size="100%" />
             {fx && fx.side === side && (
               <div key={fx.key} className={`dmg ${fx.crit ? 'crit' : ''} ${fx.miss ? 'miss' : ''}`}>
@@ -202,6 +224,11 @@ export function Luta() {
       </div>
 
       <div className="speed">
+        {intro && (
+          <button className="btn btn-sm" onClick={() => setIntro(false)}>
+            ⏩ Pular entrada
+          </button>
+        )}
         {[1, 2, 3].map((v) => (
           <button key={v} className={`btn btn-sm ${speed === v ? 'btn-primary' : ''}`} onClick={() => setSpeed(v)} disabled={finished}>
             {v}x
@@ -318,6 +345,31 @@ function FighterHud({ side, name, sub, style, hp, maxHp, sta, hurt, tools }: { t
         <Bar value={sta} max={MAX_STA} kind="sta" />
         <span className="tiny">🔥 {sta}</span>
       </div>
+    </div>
+  )
+}
+
+/** Apresentação dos lutadores: holofotes, painéis dos cantos e o VS no impacto da música. */
+function Walkout({ a, b }: { a: Rooster; b: Rooster }) {
+  const card = (r: Rooster, side: 0 | 1) => (
+    <div className={`wo-card wo-${side === 0 ? 'left' : 'right'}`}>
+      <span className="wo-corner">{side === 0 ? '🔴 CANTO VERMELHO' : 'CANTO AZUL 🔵'}</span>
+      <b className="wo-name">{r.name}</b>
+      <span className="wo-info">
+        {BREED_BY_ID[r.breedId]?.name} · Nv {r.level} · {r.wins}V {r.losses}D
+      </span>
+      <span className="wo-owner">{r.owner}</span>
+    </div>
+  )
+  return (
+    <div className="walkout" aria-label={`${a.name} contra ${b.name}`}>
+      <div className="wo-dim" />
+      <div className="spot spot-l" />
+      <div className="spot spot-r" />
+      {card(a, 0)}
+      {card(b, 1)}
+      <div className="wo-vs">VS</div>
+      <div className="wo-flash" />
     </div>
   )
 }

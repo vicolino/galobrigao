@@ -6,6 +6,7 @@ import type { GameState } from './game/types'
 
 export interface ApiUser {
   id: string
+  mvpCreditCents?: number
   isAdmin?: boolean
   email: string
   name: string
@@ -17,7 +18,7 @@ export interface ApiOrder {
   sku: string
   name: string
   amountCents: number
-  method: 'pix' | 'cartao'
+  method: 'pix' | 'cartao' | 'credito'
   status: 'pendente' | 'pago' | 'expirado' | 'recusado'
   provider: 'sandbox' | 'mercadopago'
   pixCode: string | null
@@ -52,7 +53,7 @@ async function call<T>(path: string, init: { method?: string; body?: unknown } =
 }
 
 export const api = {
-  me: () => call<{ user: ApiUser | null; provider: string }>('/me'),
+  me: () => call<{ user: ApiUser | null; provider: string; paymentsLive?: boolean }>('/me'),
   signup: (b: { email: string; password: string; name: string; adult: boolean; terms: boolean }) => call<{ user: ApiUser }>('/auth/signup', { method: 'POST', body: b }),
   login: (email: string, password: string) => call<{ user: ApiUser }>('/auth/login', { method: 'POST', body: { email, password } }),
   changePassword: (current: string, next: string) => call('/auth/password', { method: 'POST', body: { current, next } }),
@@ -65,7 +66,7 @@ export const api = {
   deleteSave: () => call('/save', { method: 'DELETE' }),
   startFree: (avatar: string) => call<{ rev: number; state: GameState }>('/onboarding/free', { method: 'POST', body: { avatar } }),
   catalog: () => call<{ items: CatalogItem[]; provider: string }>('/catalog'),
-  checkout: (sku: string, method: 'pix' | 'cartao') => call<{ order: ApiOrder }>('/checkout', { method: 'POST', body: { sku, method } }),
+  checkout: (sku: string, method: 'pix' | 'cartao' | 'credito') => call<{ order: ApiOrder }>('/checkout', { method: 'POST', body: { sku, method } }),
   order: (id: string) => call<{ order: ApiOrder }>(`/orders/${id}`),
   simulate: (id: string) => call<{ order: ApiOrder }>(`/orders/${id}/simulate`, { method: 'POST' }),
   orders: () => call<{ orders: ApiOrder[] }>('/orders'),
@@ -82,7 +83,7 @@ export const api = {
     overview: (days: number) => call<AdminOverview>(`/admin/overview?days=${days}`),
     users: (q: string, filter: string) => call<{ users: AdminUserRow[] }>(`/admin/users?q=${encodeURIComponent(q)}&filter=${filter}`),
     user: (id: string) => call<AdminUserDetail>(`/admin/users/${id}`),
-    grant: (id: string, ovos: number, milho: number, reason: string) => call<{ ok: true; ovos: number; milho: number }>(`/admin/users/${id}/grant`, { method: 'POST', body: { ovos, milho, reason } }),
+    grant: (id: string, ovos: number, milho: number, reason: string, creditCents = 0) => call<{ ok: true; ovos: number; milho: number }>(`/admin/users/${id}/grant`, { method: 'POST', body: { ovos, milho, reason, creditCents } }),
     ban: (id: string, banned: boolean, reason: string) => call(`/admin/users/${id}/ban`, { method: 'POST', body: { banned, reason } }),
     orders: (status: string, q: string) => call<{ orders: AdminOrderRow[] }>(`/admin/orders?status=${status}&q=${encodeURIComponent(q)}`),
     recheck: (id: string) => call<{ status: string }>(`/admin/orders/${id}/recheck`, { method: 'POST' }),
@@ -117,6 +118,7 @@ export interface AdminOverview {
     revenuePrevCents: number
     revenueTodayCents: number
     revenueAllCents: number
+    creditSpentCents: number
     orders: number
     pendingOrders: number
     payingUsersWin: number
@@ -146,7 +148,7 @@ export interface AdminUserRow {
   milho: number
 }
 export interface AdminUserDetail {
-  user: { id: string; email: string; name: string; createdAt: number; bannedAt: number | null; banReason: string | null; monthlyLimitCents: number; lastSeen: number | null }
+  user: { id: string; email: string; name: string; mvpCreditCents: number; createdAt: number; bannedAt: number | null; banReason: string | null; monthlyLimitCents: number; lastSeen: number | null }
   game: null | {
     milho: number
     ovos: number

@@ -4,6 +4,7 @@ import { sfx } from '../game/sound'
 import { titleFor, useGame } from '../game/store'
 import { Modal, go } from './ui'
 import { DAILY_OVOS } from '../game/rewards'
+import { brl } from '../game/catalog'
 import { APP_NAME, ARENA } from '../brand'
 
 const NAV = [
@@ -20,7 +21,7 @@ const NAV = [
 ]
 
 export function Sidebar({ route, open, onClose }: { route: string; open: boolean; onClose: () => void }) {
-  const { state, actions, toast, isVip, wallet, pvp, user } = useGame()
+  const { state, actions, toast, isVip, wallet, pvp, user, pubConfig } = useGame()
   const [daily, setDaily] = useState<{ milho: number; ovo: number; streak: number } | null>(null)
   if (!state) return null
   const s = state
@@ -81,6 +82,12 @@ export function Sidebar({ route, open, onClose }: { route: string; open: boolean
               <span>🥚 Ovo de ouro</span>
               <b>{fmt(wallet!.ovos)}</b>
             </div>
+            {pubConfig?.mvp.on && (
+              <div className="wallet-row credit-row" onClick={() => go('/loja/ovos')} title="Crédito de teste do Modo MVP (sem valor real)">
+                <span>🎁 Crédito MVP</span>
+                <b>{brl(user?.mvpCreditCents ?? 0)}</b>
+              </div>
+            )}
             <a className="btn btn-sm btn-gold" href="#/loja/ovos">💎 Comprar ovos</a>
             <p className="tiny muted center">Moeda virtual · sem saque</p>
             <button className={`btn btn-daily ${dailyReady ? 'pulse' : ''}`} onClick={claim}>

@@ -155,6 +155,7 @@ function Overview() {
             <Kpi label="Pedidos pendentes" value={n(d.kpis.pendingOrders)} />
             <Kpi label={`Vendas (${days} dias)`} value={n(d.kpis.orders)} />
             <Kpi label="Contas bloqueadas" value={n(d.kpis.banned)} />
+            <Kpi label={`Gasto com crédito MVP (${days} dias)`} value={brl(d.kpis.creditSpentCents)} hint="Compras pagas com crédito de teste — não entram na receita" />
           </div>
         </>
       )}
@@ -236,6 +237,7 @@ function UserDetail({ id, onClose, onChange }: { id: string | null; onClose: () 
   const [d, setD] = useState<AdminUserDetail | null>(null)
   const [ovos, setOvos] = useState(0)
   const [milho, setMilho] = useState(0)
+  const [credit, setCredit] = useState(0)
   const [reason, setReason] = useState('')
   const [banReason, setBanReason] = useState('')
   const load = useCallback(() => {
@@ -261,6 +263,7 @@ function UserDetail({ id, onClose, onChange }: { id: string | null; onClose: () 
             <Kpi label="Dias jogados" value={n(d.activeDays)} />
             <Kpi label="Desafios disputados" value={n(d.pvpFights)} />
             <Kpi label="Limite mensal" value={brl(d.user.monthlyLimitCents)} />
+            <Kpi label="🎁 Crédito MVP" value={brl(d.user.mvpCreditCents)} />
           </div>
           {d.user.bannedAt && (
             <div className="warn">
@@ -333,6 +336,10 @@ function UserDetail({ id, onClose, onChange }: { id: string | null; onClose: () 
                   <span>🌽 Milho</span>
                   <input type="number" value={milho} onChange={(e) => setMilho(Number(e.target.value))} />
                 </label>
+                <label className="field">
+                  <span>🎁 Crédito MVP (R$)</span>
+                  <input type="number" step="1" value={credit} onChange={(e) => setCredit(Number(e.target.value))} />
+                </label>
                 <label className="field grow">
                   <span>Motivo (obrigatório)</span>
                   <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Ex.: compensação pedido #1234" />
@@ -340,13 +347,14 @@ function UserDetail({ id, onClose, onChange }: { id: string | null; onClose: () 
               </div>
               <button
                 className="btn btn-primary"
-                disabled={!reason.trim() || (!ovos && !milho)}
+                disabled={!reason.trim() || (!ovos && !milho && !credit)}
                 onClick={async () => {
                   try {
-                    await api.admin.grant(d.user.id, ovos, milho, reason)
+                    await api.admin.grant(d.user.id, ovos, milho, reason, Math.round(credit * 100))
                     toast('Saldo ajustado.', 'ok')
                     setOvos(0)
                     setMilho(0)
+                    setCredit(0)
                     setReason('')
                     load()
                     onChange()
@@ -571,6 +579,15 @@ function Config() {
           </label>
         </div>
         {cfg.announcement.text && <div className={`announce announce-${cfg.announcement.kind}`}>{cfg.announcement.text}</div>}
+      </div>
+
+      <div className="card cfg-section">
+        <h3>🎁 Modo MVP (crédito de teste)</h3>
+        <label className="check">
+          <input type="checkbox" checked={cfg.mvp.on} onChange={(e) => set('mvp', { on: e.target.checked })} /> Ligado — cada conta recebe o crédito uma única vez (no cadastro ou no próximo acesso) e pode gastar na loja sem pagar
+        </label>
+        <NumField label="Crédito por conta (R$)" step={10} value={cfg.mvp.creditCents / 100} onChange={(v) => set('mvp', { creditCents: Math.round(v * 100) })} />
+        <p className="tiny muted">Compras com crédito não contam como receita. Mudar o valor vale só para quem ainda não recebeu.</p>
       </div>
 
       <div className={`card cfg-section ${cfg.maintenance.on ? 'danger-box' : ''}`}>

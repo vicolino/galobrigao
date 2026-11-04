@@ -110,6 +110,8 @@ export function getDb() {
   const cols = (db.prepare('PRAGMA table_info(users)').all() as { name: string }[]).map((c) => c.name)
   if (!cols.includes('banned_at')) db.exec('ALTER TABLE users ADD COLUMN banned_at INTEGER')
   if (!cols.includes('ban_reason')) db.exec('ALTER TABLE users ADD COLUMN ban_reason TEXT')
+  if (!cols.includes('mvp_credit_cents')) db.exec('ALTER TABLE users ADD COLUMN mvp_credit_cents INTEGER NOT NULL DEFAULT 0')
+  if (!cols.includes('mvp_granted_at')) db.exec('ALTER TABLE users ADD COLUMN mvp_granted_at INTEGER')
   if (!cols.includes('role')) db.exec("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'player'")
   return db
 }
@@ -126,6 +128,8 @@ export interface UserRow {
   pending_limit_at: number | null
   banned_at?: number | null
   role?: string
+  mvp_credit_cents?: number
+  mvp_granted_at?: number | null
   ban_reason?: string | null
 }
 
@@ -134,7 +138,7 @@ export interface OrderRow {
   user_id: string
   sku: string
   amount_cents: number
-  method: 'pix' | 'cartao'
+  method: 'pix' | 'cartao' | 'credito'
   provider: string
   provider_ref: string | null
   status: 'pendente' | 'pago' | 'expirado' | 'recusado'

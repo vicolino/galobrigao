@@ -79,6 +79,7 @@ function useGameEngine() {
   const [phase, setPhase] = useState<Phase>('carregando')
   const [user, setUser] = useState<ApiUser | null>(null)
   const [provider, setProvider] = useState('sandbox')
+  const [paymentsLive, setPaymentsLive] = useState(true)
   const rev = useRef(0)
   const syncTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const syncing = useRef<Promise<void> | null>(null)
@@ -222,6 +223,7 @@ function useGameEngine() {
       try {
         const me = await api.me()
         setProvider(me.provider)
+        setPaymentsLive(me.paymentsLive !== false)
         if (!me.user) return setPhase('login')
         setUser(me.user)
         adopt(await api.getSave())
@@ -758,7 +760,7 @@ async function shop<T = unknown>(op: ShopOp, sound?: () => void): Promise<Result
     },
   }
 
-  return { state, actions, toasts, toast, match, phase, user, provider, pvp, pvpDone, pubConfig, wallet: held ?? (state ? { milho: state.milho, ovos: state.ovos } : null), isVip: state ? isVip(state) : false }
+  return { state, actions, toasts, toast, match, phase, user, provider, paymentsLive, pvp, pvpDone, pubConfig, wallet: held ?? (state ? { milho: state.milho, ovos: state.ovos } : null), isVip: state ? isVip(state) : false }
 }
 
 /** Monta a luta para assistir a partir de um desafio resolvido. */

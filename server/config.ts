@@ -43,6 +43,8 @@ export function validateConfig(input: AppConfig): AppConfig {
   c.economy.defaultSpendLimitCents = Math.round(num(c.economy.defaultSpendLimitCents, 1000, 1000000, 'Limite de gasto padrão'))
   c.announcement.text = String(c.announcement.text ?? '').slice(0, 200)
   if (!['info', 'promo', 'alerta'].includes(c.announcement.kind)) c.announcement.kind = 'info'
+  c.mvp.on = !!c.mvp.on
+  c.mvp.creditCents = Math.round(num(c.mvp.creditCents, 0, 1_000_000, 'Crédito MVP (centavos)'))
   c.maintenance.on = !!c.maintenance.on
   c.maintenance.message = String(c.maintenance.message ?? '').slice(0, 200)
   return c

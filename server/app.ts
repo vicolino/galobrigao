@@ -61,8 +61,19 @@ const needUser = (req: Req) => {
   if (u.banned_at) throw new HttpError(403, `Conta bloqueada${u.ban_reason ? `: ${u.ban_reason}` : ''}. Fale com o suporte.`)
   // Dia de atividade (para os gráficos de jogadores ativos)
   getDb().prepare('INSERT OR IGNORE INTO activity (user_id, day) VALUES (?, ?)').run(u.id, new Date().toISOString().slice(0, 10))
-  return applyPendingLimit(u)
+  return applyPendingLimit(grantMvp(u))
 }
+
+/** Modo MVP: cada conta recebe o crédito de teste uma única vez. */
+function grantMvp(u: UserRow): UserRow {
+  if (!live.mvp.on || u.mvp_granted_at || live.mvp.creditCents <= 0) return u
+  const r = getDb()
+    .prepare('UPDATE users SET mvp_credit_cents = mvp_credit_cents + ?, mvp_granted_at = ? WHERE id = ? AND mvp_granted_at IS NULL')
+    .run(live.mvp.creditCents, Date.now(), u.id)
+  return r.changes ? { ...u, mvp_credit_cents: (u.mvp_credit_cents ?? 0) + live.mvp.creditCents, mvp_granted_at: Date.now() } : u
+}
+
+const paymentsLive = () => providerName() !== 'sandbox' || sandboxAllowed()
 
 /** Em manutenção, só administradores jogam e compram. */
 function blockIfMaintenance(u: UserRow) {
@@ -99,12 +110,13 @@ function applyPendingLimit(u: UserRow): UserRow {
 function spentThisMonth(userId: string) {
   const d = new Date()
   const start = new Date(d.getFullYear(), d.getMonth(), 1).getTime()
-  const row = getDb().prepare("SELECT COALESCE(SUM(amount_cents),0) AS s FROM orders WHERE user_id = ? AND status = 'pago' AND paid_at >= ?").get(userId, start) as { s: number }
+  const row = getDb().prepare("SELECT COALESCE(SUM(amount_cents),0) AS s FROM orders WHERE user_id = ? AND status = 'pago' AND provider != 'credito' AND paid_at >= ?").get(userId, start) as { s: number }
   return row.s
 }
 
 const publicUser = (u: UserRow) => ({
   id: u.id,
+  mvpCreditCents: u.mvp_credit_cents ?? 0,
   isAdmin: isAdmin(u),
   email: u.email,
   name: u.name,
@@ -355,14 +367,14 @@ export async function handle(req: Req, res: Res) {
 
     if (path === '/api/me' && method === 'GET') {
       const u = userFromRequest(req)
-      return json(res, 200, { user: u ? publicUser(applyPendingLimit(u)) : null, provider: providerName() })
+      return json(res, 200, { user: u && !u.banned_at ? publicUser(applyPendingLimit(grantMvp(u))) : null, provider: providerName(), paymentsLive: paymentsLive() })
     }
 
     // ----- Catálogo -----
     if (path === '/api/catalog' && method === 'GET') {
       const u = userFromRequest(req)
       const bought = u ? (db.prepare("SELECT sku FROM orders WHERE user_id = ? AND status = 'pago'").all(u.id) as { sku: string }[]).map((r) => r.sku) : []
-      return json(res, 200, { items: effectiveCatalog().filter((s) => s.active).map((s) => ({ ...s, owned: s.oncePerUser && bought.includes(s.id) })), provider: providerName() })
+      return json(res, 200, { items: effectiveCatalog().filter((s) => s.active).map((s) => ({ ...s, owned: s.oncePerUser && bought.includes(s.id) })), provider: providerName(), paymentsLive: paymentsLive() })
     }
 
     // ----- Save -----
@@ -444,13 +456,40 @@ export async function handle(req: Req, res: Res) {
       const u = needUser(req)
       const b = await readBody(req)
       blockIfMaintenance(u)
-      if (providerName() === 'sandbox' && !sandboxAllowed()) throw new HttpError(503, 'Pagamentos ainda não estão disponíveis. Volte em breve!')
       if (limited(`checkout:${u.id}`, 10, 600_000)) throw new HttpError(429, 'Muitos pedidos seguidos. Espere alguns minutos.')
       const sku = effectiveSku(String(b.sku))
-      const payMethod = b.method === 'cartao' ? 'cartao' : 'pix'
       if (!sku || !sku.active) throw new HttpError(404, 'Produto indisponível no momento')
       if (sku.kind !== 'starter' && !loadSave(u.id)) throw new HttpError(409, 'Crie seu galinheiro antes de comprar')
       if (sku.oncePerUser && db.prepare("SELECT 1 FROM orders WHERE user_id = ? AND sku = ? AND status = 'pago'").get(u.id, sku.id)) throw new HttpError(409, 'Esse pacote só pode ser comprado uma vez')
+
+      // Modo MVP: paga com o crédito de teste, entrega na hora
+      if (b.method === 'credito') {
+        if (!live.mvp.on) throw new HttpError(400, 'O crédito de teste não está ativo.')
+        const id = randomUUID()
+        const now = Date.now()
+        db.exec('BEGIN')
+        try {
+          const debit = db.prepare('UPDATE users SET mvp_credit_cents = mvp_credit_cents - ? WHERE id = ? AND mvp_credit_cents >= ?').run(sku.priceCents, u.id, sku.priceCents)
+          if (!debit.changes) throw new HttpError(402, 'Crédito de teste insuficiente.')
+          db.prepare("INSERT INTO orders (id, user_id, sku, amount_cents, method, provider, status, created_at, paid_at) VALUES (?, ?, ?, ?, 'credito', 'credito', 'pendente', ?, ?)").run(id, u.id, sku.id, sku.priceCents, now, now)
+          db.exec('COMMIT')
+        } catch (e) {
+          db.exec('ROLLBACK')
+          throw e
+        }
+        try {
+          const order = fulfill(id)!
+          return json(res, 201, { order: publicOrder(order) })
+        } catch (e) {
+          // Entrega falhou: devolve o crédito
+          db.prepare('UPDATE users SET mvp_credit_cents = mvp_credit_cents + ? WHERE id = ?').run(sku.priceCents, u.id)
+          db.prepare("UPDATE orders SET status = 'recusado' WHERE id = ?").run(id)
+          throw e
+        }
+      }
+
+      if (!paymentsLive()) throw new HttpError(503, 'Pix e cartão ainda não estão disponíveis. Use seu crédito de teste!')
+      const payMethod = b.method === 'cartao' ? 'cartao' : 'pix'
       const spent = spentThisMonth(u.id)
       if (spent + sku.priceCents > u.monthly_limit_cents)
         throw new HttpError(402, `Essa compra passa do seu limite mensal de R$ ${(u.monthly_limit_cents / 100).toFixed(2)}. Você pode ajustar o limite no Perfil.`)

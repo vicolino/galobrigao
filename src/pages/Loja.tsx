@@ -329,7 +329,7 @@ function Caixas() {
 }
 
 function Ovos() {
-  const { isVip, state, user } = useGame()
+  const { isVip, state, user, pubConfig } = useGame()
   const [items, setItems] = useState<CatalogItem[]>([])
   const [buying, setBuying] = useState<CatalogItem | null>(null)
   const vipDays = Math.max(0, Math.ceil((state!.vip.until - Date.now()) / 864e5))
@@ -342,6 +342,11 @@ function Ovos() {
 
   return (
     <>
+      {pubConfig?.mvp.on && (
+        <div className="mvp-banner">
+          🎁 <b>MODO MVP:</b> seu crédito de teste é <b>{brl(user?.mvpCreditCents ?? 0)}</b>. Use em qualquer compra abaixo — é por nossa conta!
+        </div>
+      )}
       {vip && (
         <div className="card vip">
           <div className="vip-crown">👑</div>

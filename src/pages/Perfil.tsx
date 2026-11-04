@@ -132,7 +132,7 @@ export function Perfil() {
                     <tr key={o.id}>
                       <td className="tiny muted">{new Date(o.createdAt).toLocaleDateString('pt-BR')}</td>
                       <td>{o.name}</td>
-                      <td className="tiny">{o.method === 'pix' ? '⚡ Pix' : '💳 Cartão'}</td>
+                      <td className="tiny">{o.method === 'pix' ? '⚡ Pix' : o.method === 'credito' ? '🎁 Crédito' : '💳 Cartão'}</td>
                       <td className="right">{brl(o.amountCents)}</td>
                       <td className={`tiny status-${o.status === 'pago' ? 'ganhou' : o.status === 'pendente' ? 'pendente' : 'perdeu'}`}>{o.status}</td>
                     </tr>

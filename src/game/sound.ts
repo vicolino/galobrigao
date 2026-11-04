@@ -56,7 +56,89 @@ function noise(dur: number, gain = 0.3, delay = 0) {
   }
 }
 
+// ---------- Peças da vinheta de entrada ----------
+
+function kick(delay: number, gain = 0.7) {
+  tone(150, 0.28, 'sine', gain, -105, delay)
+}
+
+/** Ruído com filtro passa-alta (prato/palma). */
+function hiNoise(dur: number, gain: number, delay: number, cutoff = 5000) {
+  if (muted || volume <= 0) return
+  try {
+    const c = ac()
+    const t = c.currentTime + delay
+    const buf = c.createBuffer(1, Math.floor(c.sampleRate * dur), c.sampleRate)
+    const d = buf.getChannelData(0)
+    for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 2)
+    const src = c.createBufferSource()
+    const f = c.createBiquadFilter()
+    const g = c.createGain()
+    f.type = 'highpass'
+    f.frequency.value = cutoff
+    src.buffer = buf
+    g.gain.value = gain * volume
+    src.connect(f).connect(g).connect(c.destination)
+    src.start(t)
+  } catch {
+    /* sem áudio */
+  }
+}
+
+/** Acorde "distorcido" (ondas dente-de-serra com filtro), estilo guitarra/metais. */
+function stab(freqs: number[], dur: number, delay: number, gain = 0.12) {
+  if (muted || volume <= 0) return
+  try {
+    const c = ac()
+    const t = c.currentTime + delay
+    const f = c.createBiquadFilter()
+    const g = c.createGain()
+    f.type = 'lowpass'
+    f.frequency.setValueAtTime(2400, t)
+    f.frequency.exponentialRampToValueAtTime(500, t + dur)
+    g.gain.setValueAtTime(gain * volume, t)
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur)
+    f.connect(g).connect(c.destination)
+    for (const fr of freqs) {
+      for (const det of [-6, 6]) {
+        const o = c.createOscillator()
+        o.type = 'sawtooth'
+        o.frequency.value = fr
+        o.detune.value = det
+        o.connect(f)
+        o.start(t)
+        o.stop(t + dur + 0.05)
+      }
+    }
+  } catch {
+    /* sem áudio */
+  }
+}
+
 export const sfx = {
+  /** Vinheta de entrada (~2,8 s, 128 BPM): bumbo, palmas, acordes, subida e impacto no "VS". */
+  walkout: () => {
+    const b = 60 / 128
+    const E = [82.4, 123.5, 164.8] // Mi (power chord)
+    const G = [98, 146.8, 196] // Sol
+    const A = [110, 164.8, 220] // Lá
+    ;[0, 1, 2].forEach((i) => kick(i * b))
+    ;[0.5, 1.5].forEach((i) => hiNoise(0.12, 0.35, i * b, 1500))
+    stab(E, 0.42, 0)
+    stab(G, 0.3, b * 1.5)
+    stab(A, 0.4, b * 2)
+    tone(220, b * 1.0, 'sawtooth', 0.06, 660, b * 2) // subida antes do VS
+    hiNoise(0.6, 0.08, b * 2.2, 3000)
+    // IMPACTO no VS
+    const hit = b * 3
+    kick(hit, 1)
+    tone(55, 0.9, 'sine', 0.5, -20, hit)
+    stab([...E, 329.6], 1.1, hit, 0.16)
+    hiNoise(1.4, 0.3, hit, 4000)
+    ;[4, 5].forEach((i) => kick(i * b, 0.5))
+    stab(E, 0.25, b * 5, 0.1)
+  },
+
   click: () => tone(660, 0.05, 'square', 0.12),
   coin: () => {
     tone(988, 0.08, 'square', 0.2)

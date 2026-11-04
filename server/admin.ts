@@ -44,7 +44,9 @@ function overview(days: number) {
   const keys = Array.from({ length: days }, (_, i) => dayKey(start + i * DAY))
 
   const users = db().prepare('SELECT id, created_at FROM users').all() as { id: string; created_at: number }[]
-  const paid = db().prepare("SELECT user_id, sku, method, amount_cents, paid_at FROM orders WHERE status = 'pago'").all() as {
+  const creditSpent = (db().prepare("SELECT COALESCE(SUM(amount_cents), 0) AS s FROM orders WHERE status = 'pago' AND provider = 'credito' AND paid_at >= ?").get(start) as { s: number }).s
+  // Receita = só dinheiro de verdade (compras com crédito MVP ficam de fora)
+  const paid = db().prepare("SELECT user_id, sku, method, amount_cents, paid_at FROM orders WHERE status = 'pago' AND provider != 'credito'").all() as {
     user_id: string
     sku: string
     method: string
@@ -114,6 +116,7 @@ function overview(days: number) {
       revenuePrevCents: sum(paidPrev),
       revenueTodayCents: sum(paid.filter((o) => o.paid_at >= todayStart)),
       revenueAllCents: sum(paid),
+      creditSpentCents: creditSpent,
       orders: paidWin.length,
       pendingOrders: pending,
       payingUsersWin: payersWin.size,
@@ -186,7 +189,7 @@ export async function handleAdmin(path: string, method: string, url: URL, body: 
       const log = db().prepare('SELECT at, admin_email, action, detail FROM admin_log WHERE target = ? ORDER BY at DESC LIMIT 20').all(id)
       const s = save?.state
       return {
-        user: { id: u.id, email: u.email, name: u.name, createdAt: u.created_at, bannedAt: u.banned_at, banReason: u.ban_reason, monthlyLimitCents: u.monthly_limit_cents, lastSeen: lastSeen?.last_seen ?? null },
+        user: { id: u.id, email: u.email, name: u.name, mvpCreditCents: u.mvp_credit_cents ?? 0, createdAt: u.created_at, bannedAt: u.banned_at, banReason: u.ban_reason, monthlyLimitCents: u.monthly_limit_cents, lastSeen: lastSeen?.last_seen ?? null },
         game: s
           ? {
               milho: s.milho,
@@ -210,10 +213,19 @@ export async function handleAdmin(path: string, method: string, url: URL, body: 
       const ovos = Math.round(Number(body.ovos ?? 0))
       const milho = Math.round(Number(body.milho ?? 0))
       const reason = String(body.reason ?? '').trim()
+      const creditCents = Math.round(Number(body.creditCents ?? 0))
       if (!reason) throw new AdminError(400, 'Informe o motivo')
+      if (!Number.isFinite(creditCents) || Math.abs(creditCents) > 1_000_000) throw new AdminError(400, 'Crédito inválido')
+      if (creditCents) db().prepare('UPDATE users SET mvp_credit_cents = MAX(0, mvp_credit_cents + ?) WHERE id = ?').run(creditCents, id)
       if (!Number.isFinite(ovos) || !Number.isFinite(milho) || Math.abs(ovos) > 10000 || Math.abs(milho) > 1_000_000) throw new AdminError(400, 'Valores inválidos')
       const save = loadSave(id)
-      if (!save) throw new AdminError(409, 'Jogador ainda não tem galinheiro')
+      if (!save) {
+        if (creditCents && !ovos && !milho) {
+          audit(admin, 'ajuste_saldo', id, { creditCents, reason })
+          return { ok: true, ovos: 0, milho: 0 }
+        }
+        throw new AdminError(409, 'Jogador ainda não tem galinheiro')
+      }
       const s = save.state
       const next = {
         ...s,
@@ -222,7 +234,7 @@ export async function handleAdmin(path: string, method: string, url: URL, body: 
         history: [{ id: uid(), at: Date.now(), text: `Ajuste do suporte: ${reason}`, milho, ovo: ovos }, ...s.history].slice(0, 80),
       }
       writeSave(id, next, save.rev + 1)
-      audit(admin, 'ajuste_saldo', id, { ovos, milho, reason })
+      audit(admin, 'ajuste_saldo', id, { ovos, milho, creditCents, reason })
       return { ok: true, ovos: next.ovos, milho: next.milho }
     }
 

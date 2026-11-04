@@ -16,6 +16,7 @@ export interface AppConfig {
   economy: { freeOvosPerDay: number; freeMilhoPerDay: number; defaultSpendLimitCents: number }
   announcement: { text: string; kind: 'info' | 'promo' | 'alerta' }
   maintenance: { on: boolean; message: string }
+  mvp: { on: boolean; creditCents: number }
 }
 
 export const DEFAULT_CONFIG: AppConfig = {
@@ -25,6 +26,8 @@ export const DEFAULT_CONFIG: AppConfig = {
   economy: { freeOvosPerDay: FREE_OVOS_PER_DAY, freeMilhoPerDay: 3_000_000, defaultSpendLimitCents: DEFAULT_SPEND_LIMIT },
   announcement: { text: '', kind: 'info' },
   maintenance: { on: false, message: 'Estamos ajeitando o terreiro. Voltamos já!' },
+  // Modo MVP: cada conta ganha crédito de teste (sem valor real) para comprar na loja
+  mvp: { on: true, creditCents: 10000 },
 }
 
 /** Junta o que foi salvo com os padrões (campos novos sempre têm valor). */
@@ -39,6 +42,7 @@ export function mergeConfig(saved: Partial<AppConfig> | null | undefined): AppCo
     economy: { ...DEFAULT_CONFIG.economy, ...s.economy },
     announcement: { ...DEFAULT_CONFIG.announcement, ...s.announcement },
     maintenance: { ...DEFAULT_CONFIG.maintenance, ...s.maintenance },
+    mvp: { ...DEFAULT_CONFIG.mvp, ...s.mvp },
   }
 }
 
@@ -60,5 +64,5 @@ export function effectiveSku(id: string): (Sku & { active: boolean }) | undefine
 export const effectiveCatalog = () => CATALOG.map((s) => effectiveSku(s.id)!)
 
 /** Parte da configuração que o navegador precisa conhecer. */
-export const publicConfig = (c: AppConfig) => ({ rewards: c.rewards, pvp: c.pvp, announcement: c.announcement, maintenance: c.maintenance })
+export const publicConfig = (c: AppConfig) => ({ rewards: c.rewards, pvp: c.pvp, announcement: c.announcement, maintenance: c.maintenance, mvp: c.mvp })
 export type PublicConfig = ReturnType<typeof publicConfig>

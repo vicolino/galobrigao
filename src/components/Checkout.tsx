@@ -9,7 +9,9 @@ type Step = 'metodo' | 'aguardando' | 'pago' | 'erro'
 
 /** Pagamento de qualquer produto do catálogo via Pix ou cartão. */
 export function Checkout({ item, onClose, onPaid }: { item: CatalogItem | null; onClose: () => void; onPaid?: (o: ApiOrder) => void }) {
-  const { actions, toast, provider } = useGame()
+  const { actions, toast, provider, user, pubConfig, paymentsLive } = useGame()
+  const mvp = !!pubConfig?.mvp.on
+  const credit = user?.mvpCreditCents ?? 0
   const [step, setStep] = useState<Step>('metodo')
   const [order, setOrder] = useState<ApiOrder | null>(null)
   const [error, setError] = useState('')
@@ -53,6 +55,20 @@ export function Checkout({ item, onClose, onPaid }: { item: CatalogItem | null; 
         /* tenta de novo */
       }
     }, 3000)
+  }
+
+  const payWithCredit = async () => {
+    if (!item) return
+    setBusy(true)
+    try {
+      const r = await api.checkout(item.id, 'credito')
+      await paid(r.order)
+    } catch (e) {
+      setError((e as Error).message)
+      setStep('erro')
+    } finally {
+      setBusy(false)
+    }
   }
 
   const start = async (method: 'pix' | 'cartao') => {
@@ -105,16 +121,26 @@ export function Checkout({ item, onClose, onPaid }: { item: CatalogItem | null; 
 
           {step === 'metodo' && (
             <>
+              {mvp && (
+                <button className="co-method co-credit" disabled={busy || credit < item.priceCents} onClick={payWithCredit}>
+                  <span className="big-emoji">🎁</span>
+                  <b>Usar crédito de teste</b>
+                  <span className="tiny">
+                    Saldo: <b>{brl(credit)}</b>
+                    {credit >= item.priceCents ? ` → fica ${brl(credit - item.priceCents)}` : ' · saldo insuficiente'}
+                  </span>
+                </button>
+              )}
               <div className="co-methods">
-                <button className="co-method" disabled={busy} onClick={() => start('pix')}>
+                <button className="co-method" disabled={busy || !paymentsLive} onClick={() => start('pix')}>
                   <span className="big-emoji">⚡</span>
                   <b>Pix</b>
-                  <span className="tiny muted">Aprovação na hora</span>
+                  <span className="tiny muted">{paymentsLive ? 'Aprovação na hora' : 'Em breve'}</span>
                 </button>
-                <button className="co-method" disabled={busy} onClick={() => start('cartao')}>
+                <button className="co-method" disabled={busy || !paymentsLive} onClick={() => start('cartao')}>
                   <span className="big-emoji">💳</span>
                   <b>Cartão de crédito</b>
-                  <span className="tiny muted">{provider === 'mercadopago' ? 'Pagamento seguro no Mercado Pago' : 'Visa, Master, Elo'}</span>
+                  <span className="tiny muted">{!paymentsLive ? 'Em breve' : provider === 'mercadopago' ? 'Pagamento seguro no Mercado Pago' : 'Visa, Master, Elo'}</span>
                 </button>
               </div>
               <p className="tiny muted center">Itens digitais entregues na hora após a confirmação. Sem saque: moedas do jogo não viram dinheiro.</p>
@@ -179,6 +205,7 @@ export function Checkout({ item, onClose, onPaid }: { item: CatalogItem | null; 
               <div className="prize-emoji">🎉</div>
               <h2>Pagamento aprovado!</h2>
               <p className="muted">{item.name} já está na sua conta.</p>
+              {order?.method === 'credito' && <p className="tiny">Crédito de teste restante: <b>{brl(user?.mvpCreditCents ?? 0)}</b></p>}
               <button className="btn btn-primary btn-lg" onClick={close}>
                 Bora jogar
               </button>
