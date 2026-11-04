@@ -20,6 +20,8 @@ npm start              # http://localhost:8787
 Conta, save, pedidos e pagamentos ficam no SQLite em `data/rinha.sqlite`.
 Para cobrar de verdade (Mercado Pago, Pix e cartão), veja `docs/MONETIZACAO.md`, seção 7.
 
+Produção (Google Cloud), atualização, logs, backups e segurança: [`docs/DEPLOY.md`](docs/DEPLOY.md).
+
 ## Telas
 
 | Menu | O que tem |
@@ -43,7 +45,7 @@ Para cobrar de verdade (Mercado Pago, Pix e cartão), veja `docs/MONETIZACAO.md`
 
 ## Backoffice
 
-Acesse `#/admin` com uma conta cujo e-mail esteja em `ADMIN_EMAILS` no `.env` (separados por vírgula).
+Acesse `#/admin` com uma conta administradora. Administradores são definidos por comando no servidor: `npm run admin -- create email@dominio` (ou `add`/`remove`/`list`).
 
 - **Visão geral:** receita, conversão, gasto médio por pagante, ativos por dia e no mês, novas contas, desafios, receita por produto, Pix x cartão e funil.
 - **Jogadores:** busca, detalhe (galos, saldo, compras), ajuste de saldo com motivo e bloqueio/desbloqueio.
