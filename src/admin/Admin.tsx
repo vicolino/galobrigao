@@ -640,6 +640,7 @@ function Config() {
           <h3>🛡️ Economia e segurança</h3>
           <div className="cfg-grid">
             <NumField label="Ovos grátis máximos por dia" value={cfg.economy.freeOvosPerDay} onChange={(v) => set('economy', { freeOvosPerDay: v })} hint="Acima disso o servidor recusa o progresso (anti-trapaça)" />
+            <NumField label="Milho ganho por dia (limite)" step={100000} value={cfg.economy.freeMilhoPerDay} onChange={(v) => set('economy', { freeMilhoPerDay: v })} hint="Acima disso o servidor recusa o progresso" />
             <NumField label="Limite de gasto padrão (R$)" step={10} value={cfg.economy.defaultSpendLimitCents / 100} onChange={(v) => set('economy', { defaultSpendLimitCents: Math.round(v * 100) })} hint="Vale para contas novas" />
           </div>
         </div>

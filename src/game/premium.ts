@@ -2,7 +2,7 @@
 // para que ninguém consiga criar ovos, skins ou itens premium editando o save.
 import { ACCESSORIES, ACC_BY_ID, BOXES, BREED_BY_ID, CORN_PACKS, ELECTION_ROOSTERS, ITEM_BY_ID, RARITY, SKIN_BY_ID, SKIN_BUNDLES, TOOL_BY_ID, TOOL_KITS } from './data'
 import { genMarket, skinPrice } from './engine'
-import { addXp, currentEnergy, makeRooster, pick, uid, withEnergy } from './rooster'
+import { addXp, currentEnergy, makeRooster, pick, uid, withEnergy, xpToNext } from './rooster'
 import type { Accessory, Currency, GameState, MissionKind, Rarity, Rooster } from './types'
 
 export const FEED_COOLDOWN = 4 * 3600_000
@@ -200,5 +200,23 @@ export function premiumViolation(cur: GameState, next: GameState): string | null
     // Comida grátis só a cada 4h
     if (r.fedAt && r.fedAt !== old.fedAt && old.fedAt && r.fedAt - old.fedAt < FEED_COOLDOWN - 60_000) return 'comida'
   }
+  return null
+}
+
+/**
+ * Limites de bom senso para o que o navegador ainda calcula (lutas da Arena, apostas, liga).
+ * Impede saltos impossíveis como nível 50 de uma vez.
+ */
+export function softViolation(cur: GameState, next: GameState): string | null {
+  const before = new Map(cur.roosters.map((r) => [r.id, r]))
+  for (const r of next.roosters) {
+    if (!Number.isInteger(r.level) || r.level < 1 || r.level > 50) return 'nível'
+    if (!Number.isFinite(r.xp) || r.xp < 0 || r.xp > xpToNext(r.level)) return 'xp'
+    const old = before.get(r.id)
+    if (old && r.level - old.level > 3) return 'salto de nível'
+    if (r.energy < 0 || r.energy > 100) return 'energia'
+  }
+  if (next.league.points - cur.league.points > 200) return 'pontos de liga'
+  if (!Number.isFinite(next.milho) || next.milho < 0) return 'milho'
   return null
 }

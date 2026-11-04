@@ -5,10 +5,11 @@ import { effectiveCatalog, effectiveSku, live, publicConfig } from '../src/game/
 import { AdminError, handleAdmin, isAdmin } from './admin'
 import { loadConfig } from './config'
 import { newGame } from '../src/game/engine'
-import { premiumViolation, runShop, ShopError, type ShopOp } from '../src/game/premium'
+import { premiumViolation, runShop, ShopError, softViolation, type ShopOp } from '../src/game/premium'
 import { makeRooster, today } from '../src/game/rooster'
 import type { GameState } from '../src/game/types'
-import { checkPassword, clearCookie, createSession, destroySession, hashPassword, sessionCookie, tooManyAttempts, userFromRequest } from './auth'
+import { checkPassword, clearCookie, createSession, destroySession, dummyPasswordCheck, hashPassword, sessionCookie, userFromRequest } from './auth'
+import { badOrigin, baseHeaders, clientIp, escapeHtml, isProd, limited, tooMany } from './security'
 import { getDb, type OrderRow, type UserRow } from './db'
 import { sendMail } from './mail'
 import { loadSave, writeSave } from './saves'
@@ -34,7 +35,7 @@ class HttpError extends Error {
 }
 
 const json = (res: Res, status: number, body: unknown, headers: Record<string, string> = {}) => {
-  res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...headers })
+  res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...baseHeaders(), ...headers })
   res.end(JSON.stringify(body))
 }
 
@@ -118,6 +119,18 @@ const publicUser = (u: UserRow) => ({
 
 // ---------- Save ----------
 
+/** Limite diário genérico (usa a mesma tabela, com prefixo no dia). */
+function guardDaily(userId: string, prefix: string, gained: number, max: number) {
+  if (gained <= 0) return true
+  const db = getDb()
+  const day = `${prefix}:${today()}`
+  const row = db.prepare('SELECT gained FROM ovos_guard WHERE user_id = ? AND day = ?').get(userId, day) as { gained: number } | undefined
+  const total = (row?.gained ?? 0) + gained
+  if (total > max) return false
+  db.prepare('INSERT INTO ovos_guard (user_id, day, gained) VALUES (?, ?, ?) ON CONFLICT(user_id, day) DO UPDATE SET gained = excluded.gained').run(userId, day, total)
+  return true
+}
+
 /** Ovos que o jogador ganha jogando são limitados por dia (evita editar o save para ganhar ovos). */
 function guardFreeOvos(userId: string, gained: number) {
   if (gained <= 0) return true
@@ -200,6 +213,14 @@ const publicOrder = (o: OrderRow) => ({
 
 // ---------- Rotas ----------
 
+// Senhas erradas por conta (memória, janela de 15 min)
+const fails = new Map<string, number[]>()
+const failCount = (email: string) => (fails.get(email) ?? []).filter((t) => Date.now() - t < 15 * 60_000).length
+const addFail = (email: string) => fails.set(email, [...(fails.get(email) ?? []).filter((t) => Date.now() - t < 15 * 60_000), Date.now()])
+
+/** Em produção, o modo de teste de pagamento fica desligado (senão qualquer um "simula" e ganha itens). */
+export const sandboxAllowed = () => !isProd() || process.env.ALLOW_SANDBOX === '1'
+
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 
 export async function handle(req: Req, res: Res) {
@@ -208,6 +229,10 @@ export async function handle(req: Req, res: Res) {
   const method = req.method ?? 'GET'
   const secure = (process.env.PUBLIC_URL ?? '').startsWith('https')
   const db = getDb()
+  const ip = clientIp(req)
+  // Limite geral por IP (protege contra abuso e sobrecarga)
+  if (path !== '/api/webhooks/mercadopago' && limited(`api:${ip}`, 300, 60_000)) return tooMany(res)
+  if (badOrigin(req)) return json(res, 403, { error: 'Origem não permitida' })
   loadConfig()
   try {
     // ----- Configuração pública (aviso, manutenção, recompensas) -----
@@ -224,6 +249,7 @@ export async function handle(req: Req, res: Res) {
 
     // ----- Auth -----
     if (path === '/api/auth/signup' && method === 'POST') {
+      if (limited(`signup:${ip}`, 5, 3600_000)) throw new HttpError(429, 'Muitos cadastros deste endereço. Tente mais tarde.')
       const b = await readBody(req)
       const email = String(b.email ?? '').trim().toLowerCase()
       const password = String(b.password ?? '')
@@ -242,10 +268,18 @@ export async function handle(req: Req, res: Res) {
       return json(res, 201, { user: publicUser(user) }, { 'Set-Cookie': sessionCookie(createSession(id), secure) })
     }
     if (path === '/api/auth/login' && method === 'POST') {
-      if (tooManyAttempts(req.socket.remoteAddress ?? '?')) throw new HttpError(429, 'Muitas tentativas. Espere um minuto.')
+      if (limited(`login:${ip}`, 20, 60_000)) throw new HttpError(429, 'Muitas tentativas. Espere um minuto.')
       const b = await readBody(req)
-      const user = db.prepare('SELECT * FROM users WHERE email = ?').get(String(b.email ?? '').trim().toLowerCase()) as unknown as UserRow | undefined
-      if (!user || !checkPassword(String(b.password ?? ''), user)) throw new HttpError(401, 'E-mail ou senha incorretos')
+      const email = String(b.email ?? '').trim().toLowerCase()
+      // Bloqueio por conta: 8 senhas erradas em 15 min
+      const fails = failCount(email)
+      if (fails >= 8) throw new HttpError(429, 'Muitas senhas erradas nesta conta. Espere 15 minutos ou use "Esqueci minha senha".')
+      const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email) as unknown as UserRow | undefined
+      const ok = user ? checkPassword(String(b.password ?? ''), user) : dummyPasswordCheck()
+      if (!user || !ok) {
+        addFail(email)
+        throw new HttpError(401, 'E-mail ou senha incorretos')
+      }
       if (user.banned_at) throw new HttpError(403, `Conta bloqueada${user.ban_reason ? `: ${user.ban_reason}` : ''}. Fale com o suporte.`)
       return json(res, 200, { user: publicUser(applyPendingLimit(user)) }, { 'Set-Cookie': sessionCookie(createSession(user.id), secure) })
     }
@@ -253,10 +287,26 @@ export async function handle(req: Req, res: Res) {
       destroySession(req)
       return json(res, 200, { ok: true }, { 'Set-Cookie': clearCookie })
     }
+    // ----- Trocar senha (logado) -----
+    if (path === '/api/auth/password' && method === 'POST') {
+      const u = needUser(req)
+      if (limited(`pwd:${u.id}`, 10, 3600_000)) throw new HttpError(429, 'Muitas tentativas. Tente mais tarde.')
+      const b = await readBody(req)
+      if (!checkPassword(String(b.current ?? ''), u)) throw new HttpError(401, 'Senha atual incorreta')
+      const next = String(b.next ?? '')
+      if (next.length < 8) throw new HttpError(400, 'A senha nova precisa ter pelo menos 8 caracteres')
+      const np = hashPassword(next)
+      db.prepare('UPDATE users SET pass_hash = ?, salt = ? WHERE id = ?').run(np.hash, np.salt, u.id)
+      // Derruba as outras sessões e cria uma nova para este aparelho
+      db.prepare('DELETE FROM sessions WHERE user_id = ?').run(u.id)
+      return json(res, 200, { ok: true }, { 'Set-Cookie': sessionCookie(createSession(u.id), secure) })
+    }
+
     // ----- Recuperar senha -----
     if (path === '/api/auth/forgot' && method === 'POST') {
-      if (tooManyAttempts('forgot:' + (req.socket.remoteAddress ?? '?'))) throw new HttpError(429, 'Muitas tentativas. Espere um minuto.')
+      if (limited(`forgot:${ip}`, 5, 3600_000)) throw new HttpError(429, 'Muitas tentativas. Tente mais tarde.')
       const b = await readBody(req)
+      if (limited(`forgot-mail:${String(b.email ?? '').trim().toLowerCase()}`, 3, 3600_000)) return json(res, 200, { ok: true })
       const user = db.prepare('SELECT * FROM users WHERE email = ?').get(String(b.email ?? '').trim().toLowerCase()) as unknown as UserRow | undefined
       if (user) {
         const token = randomBytes(32).toString('hex')
@@ -266,7 +316,7 @@ export async function handle(req: Req, res: Res) {
         await sendMail(
           user.email,
           'Redefinir sua senha',
-          `<p>Olá, ${user.name}!</p><p>Para criar uma senha nova, acesse: <a href="${link}">${link}</a></p><p>O link vale por 1 hora. Se não foi você, ignore este e-mail.</p>`,
+          `<p>Olá, ${escapeHtml(user.name)}!</p><p>Para criar uma senha nova, acesse: <a href="${link}">${link}</a></p><p>O link vale por 1 hora. Se não foi você, ignore este e-mail.</p>`,
         )
       }
       // Mesma resposta sempre, para não revelar quais e-mails têm conta
@@ -332,7 +382,9 @@ export async function handle(req: Req, res: Res) {
       if (!incoming || !Array.isArray(incoming.roosters) || incoming.roosters.length < 1 || incoming.roosters.length > 16) throw new HttpError(422, 'Save inválido', cur)
       const gained = incoming.ovos - cur.state.ovos
       if (incoming.ovos < 0 || !guardFreeOvos(u.id, gained)) throw new HttpError(422, 'Ovos de ouro fora do esperado. Recarregando do servidor.', cur)
-      const violation = premiumViolation(cur.state, incoming)
+      const milhoGain = incoming.milho - cur.state.milho
+      if (!guardDaily(u.id, 'm', milhoGain, live.economy.freeMilhoPerDay)) throw new HttpError(422, 'Milho fora do esperado. Recarregando do servidor.', cur)
+      const violation = premiumViolation(cur.state, incoming) ?? softViolation(cur.state, incoming)
       if (violation) {
         console.warn(`[save] recusado (${violation}) para ${u.email}`)
         throw new HttpError(422, 'Algo no seu progresso não bate com o servidor. Recarregando.', cur)
@@ -392,6 +444,8 @@ export async function handle(req: Req, res: Res) {
       const u = needUser(req)
       const b = await readBody(req)
       blockIfMaintenance(u)
+      if (providerName() === 'sandbox' && !sandboxAllowed()) throw new HttpError(503, 'Pagamentos ainda não estão disponíveis. Volte em breve!')
+      if (limited(`checkout:${u.id}`, 10, 600_000)) throw new HttpError(429, 'Muitos pedidos seguidos. Espere alguns minutos.')
       const sku = effectiveSku(String(b.sku))
       const payMethod = b.method === 'cartao' ? 'cartao' : 'pix'
       if (!sku || !sku.active) throw new HttpError(404, 'Produto indisponível no momento')
@@ -439,7 +493,7 @@ export async function handle(req: Req, res: Res) {
       let order = db.prepare('SELECT * FROM orders WHERE id = ? AND user_id = ?').get(orderMatch[1], u.id) as unknown as OrderRow | undefined
       if (!order) throw new HttpError(404, 'Pedido não encontrado')
       if (orderMatch[2] && method === 'POST') {
-        if (order.provider !== 'sandbox') throw new HttpError(403, 'Simulação só existe no modo de teste')
+        if (order.provider !== 'sandbox' || !sandboxAllowed()) throw new HttpError(403, 'Simulação só existe no modo de teste')
         order = fulfill(order.id)!
       } else if (method === 'GET' && order.status === 'pendente') {
         order = await recheckOrder(order)
@@ -449,6 +503,11 @@ export async function handle(req: Req, res: Res) {
 
     // ----- Webhook Mercado Pago -----
     if (path === '/api/webhooks/mercadopago' && method === 'POST') {
+      if (limited(`webhook:${ip}`, 600, 60_000)) return tooMany(res)
+      if (isProd() && !process.env.MP_WEBHOOK_SECRET) {
+        console.error('[webhook] MP_WEBHOOK_SECRET não configurado: notificação ignorada (o polling continua confirmando pagamentos)')
+        return json(res, 200, { ok: true })
+      }
       const b = await readBody(req)
       const info = await parseMpWebhook(req.headers, url, b).catch((e) => {
         console.warn('[webhook]', e.message)

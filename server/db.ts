@@ -110,6 +110,7 @@ export function getDb() {
   const cols = (db.prepare('PRAGMA table_info(users)').all() as { name: string }[]).map((c) => c.name)
   if (!cols.includes('banned_at')) db.exec('ALTER TABLE users ADD COLUMN banned_at INTEGER')
   if (!cols.includes('ban_reason')) db.exec('ALTER TABLE users ADD COLUMN ban_reason TEXT')
+  if (!cols.includes('role')) db.exec("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'player'")
   return db
 }
 
@@ -124,6 +125,7 @@ export interface UserRow {
   pending_limit_cents: number | null
   pending_limit_at: number | null
   banned_at?: number | null
+  role?: string
   ban_reason?: string | null
 }
 

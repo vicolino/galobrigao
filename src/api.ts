@@ -55,6 +55,7 @@ export const api = {
   me: () => call<{ user: ApiUser | null; provider: string }>('/me'),
   signup: (b: { email: string; password: string; name: string; adult: boolean; terms: boolean }) => call<{ user: ApiUser }>('/auth/signup', { method: 'POST', body: b }),
   login: (email: string, password: string) => call<{ user: ApiUser }>('/auth/login', { method: 'POST', body: { email, password } }),
+  changePassword: (current: string, next: string) => call('/auth/password', { method: 'POST', body: { current, next } }),
   forgot: (email: string) => call('/auth/forgot', { method: 'POST', body: { email } }),
   reset: (token: string, password: string) => call('/auth/reset', { method: 'POST', body: { token, password } }),
   deleteAccount: (password: string) => call('/account', { method: 'DELETE', body: { password } }),

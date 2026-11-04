@@ -1,7 +1,7 @@
 // Provedores de pagamento.
 // - "sandbox": modo de teste local, sem cobrança. Libera o botão "simular pagamento".
 // - "mercadopago": Pix (QR + copia e cola) e cartão (Checkout Pro, o cartão é digitado no site do Mercado Pago).
-import { createHmac } from 'node:crypto'
+import { createHmac, timingSafeEqual } from 'node:crypto'
 import type { OrderRow, UserRow } from './db'
 import type { Sku } from '../src/game/catalog'
 
@@ -109,7 +109,13 @@ export async function parseMpWebhook(headers: Record<string, string | string[] |
     const parts = Object.fromEntries(sig.split(',').map((p) => p.trim().split('=') as [string, string]))
     const manifest = `id:${dataId.toLowerCase()};request-id:${reqId};ts:${parts.ts};`
     const expected = createHmac('sha256', secret).update(manifest).digest('hex')
-    if (expected !== parts.v1) throw new Error('assinatura inválida')
+    const got = Buffer.from(String(parts.v1 ?? ''), 'utf8')
+    const exp = Buffer.from(expected, 'utf8')
+    if (got.length !== exp.length || !timingSafeEqual(got, exp)) throw new Error('assinatura inválida')
+    // Rejeita notificações velhas (replay): ts em milissegundos
+    const ts = Number(parts.ts)
+    const tsMs = ts < 1e12 ? ts * 1000 : ts
+    if (ts && Math.abs(Date.now() - tsMs) > 10 * 60_000) throw new Error('notificação expirada')
   }
   if (!dataId) return null
   const p = await mp(`/v1/payments/${dataId}`)

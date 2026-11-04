@@ -48,15 +48,18 @@ export function destroySession(req: IncomingMessage) {
   if (token) getDb().prepare('DELETE FROM sessions WHERE token = ?').run(token)
 }
 
-// Limite simples de tentativas de login por IP (memória)
-const attempts = new Map<string, { n: number; at: number }>()
-export function tooManyAttempts(ip: string) {
-  const now = Date.now()
-  const a = attempts.get(ip)
-  if (!a || now - a.at > 60_000) {
-    attempts.set(ip, { n: 1, at: now })
-    return false
-  }
-  a.n++
-  return a.n > 10
+/** Gasta o mesmo tempo de uma senha real quando o e-mail não existe (não revela quem tem conta). */
+const DUMMY = hashPassword('senha-que-nao-existe-1234')
+export function dummyPasswordCheck() {
+  hashPassword('x', DUMMY.salt)
+  return false
 }
+
+/** Remove sessões vencidas de tempos em tempos. */
+setInterval(() => {
+  try {
+    getDb().prepare('DELETE FROM sessions WHERE expires_at < ?').run(Date.now())
+  } catch {
+    /* banco indisponível */
+  }
+}, 3600_000).unref()

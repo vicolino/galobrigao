@@ -16,10 +16,9 @@ export class AdminError extends Error {
   }
 }
 
-export function isAdmin(u: Pick<UserRow, 'email'> | null) {
-  if (!u) return false
-  const list = (process.env.ADMIN_EMAILS ?? '').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean)
-  return list.includes(u.email.toLowerCase())
+/** Administrador = papel gravado no banco (dado só pelo comando `npm run admin -- add email`). */
+export function isAdmin(u: Pick<UserRow, 'role'> | null | undefined) {
+  return u?.role === 'admin'
 }
 
 const db = () => getDb()

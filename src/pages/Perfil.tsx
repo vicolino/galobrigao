@@ -18,6 +18,9 @@ export function Perfil() {
   const [confirmReset, setConfirmReset] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [delPass, setDelPass] = useState('')
+  const [pwOpen, setPwOpen] = useState(false)
+  const [pwCur, setPwCur] = useState('')
+  const [pwNew, setPwNew] = useState('')
 
   const stats = [
     ['⚔️ Lutas', s.stats.fights],
@@ -109,9 +112,14 @@ export function Perfil() {
               </p>
             )}
             <p className="tiny muted">Reduzir vale na hora. Aumentar leva 24h, para evitar compras por impulso.</p>
-            <button className="btn btn-sm" onClick={() => actions.logout()}>
-              🚪 Sair da conta
-            </button>
+            <div className="row gap wrap">
+              <button className="btn btn-sm" onClick={() => setPwOpen(true)}>
+                🔑 Trocar senha
+              </button>
+              <button className="btn btn-sm" onClick={() => actions.logout()}>
+                🚪 Sair da conta
+              </button>
+            </div>
           </div>
           <div className="card">
             <h3>🧾 Minhas compras</h3>
@@ -183,6 +191,33 @@ export function Perfil() {
           <a href="#/termos">Termos de uso</a> · <a href="#/privacidade">Privacidade</a>
         </p>
       </div>
+
+      <Modal open={pwOpen} onClose={() => setPwOpen(false)} title="🔑 Trocar senha">
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault()
+            try {
+              await api.changePassword(pwCur, pwNew)
+              toast('Senha alterada! Outros aparelhos foram desconectados.', 'ok')
+              setPwOpen(false)
+              setPwCur('')
+              setPwNew('')
+            } catch (err) {
+              toast((err as Error).message, 'erro')
+            }
+          }}
+        >
+          <label className="field">
+            <span>Senha atual</span>
+            <input type="password" autoComplete="current-password" value={pwCur} onChange={(e) => setPwCur(e.target.value)} required />
+          </label>
+          <label className="field">
+            <span>Senha nova (mínimo 8 caracteres)</span>
+            <input type="password" autoComplete="new-password" minLength={8} value={pwNew} onChange={(e) => setPwNew(e.target.value)} required />
+          </label>
+          <button className="btn btn-primary full">Salvar senha nova</button>
+        </form>
+      </Modal>
 
       <Modal open={deleting} onClose={() => setDeleting(false)} title="Excluir conta">
         <p>Sua conta, seus galos e seus dados pessoais serão apagados. Compras já feitas não são devolvidas. Não dá para desfazer.</p>

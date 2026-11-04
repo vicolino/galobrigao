@@ -39,6 +39,7 @@ export function validateConfig(input: AppConfig): AppConfig {
   c.pvp.dailyRewards = Math.round(num(c.pvp.dailyRewards, 0, 200, 'Desafios com prêmio por dia'))
   c.pvp.challengeTtlSec = Math.round(num(c.pvp.challengeTtlSec, 15, 600, 'Tempo para aceitar (s)'))
   c.economy.freeOvosPerDay = Math.round(num(c.economy.freeOvosPerDay, 0, 5000, 'Ovos grátis por dia (limite)'))
+  c.economy.freeMilhoPerDay = Math.round(num(c.economy.freeMilhoPerDay, 0, 100_000_000, 'Milho ganho por dia (limite)'))
   c.economy.defaultSpendLimitCents = Math.round(num(c.economy.defaultSpendLimitCents, 1000, 1000000, 'Limite de gasto padrão'))
   c.announcement.text = String(c.announcement.text ?? '').slice(0, 200)
   if (!['info', 'promo', 'alerta'].includes(c.announcement.kind)) c.announcement.kind = 'info'
