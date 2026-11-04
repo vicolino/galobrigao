@@ -133,12 +133,15 @@ sleep 2
 systemctl is-active galobrigao.service
 curl -fsS http://127.0.0.1:8787/api/config >/dev/null && echo "app respondendo localmente"
 
-echo "== Contas de administrador (antes de abrir ao público)"
-touch /root/admin-senhas.txt && chmod 600 /root/admin-senhas.txt
-for email in vinicius@vj.dev.br vinicius.morais@vj.dev.br; do
-  sudo -u galobrigao DB_FILE="$DATA/rinha.sqlite" node "$APP/dist-server/cli.mjs" admin create "$email" >> /root/admin-senhas.txt 2>&1 || true
-done
-echo "senhas temporárias gravadas em /root/admin-senhas.txt (somente root)"
+echo "== Contas de administrador (só na primeira instalação)"
+if [ ! -f "$DATA/.admins-criados" ]; then
+  touch /root/admin-senhas.txt && chmod 600 /root/admin-senhas.txt
+  for email in vinicius@vj.dev.br vinicius.morais@vj.dev.br; do
+    sudo -u galobrigao DB_FILE="$DATA/rinha.sqlite" node "$APP/dist-server/cli.mjs" admin create "$email" >> /root/admin-senhas.txt 2>&1 || true
+  done
+  touch "$DATA/.admins-criados"
+  echo "senhas temporárias gravadas em /root/admin-senhas.txt (somente root)"
+fi
 
 echo "== Caddy (HTTPS automático)"
 cat > /etc/caddy/Caddyfile <<EOF

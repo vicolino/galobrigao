@@ -276,7 +276,7 @@ export async function handle(req: Req, res: Res) {
       const id = randomUUID()
       const now = Date.now()
       db.prepare('INSERT INTO users (id, email, name, pass_hash, salt, created_at, adult_confirmed_at, terms_accepted_at, monthly_limit_cents) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').run(id, email, name, hash, salt, now, now, now, live.economy.defaultSpendLimitCents)
-      const user = db.prepare('SELECT * FROM users WHERE id = ?').get(id) as unknown as UserRow
+      const user = grantMvp(db.prepare('SELECT * FROM users WHERE id = ?').get(id) as unknown as UserRow)
       return json(res, 201, { user: publicUser(user) }, { 'Set-Cookie': sessionCookie(createSession(id), secure) })
     }
     if (path === '/api/auth/login' && method === 'POST') {
