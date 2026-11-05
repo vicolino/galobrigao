@@ -1,3 +1,4 @@
+import { WalletBar, confirmBuy } from '../components/BuyConfirm'
 import { useEffect, useState } from 'react'
 import { api, type CatalogItem } from '../api'
 import { Checkout } from '../components/Checkout'
@@ -21,6 +22,7 @@ export function Loja({ tab: tabParam }: { tab?: string }) {
   return (
     <>
       <PageHead title={t('🛒 Loja')} subtitle={t('Galos, skins, acessórios, ferramentas de luta e muito mais.')} />
+      <WalletBar />
       <Tabs
         value={tab}
         onChange={(v) => go(`/loja/${v}`)}
@@ -81,6 +83,7 @@ function Galos() {
                   className="btn btn-gold full"
                   disabled={owned}
                   onClick={async () => {
+                    if (!(await confirmBuy({ emoji: e.emoji, title: e.name, detail: t('Galo de edição especial'), price: BREED_BY_ID[e.breedId].price, currency: 'ovo' }))) return
                     const r = await actions.buyElection(e.breedId)
                     if (r.ok) toast(t('{nome} chegou ao galinheiro!', { nome: `${e.emoji} ${e.name}` }), 'ok')
                     else toast(tx(r.error), 'erro')
@@ -115,7 +118,8 @@ function Galos() {
                 className="btn btn-gold"
                 disabled={owned}
                 onClick={async () => {
-                  const r = await actions.buyElection(e.breedId)
+                  if (!(await confirmBuy({ emoji: e.emoji, title: e.name, detail: t('Galo de edição especial'), price: BREED_BY_ID[e.breedId].price, currency: 'ovo' }))) return
+                    const r = await actions.buyElection(e.breedId)
                   if (r.ok) toast(t('{nome} chegou ao galinheiro!', { nome: `${e.emoji} ${e.name}` }), 'ok')
                   else toast(tx(r.error), 'erro')
                 }}
@@ -150,6 +154,7 @@ function Galos() {
                   className="btn btn-gold btn-sm full"
                   disabled={owned}
                   onClick={async () => {
+                    if (!(await confirmBuy({ emoji: e.emoji, title: e.name, detail: t('Galo de edição especial'), price: BREED_BY_ID[e.breedId].price, currency: 'ovo' }))) return
                     const r = await actions.buyElection(e.breedId)
                     if (r.ok) toast(t('{nome} chegou ao galinheiro!', { nome: `${e.emoji} ${e.name}` }), 'ok')
                     else toast(tx(r.error), 'erro')
@@ -189,6 +194,7 @@ function Galos() {
                   className="btn btn-gold btn-sm full"
                   disabled={owned || (e.breedId === 'rei' && !!rei?.out)}
                   onClick={async () => {
+                    if (!(await confirmBuy({ emoji: e.emoji, title: e.name, detail: t('Galo de edição especial'), price: BREED_BY_ID[e.breedId].price, currency: 'ovo' }))) return
                     const r = await actions.buyElection(e.breedId)
                     if (r.ok) toast(t('{nome} chegou ao galinheiro!', { nome: `${e.emoji} ${e.name}` }), 'ok')
                     else toast(tx(r.error), 'erro')
@@ -226,6 +232,7 @@ function Galos() {
                   className="btn btn-primary full"
                   disabled={s.milho < price}
                   onClick={async () => {
+                    if (!(await confirmBuy({ emoji: '🐓', title: r.name, detail: t('Galo do mercado · Nv {n}', { n: r.level }), price, currency: 'milho' }))) return
                     const res = await actions.buyRooster(r.id)
                     if (res.ok) toast(t('{nome} chegou ao galinheiro! 🐓', { nome: r.name }), 'ok')
                     else toast(tx(res.error), 'erro')
@@ -283,6 +290,7 @@ function Acessorios() {
               className="btn btn-primary full"
               onClick={async (e) => {
                 e.stopPropagation()
+                if (!(await confirmBuy({ emoji: a.emoji, title: a.name, detail: t('Acessório'), price: a.price, currency: a.currency }))) return
                 const r = await actions.buyAccessory(a.id)
                 if (r.ok) toast(t('{nome} comprado! Equipe no Galinheiro.', { nome: `${a.emoji} ${a.name}` }), 'ok')
                 else toast(tx(r.error), 'erro')
@@ -309,6 +317,7 @@ function Acessorios() {
             <button
               className="btn btn-primary btn-lg"
               onClick={async () => {
+                if (!(await confirmBuy({ emoji: preview.emoji, title: preview.name, detail: t('Acessório'), price: preview.price, currency: preview.currency }))) return
                 const r = await actions.buyAccessory(preview.id)
                 if (r.ok) {
                   toast(t('{nome} comprado!', { nome: preview.name }), 'ok')
@@ -340,6 +349,7 @@ function Itens() {
             <button
               className="btn btn-primary grow"
               onClick={async () => {
+                if (!(await confirmBuy({ emoji: it.emoji, title: it.name, price: it.price, currency: it.currency }))) return
                 const r = await actions.buyItem(it.id)
                 if (r.ok) toast(t('{nome} comprado!', { nome: `${it.emoji} ${it.name}` }), 'ok')
                 else toast(tx(r.error), 'erro')
@@ -351,6 +361,7 @@ function Itens() {
               className="btn btn-sm"
               title={t('Comprar 5')}
               onClick={async () => {
+                if (!(await confirmBuy({ emoji: it.emoji, title: `5x ${it.name}`, price: it.price * 5, currency: it.currency }))) return
                 const r = await actions.buyItem(it.id, 5)
                 if (r.ok) toast(t('5x {nome} comprados!', { nome: it.name }), 'ok')
                 else toast(tx(r.error), 'erro')
@@ -371,6 +382,8 @@ function Caixas() {
   const [prize, setPrize] = useState<Accessory | null>(null)
 
   const open = async (id: string) => {
+    const bx = BOXES.find((x) => x.id === id)
+    if (bx && !(await confirmBuy({ emoji: bx.emoji, title: bx.name, detail: t('Abre na hora com um acessório surpresa'), price: bx.price, currency: bx.currency }))) return
     const r = await actions.openBox(id)
     if (!r.ok) {
       toast(tx(r.error), 'erro')
@@ -546,6 +559,7 @@ function Trocar() {
               className="btn btn-primary full"
               disabled={state!.ovos < p.ovos}
               onClick={async () => {
+                if (!(await confirmBuy({ emoji: '🔁', title: t('Trocar ovos por milho'), price: p.ovos, currency: 'ovo', gainMilho: p.milho }))) return
                 const r = await actions.exchange(p.id)
                 if (r.ok) toast(`+🌽 ${fmt(p.milho)}`, 'ok')
                 else toast(tx(r.error), 'erro')

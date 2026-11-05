@@ -15,6 +15,7 @@ import { Legal } from './pages/Legal'
 import { ChallengeAlert, Desafios } from './pages/Desafios'
 import { OfferCenter } from './components/Ofertas'
 import { NewsCenter, Novidades } from './components/Novidades'
+import { BuyConfirm } from './components/BuyConfirm'
 import { Admin } from './admin/Admin'
 import { Perfil } from './pages/Perfil'
 import { Rinha } from './pages/Rinha'
@@ -123,6 +124,7 @@ export default function App() {
       <TorneioAlert />
       <OfferCenter />
       <NewsCenter />
+      <BuyConfirm />
       <Toasts />
     </div>
   )

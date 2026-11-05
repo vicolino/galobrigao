@@ -1194,3 +1194,22 @@ tr.muted td { opacity: 0.55; }
   .dep-top { flex-direction: column; align-items: center; }
   .dep-info { width: 100%; }
 }
+
+/* ---------- Confirmar compra e barra de saldo ---------- */
+.buyc { display: flex; flex-direction: column; gap: 12px; }
+.buyc-item { display: flex; align-items: center; gap: 12px; }
+.buyc-emoji { font-size: 38px; }
+.buyc-rows { background: var(--bg2); border: 1px solid var(--line); border-radius: 12px; padding: 6px 12px; }
+.buyc-rows > div { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid rgba(42, 74, 56, 0.5); }
+.buyc-rows > div:last-child { border-bottom: 0; }
+.buyc-after b { color: var(--gold); font-size: 17px; }
+.buyc-after.neg b { color: #ff6b6b; }
+.buyc-gain b { color: var(--green); }
+.walletbar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; background: rgba(20, 40, 30, 0.95); backdrop-filter: blur(6px); border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; margin-bottom: 12px; }
+.wb-item { font-size: 16px; }
+.wb-item b { color: var(--gold); }
+.wb-deltas { display: inline-flex; gap: 6px; animation: wbIn 2.2s ease forwards; }
+.wb-delta { font-weight: 900; font-size: 14px; }
+.wb-delta.neg { color: #ff6b6b; }
+.wb-delta.pos { color: var(--green); }
+@keyframes wbIn { 0% { opacity: 0; transform: translateY(6px); } 15% { opacity: 1; transform: none; } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(-6px); } }

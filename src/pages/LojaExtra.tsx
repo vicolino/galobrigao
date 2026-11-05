@@ -1,3 +1,4 @@
+import { confirmBuy } from '../components/BuyConfirm'
 import { useState } from 'react'
 import { RoosterSvg } from '../components/RoosterSvg'
 import { Modal, Price, RarityTag, go } from '../components/ui'
@@ -23,6 +24,7 @@ export function SkinsTab() {
   const diamante = useLimited('skin:diamante')
 
   const buy = async (sk: Skin) => {
+    if (!(await confirmBuy({ emoji: sk.emoji, title: sk.name, detail: t('Skin'), price: skinPrice(sk.id), currency: sk.currency }))) return
     const r = await actions.buySkin(sk.id)
     if (r.ok) {
       toast(t('{emoji} Skin {nome} desbloqueada!', { emoji: sk.emoji, nome: sk.name }), 'ok')
@@ -91,6 +93,7 @@ export function SkinsTab() {
                 className="btn btn-primary full"
                 disabled={all}
                 onClick={async () => {
+                  if (!(await confirmBuy({ emoji: b.emoji, title: b.name, detail: t('Pacote de skins'), price: b.price, currency: 'ovo' }))) return
                   const r = await actions.buySkinBundle(b.id)
                   if (r.ok) toast(t('{nome} desbloqueado!', { nome: b.name }), 'ok')
                   else toast(tx(r.error), 'erro')
@@ -244,6 +247,7 @@ export function FerramentasTab() {
             <button
               className="btn btn-primary full"
               onClick={async () => {
+                if (!(await confirmBuy({ emoji: k.emoji, title: k.name, detail: k.desc, price: k.price, currency: k.currency }))) return
                 const r = await actions.buyKit(k.id)
                 if (r.ok) toast(t('{nome} comprado!', { nome: `${k.emoji} ${k.name}` }), 'ok')
                 else toast(tx(r.error), 'erro')
@@ -272,6 +276,7 @@ export function FerramentasTab() {
               <button
                 className="btn btn-primary grow"
                 onClick={async () => {
+                  if (!(await confirmBuy({ emoji: tool.emoji, title: tool.name, detail: t('Ferramenta de luta'), price: tool.price, currency: tool.currency }))) return
                   const r = await actions.buyTool(tool.id)
                   if (r.ok) toast(t('{nome} comprado!', { nome: `${tool.emoji} ${tool.name}` }), 'ok')
                   else toast(tx(r.error), 'erro')
@@ -283,6 +288,7 @@ export function FerramentasTab() {
                 className="btn btn-sm"
                 title={t('Comprar 5 por {n}', { n: fmt(tool.price * 5) })}
                 onClick={async () => {
+                  if (!(await confirmBuy({ emoji: tool.emoji, title: `5x ${tool.name}`, detail: t('Ferramenta de luta'), price: tool.price * 5, currency: tool.currency }))) return
                   const r = await actions.buyTool(tool.id, 5)
                   if (r.ok) toast(t('5x {nome} comprados!', { nome: tool.name }), 'ok')
                   else toast(tx(r.error), 'erro')
