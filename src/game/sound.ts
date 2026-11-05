@@ -139,6 +139,20 @@ export const sfx = {
     stab(E, 0.25, b * 5, 0.1)
   },
 
+  /** Batucada curta da Banda do Terreiro. */
+  drums: () => {
+    const b = 0.11
+    ;[0, 2, 3, 4, 6].forEach((i) => kick(i * b, i === 0 || i === 4 ? 0.7 : 0.4))
+    ;[1, 3, 5, 7].forEach((i) => hiNoise(0.08, 0.3, i * b, 1800))
+    hiNoise(0.5, 0.12, 8 * b, 4000)
+  },
+  /** Brilho de ferramenta ativando. */
+  powerup: () => {
+    ;[523, 784, 1047, 1568].forEach((f, i) => tone(f, 0.12, 'triangle', 0.16, 0, i * 0.05))
+    hiNoise(0.3, 0.06, 0.1, 6000)
+  },
+  /** "Ding" curto quando uma ferramenta ajuda num golpe. */
+  proc: () => tone(1320, 0.09, 'triangle', 0.1, 400),
   click: () => tone(660, 0.05, 'square', 0.12),
   coin: () => {
     tone(988, 0.08, 'square', 0.2)

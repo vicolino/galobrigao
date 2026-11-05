@@ -112,6 +112,12 @@ export interface Fighter {
   stats: Stats
 }
 
+/** Uma ferramenta agindo em um lado da luta. */
+export interface ToolProc {
+  side: 0 | 1
+  tool: string
+}
+
 export type BattleEvent =
   | { t: 'intro'; text: string }
   | { t: 'round'; round: number; text: string }
@@ -122,12 +128,14 @@ export type BattleEvent =
       dmg: number
       crit: boolean
       dodged: boolean
+      /** Ferramentas que fizeram diferença neste golpe (só visual). */
+      boost?: ToolProc[]
       hp: [number, number]
       sta: [number, number]
       text: string
     }
   | { t: 'defend'; side: 0 | 1; hp: [number, number]; sta: [number, number]; text: string }
-  | { t: 'rest'; side: 0 | 1; hp: [number, number]; sta: [number, number]; text: string }
+  | { t: 'rest'; side: 0 | 1; boost?: ToolProc[]; hp: [number, number]; sta: [number, number]; text: string }
   | { t: 'special'; side: 0 | 1; move: string; hp: [number, number]; sta: [number, number]; text: string }
   | { t: 'tool'; side: 0 | 1; emoji: string; hp: [number, number]; sta: [number, number]; text: string }
   | { t: 'ko'; winner: 0 | 1; text: string }

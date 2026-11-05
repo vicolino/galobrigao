@@ -6,11 +6,27 @@ import { BREED_BY_ID, TOOL_BY_ID } from '../game/data'
 import { fmt } from '../game/rooster'
 import { sfx } from '../game/sound'
 import { useGame } from '../game/store'
-import type { BattleEvent, Rooster } from '../game/types'
+import type { BattleEvent, Rooster, Tool, ToolProc } from '../game/types'
 
 const BASE_MS = 1150
 /** Duração da entrada dos lutadores (acompanha a vinheta de 6 tempos a 128 BPM). */
 const INTRO_MS = 2900
+
+/** Texto curto do efeito da ferramenta quando ela age. */
+function procLabel(t: Tool) {
+  const pct = Math.round(t.value * 100)
+  switch (t.effect) {
+    case 'atk': return `Ataque +${pct}%`
+    case 'def': return `Dano −${pct}%`
+    case 'tudo': return `Torcida +${pct}%`
+    case 'critico': return 'Crítico!'
+    case 'esquiva': return 'Esquivou!'
+    case 'sta': return 'Fôlego!'
+    case 'cura': return `Cura +${pct}%`
+    case 'fenix': return 'Renasceu!'
+    default: return 'Turbinado!'
+  }
+}
 
 export function Luta() {
   const { match, actions } = useGame()
@@ -23,6 +39,8 @@ export function Luta() {
   const [bubble, setBubble] = useState<string | null>(null)
   const logRef = useRef<HTMLOListElement>(null)
   const [intro, setIntro] = useState(true)
+  const [toolCard, setToolCard] = useState<{ key: number; side: 0 | 1; id: string; text: string } | null>(null)
+  const [procs, setProcs] = useState<{ key: number; list: ToolProc[] } | null>(null)
 
   // Entrada estilo UFC antes de cada luta
   useEffect(() => {
@@ -48,7 +66,7 @@ export function Luta() {
   // Avança a narração
   useEffect(() => {
     if (!result || done || intro) return
-    const t = setTimeout(() => setIdx((i) => i + 1), idx === 0 ? 300 : BASE_MS / speed)
+    const t = setTimeout(() => setIdx((i) => i + 1), idx === 0 ? 300 : (events[idx - 1]?.t === 'tool' ? BASE_MS * 1.5 : BASE_MS) / speed)
     return () => clearTimeout(t)
   }, [idx, speed, result, done, intro])
 
@@ -69,6 +87,10 @@ export function Luta() {
       a[1 - ev.side] = ev.dodged ? 'miss' : 'hit'
       setAnims(a)
       setFx({ key: idx, side: (1 - ev.side) as 0 | 1, text: ev.dodged ? 'Errou!' : `-${ev.dmg}`, crit: ev.crit, miss: ev.dodged })
+      if (ev.boost?.length) {
+        setProcs({ key: idx, list: ev.boost })
+        setTimeout(sfx.proc, 120)
+      }
       if (ev.dodged) sfx.miss()
       else if (ev.crit) {
         sfx.crit()
@@ -87,8 +109,12 @@ export function Luta() {
       const a: [Anim, Anim] = ['idle', 'idle']
       a[ev.side] = 'special'
       setAnims(a)
-      setFx({ key: idx, side: ev.side, text: ev.emoji, crit: false, miss: true })
-      sfx.special()
+      const id = Object.values(TOOL_BY_ID).find((t) => t.emoji === ev.emoji)?.id ?? ''
+      setToolCard({ key: idx, side: ev.side, id, text: ev.text })
+      setProcs({ key: idx, list: id ? [{ side: ev.side, tool: id }] : [] })
+      setTimeout(() => setToolCard((c) => (c?.key === idx ? null : c)), (BASE_MS * 1.4) / speed)
+      if (ev.emoji === '🥁') sfx.drums()
+      else sfx.powerup()
       reset()
     } else if (ev.t === 'defend') {
       const a: [Anim, Anim] = ['idle', 'idle']
@@ -97,6 +123,7 @@ export function Luta() {
       reset()
     } else if (ev.t === 'rest') {
       setFx({ key: idx, side: ev.side, text: '😮‍💨', crit: false, miss: true })
+      if (ev.boost?.length) setProcs({ key: idx, list: ev.boost })
     } else if (ev.t === 'ko' || ev.t === 'decision') {
       const a: [Anim, Anim] = ['idle', 'idle']
       a[ev.winner] = 'win'
@@ -173,12 +200,12 @@ export function Luta() {
       </div>
 
       <div className="hud">
-        <FighterHud side={0} tools={match.tools?.[0]} name={match.a.name} sub={`${match.a.owner} · Nv ${match.a.level}`} style={match.a.style} hp={hp[0]} maxHp={result.maxHp[0]} sta={sta[0]} hurt={anims[0] === 'hit'} />
+        <FighterHud side={0} tools={match.tools?.[0]} pulse={procs?.list.filter((p) => p.side === 0).map((p) => p.tool)} pulseKey={procs?.key} name={match.a.name} sub={`${match.a.owner} · Nv ${match.a.level}`} style={match.a.style} hp={hp[0]} maxHp={result.maxHp[0]} sta={sta[0]} hurt={anims[0] === 'hit'} />
         <div className="hud-round">
           Round {round}/3
           {bets.length > 0 && <span className="tiny muted">{bets.length} aposta(s)</span>}
         </div>
-        <FighterHud side={1} tools={match.tools?.[1]} name={match.b.name} sub={`${match.b.owner} · Nv ${match.b.level}`} style={match.b.style} hp={hp[1]} maxHp={result.maxHp[1]} sta={sta[1]} hurt={anims[1] === 'hit'} />
+        <FighterHud side={1} tools={match.tools?.[1]} pulse={procs?.list.filter((p) => p.side === 1).map((p) => p.tool)} pulseKey={procs?.key} name={match.b.name} sub={`${match.b.owner} · Nv ${match.b.level}`} style={match.b.style} hp={hp[1]} maxHp={result.maxHp[1]} sta={sta[1]} hurt={anims[1] === 'hit'} />
       </div>
 
       <div className={`arena ${shake ? 'shake' : ''}`}>
@@ -199,11 +226,50 @@ export function Luta() {
           <div className="straw" />
         </div>
 
-        {intro && <Walkout a={match.a} b={match.b} />}
+        {([0, 1] as const).map((side) =>
+          match.tools?.[side]?.includes('banda') ? (
+            <div key={`banda${side}`} className={`banda banda-${side} ${toolCard?.id === 'banda' && toolCard.side === side ? 'loud' : ''}`} aria-hidden>
+              <span>🥁</span>
+              <span>🎺</span>
+              <span>🥁</span>
+            </div>
+          ) : null,
+        )}
+        {intro && <Walkout a={match.a} b={match.b} tools={match.tools} />}
+        {toolCard && !intro && TOOL_BY_ID[toolCard.id] && (
+          <div key={toolCard.key} className={`tool-banner side-${toolCard.side} r-${TOOL_BY_ID[toolCard.id].rarity}`}>
+            <span className="tb-emoji">{TOOL_BY_ID[toolCard.id].emoji}</span>
+            <div>
+              <b>{TOOL_BY_ID[toolCard.id].name}</b>
+              <span>{procLabel(TOOL_BY_ID[toolCard.id])} · {toolCard.side === 0 ? match.a.name : match.b.name}</span>
+            </div>
+          </div>
+        )}
         {bubble && !intro && <div className={`bubble ${bubble === 'K.O.!' ? 'ko' : ''}`}>{bubble}</div>}
 
         {[0, 1].map((side) => (
           <div key={side} className={`fighter fighter-${side} ${anims[side] === 'attack' ? 'lunge' : ''} ${intro ? `enter-${side}` : ''}`}>
+            {(match.tools?.[side]?.length ?? 0) > 0 && <div className={`tool-aura ${procs?.list.some((p) => p.side === side) ? 'on' : ''}`} key={`aura${procs?.key ?? 0}`} />}
+            {(match.tools?.[side]?.length ?? 0) > 0 && (
+              <div className="fighter-tools">
+                {match.tools![side].map((t) => (
+                  <span key={t} title={TOOL_BY_ID[t]?.name}>
+                    {TOOL_BY_ID[t]?.emoji}
+                  </span>
+                ))}
+              </div>
+            )}
+            {procs && !intro && procs.list.some((p) => p.side === side) && (
+              <div key={`p${procs.key}`} className="tool-procs">
+                {procs.list
+                  .filter((p) => p.side === side && TOOL_BY_ID[p.tool])
+                  .map((p) => (
+                    <span key={p.tool} className={`r-${TOOL_BY_ID[p.tool].rarity}`}>
+                      {TOOL_BY_ID[p.tool].emoji} {procLabel(TOOL_BY_ID[p.tool])}
+                    </span>
+                  ))}
+              </div>
+            )}
             <RoosterSvg breedId={side === 0 ? match.a.breedId : match.b.breedId} skin={side === 0 ? match.a.skin : match.b.skin} equipped={side === 0 ? match.a.equipped : match.b.equipped} flip={side === 1} anim={anims[side]} size="100%" />
             {fx && fx.side === side && (
               <div key={fx.key} className={`dmg ${fx.crit ? 'crit' : ''} ${fx.miss ? 'miss' : ''}`}>
@@ -320,7 +386,7 @@ export function Luta() {
   )
 }
 
-function FighterHud({ side, name, sub, style, hp, maxHp, sta, hurt, tools }: { tools?: string[]; side: 0 | 1; name: string; sub: string; style: Parameters<typeof StyleTag>[0]['style']; hp: number; maxHp: number; sta: number; hurt: boolean }) {
+function FighterHud({ side, name, sub, style, hp, maxHp, sta, hurt, tools, pulse, pulseKey }: { tools?: string[]; pulse?: string[]; pulseKey?: number; side: 0 | 1; name: string; sub: string; style: Parameters<typeof StyleTag>[0]['style']; hp: number; maxHp: number; sta: number; hurt: boolean }) {
   return (
     <div className={`card hud-card side-${side} ${hp <= 0 ? 'down' : ''} ${hurt ? 'hurt' : ''}`}>
       <b className="hud-name">{name}</b>
@@ -328,8 +394,8 @@ function FighterHud({ side, name, sub, style, hp, maxHp, sta, hurt, tools }: { t
       <div className="hud-tags">
         <StyleTag style={style} />
         {tools?.map((t) => (
-          <span key={t} className="tool-chip" title={TOOL_BY_ID[t]?.desc}>
-            {TOOL_BY_ID[t]?.emoji}
+          <span key={pulse?.includes(t) ? `${t}${pulseKey}` : t} className={`tool-chip ${pulse?.includes(t) ? 'pulse' : ''}`} title={`${TOOL_BY_ID[t]?.name}: ${TOOL_BY_ID[t]?.desc}`}>
+            {TOOL_BY_ID[t]?.emoji} <span className="tool-chip-name">{TOOL_BY_ID[t]?.name}</span>
           </span>
         ))}
       </div>
@@ -350,7 +416,7 @@ function FighterHud({ side, name, sub, style, hp, maxHp, sta, hurt, tools }: { t
 }
 
 /** Apresentação dos lutadores: holofotes, painéis dos cantos e o VS no impacto da música. */
-function Walkout({ a, b }: { a: Rooster; b: Rooster }) {
+function Walkout({ a, b, tools }: { a: Rooster; b: Rooster; tools?: [string[], string[]] }) {
   const card = (r: Rooster, side: 0 | 1) => (
     <div className={`wo-card wo-${side === 0 ? 'left' : 'right'}`}>
       <span className="wo-corner">{side === 0 ? '🔴 CANTO VERMELHO' : 'CANTO AZUL 🔵'}</span>
@@ -359,6 +425,7 @@ function Walkout({ a, b }: { a: Rooster; b: Rooster }) {
         {BREED_BY_ID[r.breedId]?.name} · Nv {r.level} · {r.wins}V {r.losses}D
       </span>
       <span className="wo-owner">{r.owner}</span>
+      {(tools?.[side]?.length ?? 0) > 0 && <span className="wo-tools">{tools![side].map((t) => TOOL_BY_ID[t]?.emoji).join(' ')} equipado</span>}
     </div>
   )
   return (

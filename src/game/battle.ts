@@ -1,6 +1,6 @@
 import { STYLES, TOOL_BY_ID } from './data'
 import { finalStats, rng } from './rooster'
-import type { BattleEvent, BattleResult, Rooster } from './types'
+import type { BattleEvent, BattleResult, Rooster, ToolProc } from './types'
 
 export const MAX_STA = 60
 const ROUNDS = 3
@@ -69,6 +69,7 @@ interface Side {
   cura: number
   fenix: number
   pimenta: boolean
+  tools: string[]
 }
 
 function fill(line: string, a: string, d: string) {
@@ -99,6 +100,7 @@ export function simulate(r0: Rooster, r1: Rooster, seed: number, tools: [string[
       cura: 0,
       fenix: 0,
       pimenta: false,
+      tools: tl.filter((id) => TOOL_BY_ID[id]),
     }
     for (const id of tl) {
       const t = TOOL_BY_ID[id]
@@ -124,6 +126,9 @@ export function simulate(r0: Rooster, r1: Rooster, seed: number, tools: [string[
     return side
   }
   const S: [Side, Side] = [mk(r0, tools[0]), mk(r1, tools[1])]
+  /** Ferramentas de um lado com certos efeitos (só para mostrar na tela; não usa o sorteio). */
+  const procs = (side: 0 | 1, effects: string[]): ToolProc[] =>
+    S[side].tools.filter((id) => effects.includes(TOOL_BY_ID[id].effect)).map((tool) => ({ side, tool }))
   const events: BattleEvent[] = []
   const hp = (): [number, number] => [Math.max(0, Math.round(S[0].hp)), Math.max(0, Math.round(S[1].hp))]
   const sta = (): [number, number] => [Math.round(S[0].sta), Math.round(S[1].sta)]
@@ -132,7 +137,7 @@ export function simulate(r0: Rooster, r1: Rooster, seed: number, tools: [string[
   ;([0, 1] as const).forEach((i) => {
     for (const id of tools[i]) {
       const t = TOOL_BY_ID[id]
-      if (t) events.push({ t: 'tool', side: i, emoji: t.emoji, hp: hp(), sta: sta(), text: `${t.emoji} ${S[i].ro.name} entra com ${t.name}!` })
+      if (t) events.push({ t: 'tool', side: i, emoji: t.emoji, hp: hp(), sta: sta(), text: `${t.emoji} ${S[i].ro.name} entra com ${t.name}! ${t.desc}` })
     }
   })
 
@@ -144,6 +149,10 @@ export function simulate(r0: Rooster, r1: Rooster, seed: number, tools: [string[
     if (round > 1) {
       for (const s of S) s.sta = Math.min(Math.max(MAX_STA, s.sta), s.sta + 20 * s.staMult)
       events.push({ t: 'round', round, text: `🔔 Round ${round}! Os galos voltam ao centro.` })
+      ;([0, 1] as const).forEach((i) => {
+        if (S[i].tools.includes('banda'))
+          events.push({ t: 'tool', side: i, emoji: '🥁', hp: hp(), sta: sta(), text: `🥁 A Banda do Terreiro toca mais alto e a torcida empurra ${S[i].ro.name}!` })
+      })
     }
     for (let ex = 0; ex < EXCHANGES && ko === null; ex++) {
       const init0 = S[0].spd * (0.75 + r() * 0.5)
@@ -187,7 +196,8 @@ export function simulate(r0: Rooster, r1: Rooster, seed: number, tools: [string[
         // Cansado: descansa
         if (me.sta < 8) {
           me.sta = Math.min(MAX_STA, me.sta + 22 * me.staMult)
-          events.push({ t: 'rest', side: i, hp: hp(), sta: sta(), text: fill(pick(REST_LINES), me.ro.name, foe.ro.name) })
+          const ap = procs(i, ['sta'])
+          events.push({ t: 'rest', side: i, boost: ap, hp: hp(), sta: sta(), text: fill(pick(REST_LINES), me.ro.name, foe.ro.name) + (ap.length ? ' 📯 O apito do treinador dá fôlego extra!' : '') })
           continue
         }
 
@@ -224,9 +234,10 @@ export function simulate(r0: Rooster, r1: Rooster, seed: number, tools: [string[
             dmg: 0,
             crit: false,
             dodged: true,
+            boost: procs((1 - i) as 0 | 1, ['esquiva']),
             hp: hp(),
             sta: sta(),
-            text: fill(pick(MISS_LINES), me.ro.name, foe.ro.name),
+            text: fill(pick(MISS_LINES), me.ro.name, foe.ro.name) + (procs((1 - i) as 0 | 1, ['esquiva']).length ? ' 🪞 O espelho hipnótico confundiu o golpe!' : ''),
           })
           continue
         }
@@ -244,7 +255,10 @@ export function simulate(r0: Rooster, r1: Rooster, seed: number, tools: [string[
         foe.hp -= dmg
         let text = (crit ? pick(CRIT_LINES) : '') + fill(pick(mv.lines), me.ro.name, foe.ro.name) + ` (-${dmg})`
         if (foe.guard) text += ' A defesa segurou metade!'
-        events.push({ t: 'attack', side: i, move: mv.name, dmg, crit, dodged: false, hp: hp(), sta: sta(), text })
+        const fi = (1 - i) as 0 | 1
+        const boost = [...procs(i, crit ? ['atk', 'tudo', 'critico'] : ['atk', 'tudo']), ...procs(fi, ['def', 'tudo'])]
+        if (crit && procs(i, ['critico']).length) text += ' 🧿 O amuleto brilhou!'
+        events.push({ t: 'attack', side: i, move: mv.name, dmg, crit, dodged: false, boost, hp: hp(), sta: sta(), text })
 
         if (foe.hp <= 0 && foe.fenix > 0) {
           foe.hp = foe.maxHp * foe.fenix
