@@ -63,11 +63,11 @@ export function Apostas() {
           <b>{settled.length ? Math.round((settled.filter((b) => b.status === 'ganhou').length / settled.length) * 100) : 0}%</b>
         </div>
         <div className="kpi">
-          <span>Saldo</span>
+          <span title="Quanto você ganhou em prêmios menos quanto apostou. Não é o seu milho.">Lucro nas apostas</span>
           <b className={returned - staked >= 0 ? 'pos' : 'neg'}>
-            {returned - staked >= 0 ? '+' : ''}
-            {fmt(returned - staked)}
+            {returned - staked >= 0 ? '+' : '−'}🌽 {fmt(Math.abs(returned - staked))}
           </b>
+          <small className="tiny muted">prêmios − apostado · seu milho: 🌽 {fmt(s.milho)}</small>
         </div>
         <div className="kpi">
           <span>Maior prêmio</span>
