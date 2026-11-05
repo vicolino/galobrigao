@@ -921,3 +921,17 @@ tr.muted td { opacity: 0.55; }
 .count-badge { display: inline-block; vertical-align: middle; font-size: 14px; font-weight: 900; background: var(--bg2); border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; margin-left: 6px; }
 .pager { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; padding-top: 12px; }
 .pager-btns { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+
+/* ---------- Valor do galinheiro ---------- */
+.worth { display: grid; grid-template-columns: minmax(220px, 1fr) 1.4fr; gap: 20px; align-items: center; margin-bottom: 16px; background: linear-gradient(135deg, rgba(245, 197, 66, 0.16), var(--panel) 60%); border-color: #8a6a1a; }
+.worth-main { display: flex; flex-direction: column; gap: 4px; }
+.worth-label { font-weight: 800; color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; }
+.worth-total { font-family: 'Lilita One', sans-serif; font-size: 36px; color: var(--gold); line-height: 1.1; }
+.worth-delta { font-weight: 800; font-size: 13px; }
+.worth-delta.up { color: var(--green); }
+.worth-delta.down { color: #ff6b6b; }
+.worth-parts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; }
+.worth-parts > div { display: flex; justify-content: space-between; gap: 8px; background: rgba(0, 0, 0, 0.18); border-radius: 10px; padding: 8px 12px; font-size: 14px; }
+.worth-parts p { grid-column: 1 / -1; margin: 0; }
+.rc-value { text-align: center; font-size: 13px; font-weight: 800; color: var(--gold); margin-top: 2px; }
+@media (max-width: 760px) { .worth { grid-template-columns: 1fr; } .worth-parts { grid-template-columns: 1fr; } }

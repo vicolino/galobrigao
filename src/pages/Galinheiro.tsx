@@ -1,11 +1,12 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { RoosterSvg, type Anim } from '../components/RoosterSvg'
 import { Bar, Empty, Modal, PageHead, RarityTag, RoosterCard, Stars, StyleTag, go } from '../components/ui'
 import { ACCESSORIES, ACC_BY_ID, BREED_BY_ID, ITEMS, SKIN_BY_ID, SLOTS, STYLES } from '../game/data'
 import { currentEnergy, feedCost, feedInstantCost, finalStats, fmt, power, sellPrice, trainCost, xpToNext } from '../game/rooster'
 import { FEED_COOLDOWN, STAR_COST, useGame } from '../game/store'
 import type { Slot, Style } from '../game/types'
-import { t, tn, tp, tx } from '../i18n'
+import { OVO_EM_MILHO, coopWorth, roosterValue, trackWorth } from '../game/worth'
+import { locale, t, tn, tp, tx } from '../i18n'
 
 export function Galinheiro({ selectedId }: { selectedId?: string }) {
   const { state } = useGame()
@@ -13,6 +14,12 @@ export function Galinheiro({ selectedId }: { selectedId?: string }) {
   const sel = s.roosters.find((r) => r.id === selectedId)
 
   if (sel) return <RoosterDetail id={sel.id} />
+  return <CoopList />
+}
+
+function CoopList() {
+  const { state, user } = useGame()
+  const s = state!
 
   const freeAcc = Object.entries(s.accessories).filter(([, n]) => n > 0)
   const items = Object.entries(s.items).filter(([, n]) => n > 0)
@@ -28,9 +35,20 @@ export function Galinheiro({ selectedId }: { selectedId?: string }) {
           </button>
         }
       />
+      <CoopWorth userKey={user?.id ?? 'local'} />
       <div className="grid-cards">
         {s.roosters.map((r) => (
-          <RoosterCard key={r.id} ro={r} onClick={() => go(`/galinheiro/${r.id}`)} footer={<div className="rc-record">{t('{w}V · {l}D · {k} K.O.', { w: r.wins, l: r.losses, k: r.kos })}</div>} />
+          <RoosterCard
+            key={r.id}
+            ro={r}
+            onClick={() => go(`/galinheiro/${r.id}`)}
+            footer={
+              <>
+                <div className="rc-record">{t('{w}V · {l}D · {k} K.O.', { w: r.wins, l: r.losses, k: r.kos })}</div>
+                <div className="rc-value">{t('💰 Vale 🌽 {n}', { n: fmt(roosterValue(r)) })}</div>
+              </>
+            }
+          />
         ))}
         <div className="card add-card clickable" onClick={() => go('/loja/galos')}>
           <div className="add-plus">＋</div>
@@ -73,6 +91,52 @@ export function Galinheiro({ selectedId }: { selectedId?: string }) {
         </div>
       </div>
     </>
+  )
+}
+
+/** Painel "Valor do galinheiro": total, variação desde o último dia registrado e de onde vem o valor. */
+function CoopWorth({ userKey }: { userKey: string }) {
+  const { state } = useGame()
+  const w = coopWorth(state!)
+  const [trend, setTrend] = useState<{ prev: number; since: string } | null>(null)
+  useEffect(() => setTrend(trackWorth(userKey, w.total)), [userKey, w.total])
+  const delta = trend ? w.total - trend.prev : 0
+  const pct = trend && trend.prev > 0 ? Math.round((delta / trend.prev) * 1000) / 10 : 0
+  const yesterday = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10)
+  const since = trend
+    ? trend.since === yesterday
+      ? t('desde ontem')
+      : t('desde {dia}', { dia: new Date(`${trend.since}T12:00:00`).toLocaleDateString(locale(), { day: '2-digit', month: '2-digit' }) })
+    : ''
+  const parts = [
+    { k: 'roosters', label: t('🐓 Galos'), v: w.roosters },
+    { k: 'gear', label: t('🎩 Acessórios guardados'), v: w.gear },
+    { k: 'items', label: t('🎒 Itens e ferramentas'), v: w.items },
+    { k: 'skins', label: t('🎨 Skins'), v: w.skins },
+  ]
+  return (
+    <div className="card worth">
+      <div className="worth-main">
+        <span className="worth-label">{t('💰 Valor do galinheiro')}</span>
+        <b className="worth-total">🌽 {fmt(w.total)}</b>
+        <span className="tiny muted">{t('≈ 🥚 {n} em ovos de ouro', { n: fmt(Math.round(w.total / OVO_EM_MILHO)) })}</span>
+        {trend && delta !== 0 && (
+          <span className={`worth-delta ${delta > 0 ? 'up' : 'down'}`}>
+            {delta > 0 ? '▲' : '▼'} 🌽 {fmt(Math.abs(delta))} ({delta > 0 ? '+' : ''}
+            {pct.toLocaleString(locale())}%) {since}
+          </span>
+        )}
+      </div>
+      <div className="worth-parts">
+        {parts.map((p) => (
+          <div key={p.k}>
+            <span>{p.label}</span>
+            <b>🌽 {fmt(p.v)}</b>
+          </div>
+        ))}
+        <p className="tiny muted">{t('Treine, vença lutas e evolua as estrelas para valorizar seus galos.')}</p>
+      </div>
+    </div>
   )
 }
 
