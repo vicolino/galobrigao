@@ -161,17 +161,26 @@ export async function handleAdmin(path: string, method: string, url: URL, body: 
     const q = `%${(url.searchParams.get('q') ?? '').trim().toLowerCase()}%`
     const filter = url.searchParams.get('filter') ?? 'todos'
     const where = filter === 'pagantes' ? 'AND COALESCE(o.spent, 0) > 0' : filter === 'bloqueados' ? 'AND u.banned_at IS NOT NULL' : ''
+    const pageSize = Math.min(100, Math.max(5, Number(url.searchParams.get('size')) || 25))
+    const from = `FROM users u
+         LEFT JOIN presence p ON p.user_id = u.id
+         LEFT JOIN (SELECT user_id, SUM(amount_cents) AS spent, COUNT(*) AS n FROM orders WHERE status = 'pago' GROUP BY user_id) o ON o.user_id = u.id
+         WHERE (lower(u.email) LIKE ? OR lower(u.name) LIKE ?) ${where}`
+    const total = (db().prepare(`SELECT COUNT(*) AS n ${from}`).get(q, q) as { n: number }).n
+    const pages = Math.max(1, Math.ceil(total / pageSize))
+    const page = Math.min(pages, Math.max(1, Math.floor(Number(url.searchParams.get('page')) || 1)))
     const rows = db()
       .prepare(
         `SELECT u.id, u.email, u.name, u.created_at, u.banned_at, p.last_seen, COALESCE(o.spent, 0) AS spent, COALESCE(o.n, 0) AS orders
-         FROM users u
-         LEFT JOIN presence p ON p.user_id = u.id
-         LEFT JOIN (SELECT user_id, SUM(amount_cents) AS spent, COUNT(*) AS n FROM orders WHERE status = 'pago' GROUP BY user_id) o ON o.user_id = u.id
-         WHERE (lower(u.email) LIKE ? OR lower(u.name) LIKE ?) ${where}
-         ORDER BY u.created_at DESC LIMIT 100`,
+         ${from}
+         ORDER BY u.created_at DESC LIMIT ? OFFSET ?`,
       )
-      .all(q, q) as Record<string, unknown>[]
+      .all(q, q, pageSize, (page - 1) * pageSize) as Record<string, unknown>[]
     return {
+      total,
+      page,
+      pages,
+      pageSize,
       users: rows.map((r) => {
         const save = loadSave(String(r.id))
         return { ...r, roosters: save?.state.roosters.length ?? 0, maxLevel: save ? Math.max(...save.state.roosters.map((x) => x.level)) : 0, ovos: save?.state.ovos ?? 0, milho: save?.state.milho ?? 0 }

@@ -100,7 +100,8 @@ export const api = {
   config: () => call<PublicConfig>('/config'),
   admin: {
     overview: (days: number) => call<AdminOverview>(`/admin/overview?days=${days}`),
-    users: (q: string, filter: string) => call<{ users: AdminUserRow[] }>(`/admin/users?q=${encodeURIComponent(q)}&filter=${filter}`),
+    users: (q: string, filter: string, page = 1) =>
+      call<{ users: AdminUserRow[]; total: number; page: number; pages: number; pageSize: number }>(`/admin/users?q=${encodeURIComponent(q)}&filter=${filter}&page=${page}`),
     user: (id: string) => call<AdminUserDetail>(`/admin/users/${id}`),
     grant: (id: string, ovos: number, milho: number, reason: string, creditCents = 0) => call<{ ok: true; ovos: number; milho: number }>(`/admin/users/${id}/grant`, { method: 'POST', body: { ovos, milho, reason, creditCents } }),
     ban: (id: string, banned: boolean, reason: string) => call(`/admin/users/${id}/ban`, { method: 'POST', body: { banned, reason } }),

@@ -174,18 +174,33 @@ function Users() {
   const [filter, setFilter] = useState('todos')
   const [rows, setRows] = useState<AdminUserRow[]>([])
   const [open, setOpen] = useState<string | null>(null)
+  const [page, setPage] = useState(1)
+  const [meta, setMeta] = useState({ total: 0, pages: 1, pageSize: 25 })
   const load = useCallback(() => {
-    api.admin.users(q, filter).then((r) => setRows(r.users)).catch(() => null)
-  }, [q, filter])
+    api.admin
+      .users(q, filter, page)
+      .then((r) => {
+        setRows(r.users)
+        setMeta({ total: r.total, pages: r.pages, pageSize: r.pageSize })
+        if (r.page !== page) setPage(r.page)
+      })
+      .catch(() => null)
+  }, [q, filter, page])
   useEffect(() => {
     const h = setTimeout(load, 250)
     return () => clearTimeout(h)
   }, [load])
+  // Nova busca ou filtro: volta para a primeira página
+  useEffect(() => setPage(1), [q, filter])
+  const first = meta.total ? (page - 1) * meta.pageSize + 1 : 0
+  const last = Math.min(meta.total, page * meta.pageSize)
 
   return (
     <>
       <div className="row-between admin-filters">
-        <h1>{t('Jogadores')}</h1>
+        <h1>
+          {t('Jogadores')} <span className="count-badge">{n(meta.total)}</span>
+        </h1>
         <div className="row gap">
           <input placeholder={t('Buscar por e-mail ou nome')} value={q} onChange={(e) => setQ(e.target.value)} />
           <div className="tabs compact">
@@ -230,6 +245,7 @@ function Users() {
           </tbody>
         </table>
         {rows.length === 0 && <p className="muted center">{t('Nenhum jogador encontrado.')}</p>}
+        {meta.total > 0 && <Pager page={page} pages={meta.pages} first={first} last={last} total={meta.total} onPage={setPage} />}
       </div>
       <UserDetail id={open} onClose={() => setOpen(null)} onChange={load} />
     </>
@@ -450,6 +466,41 @@ const AUDIT_LABEL: Record<string, string> = {
   desbloqueio: t('✅ Desbloqueio'),
   reconsultar_pedido: t('💳 Reconsulta de pedido'),
   kyc: t('🪪 Verificação (KYC)'),
+}
+
+/** Paginação: "1–25 de 132" + anterior/próxima + números das páginas (com reticências). */
+function Pager({ page, pages, first, last, total, onPage }: { page: number; pages: number; first: number; last: number; total: number; onPage: (p: number) => void }) {
+  const nums: (number | '…')[] = []
+  for (let p = 1; p <= pages; p++) {
+    if (p === 1 || p === pages || Math.abs(p - page) <= 1) nums.push(p)
+    else if (nums[nums.length - 1] !== '…') nums.push('…')
+  }
+  return (
+    <div className="pager">
+      <span className="tiny muted">{t('{a}–{b} de {n}', { a: n(first), b: n(last), n: n(total) })}</span>
+      {pages > 1 && (
+        <div className="pager-btns">
+          <button className="btn btn-sm" disabled={page <= 1} onClick={() => onPage(page - 1)}>
+            {t('‹ Anterior')}
+          </button>
+          {nums.map((p, i) =>
+            p === '…' ? (
+              <span key={`e${i}`} className="muted">
+                …
+              </span>
+            ) : (
+              <button key={p} className={`btn btn-sm ${p === page ? 'btn-primary' : ''}`} onClick={() => onPage(p)}>
+                {p}
+              </button>
+            ),
+          )}
+          <button className="btn btn-sm" disabled={page >= pages} onClick={() => onPage(page + 1)}>
+            {t('Próxima ›')}
+          </button>
+        </div>
+      )}
+    </div>
+  )
 }
 
 function Stat({ label, value }: { label: string; value: string }) {
