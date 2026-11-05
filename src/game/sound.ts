@@ -116,37 +116,6 @@ function stab(freqs: number[], dur: number, delay: number, gain = 0.12) {
 }
 
 
-/** Metais de charanga: dente-de-serra + quadrada com filtro e ataque rápido. */
-function brass(freq: number, dur: number, delay: number, gain = 0.07) {
-  if (muted || volume <= 0) return
-  try {
-    const c = ac()
-    const t = c.currentTime + delay
-    const f = c.createBiquadFilter()
-    const g = c.createGain()
-    f.type = 'lowpass'
-    f.frequency.setValueAtTime(900, t)
-    f.frequency.linearRampToValueAtTime(2600, t + 0.04)
-    f.frequency.exponentialRampToValueAtTime(1200, t + dur)
-    g.gain.setValueAtTime(0.0001, t)
-    g.gain.linearRampToValueAtTime(gain * volume, t + 0.02)
-    g.gain.setValueAtTime(gain * volume * 0.8, t + dur * 0.7)
-    g.gain.exponentialRampToValueAtTime(0.0001, t + dur)
-    f.connect(g).connect(c.destination)
-    for (const [type, det] of [['sawtooth', -7], ['sawtooth', 7], ['square', 0]] as const) {
-      const o = c.createOscillator()
-      o.type = type
-      o.frequency.value = freq
-      o.detune.value = det
-      o.connect(f)
-      o.start(t)
-      o.stop(t + dur + 0.05)
-    }
-  } catch {
-    /* sem áudio */
-  }
-}
-
 /** Torcida gritando: ruído com filtro passa-banda que cresce e some. */
 function crowd(dur: number, delay: number, gain = 0.12) {
   if (muted || volume <= 0) return
@@ -173,35 +142,93 @@ function crowd(dur: number, delay: number, gain = 0.12) {
   }
 }
 
-/** Charanga original em Si bemol, 150 BPM: surdo, caixa, agogô, metais e torcida. */
+/** Apito do mestre de bateria (seno agudo com trinado). */
+function apito(dur: number, delay: number, gain = 0.09) {
+  if (muted || volume <= 0) return
+  try {
+    const c = ac()
+    const t = c.currentTime + delay
+    const o = c.createOscillator()
+    const lfo = c.createOscillator()
+    const lg = c.createGain()
+    const g = c.createGain()
+    o.type = 'sine'
+    o.frequency.value = 2700
+    lfo.frequency.value = 28
+    lg.gain.value = 140
+    lfo.connect(lg).connect(o.frequency)
+    g.gain.setValueAtTime(0.0001, t)
+    g.gain.linearRampToValueAtTime(gain * volume, t + 0.015)
+    g.gain.setValueAtTime(gain * volume, t + dur - 0.03)
+    g.gain.linearRampToValueAtTime(0.0001, t + dur)
+    o.connect(g).connect(c.destination)
+    o.start(t)
+    lfo.start(t)
+    o.stop(t + dur + 0.02)
+    lfo.stop(t + dur + 0.02)
+  } catch {
+    /* sem áudio */
+  }
+}
+
+/** Surdo: grave com queda de afinação. `abafado` = mão no couro (curto). */
+const surdo = (freq: number, delay: number, gain = 0.9, abafado = false) => tone(freq, abafado ? 0.12 : 0.55, 'sine', gain, -freq * 0.35, delay)
+const caixa = (delay: number, acento: boolean) => {
+  hiNoise(0.07, acento ? 0.32 : 0.14, delay, 1400)
+  tone(240, 0.04, 'triangle', acento ? 0.12 : 0.05, -60, delay)
+}
+const tamborim = (delay: number) => tone(980, 0.035, 'square', 0.1, -200, delay)
+const chocalho = (delay: number, acento: boolean) => hiNoise(0.045, acento ? 0.12 : 0.06, delay, 6500)
+const repique = (delay: number, gain = 0.35) => {
+  tone(380, 0.09, 'triangle', gain, -120, delay)
+  hiNoise(0.05, gain * 0.6, delay, 2500)
+}
+
+/**
+ * Bateria de escola de samba (~3,4 s; `curta` ~1,7 s):
+ * apito do mestre → chamada do repique → bateria completa → paradinha final.
+ */
 function charanga(curta: boolean) {
-  const b = 60 / 150
-  const beats = curta ? 4 : 8
-  const N: Record<string, number> = { Bb3: 233.1, D4: 293.7, F4: 349.2, G4: 392, A4: 440, Bb4: 466.2, C5: 523.3, D5: 587.3, Eb5: 622.3, F5: 698.5 }
-  // Bateria: surdo no 1 e no 3 (forte no 3), caixa em semicolcheias, agogô alternando
-  for (let i = 0; i < beats; i++) {
-    tone(i % 2 ? 70 : 95, 0.35, 'sine', i % 2 ? 0.9 : 0.6, -40, i * b)
-    for (let k = 0; k < 4; k++) hiNoise(0.06, k === 2 ? 0.28 : 0.14, i * b + (k * b) / 4, 2200)
-    tone(i % 2 ? 560 : 840, 0.07, 'square', 0.08, 0, i * b)
-    tone(i % 2 ? 840 : 560, 0.07, 'square', 0.06, 0, i * b + b * 0.5)
+  const q = 60 / 140 // tempo (2 tempos por compasso)
+  const s16 = q / 4
+  let t0 = 0
+  if (!curta) {
+    apito(0.16, 0)
+    apito(0.16, 0.22)
+    apito(0.34, 0.44)
+    t0 = 0.86
   }
-  // Metais: frase original (duração em tempos)
-  const riff: [string, number][] = [
-    ['F4', 0.5], ['Bb4', 0.5], ['D5', 0.5], ['F5', 1], ['D5', 0.5], ['Eb5', 0.5], ['C5', 0.5],
-    ['D5', 0.5], ['Bb4', 0.5], ['C5', 0.5], ['A4', 0.5], ['Bb4', 1.5],
-  ]
-  const fim = curta ? 4 : 8
-  let at = 0
-  for (const [n, d] of riff) {
-    if (at >= fim) break
-    brass(N[n], Math.min(d, fim - at) * b * 0.92, at * b)
-    brass(N[n] / 2, Math.min(d, fim - at) * b * 0.92, at * b, 0.035) // oitava abaixo engorda o som
-    at += d
+  // Chamada do repique: tá-tá-tá . tá-tá . tá
+  ;[0, 1, 2, 4, 5, 7].forEach((k) => repique(t0 + k * s16, k === 7 ? 0.5 : 0.35))
+  t0 += 2 * q
+  const compassos = curta ? 1 : 2
+  // Teleco-teco do tamborim (2 compassos = 16 semicolcheias)
+  const teleco = [0, 2, 3, 5, 7, 9, 10, 12, 14]
+  for (let m = 0; m < compassos; m++) {
+    const c0 = t0 + m * 2 * q
+    surdo(78, c0, 0.7) // segunda (tempo 1)
+    surdo(78, c0 + q * 0.5, 0.25, true)
+    surdo(62, c0 + q, 1) // primeira (tempo 2, o mais forte)
+    surdo(92, c0 + 3 * s16, 0.4) // terceira, sincopado
+    surdo(92, c0 + q + 2 * s16, 0.35)
+    for (let k = 0; k < 8; k++) {
+      const at = c0 + k * s16
+      caixa(at, k % 4 === 1 || k % 4 === 3)
+      chocalho(at, k % 2 === 1)
+      if (teleco.includes((m % 2) * 8 + k)) tamborim(at)
+    }
+    tone(m % 2 ? 640 : 900, 0.08, 'square', 0.07, 0, c0) // agogô
+    tone(m % 2 ? 900 : 640, 0.08, 'square', 0.06, 0, c0 + q)
+    tone(900, 0.08, 'square', 0.06, 0, c0 + q + 2 * s16)
   }
-  // Acorde final + "uuuh" da torcida
-  if (!curta) [N.Bb3, N.D4, N.F4, N.Bb4].forEach((f) => brass(f, b * 1.4, 7.5 * b, 0.05))
-  crowd(beats * b + 0.6, 0.1, curta ? 0.08 : 0.12)
-  hiNoise(0.9, 0.12, (beats - 0.5) * b, 4000)
+  // Paradinha: todos juntos num golpe só + torcida
+  const fim = t0 + compassos * 2 * q
+  surdo(62, fim, 1)
+  surdo(78, fim, 0.7)
+  repique(fim, 0.5)
+  hiNoise(0.6, 0.25, fim, 1200)
+  if (!curta) apito(0.5, fim + 0.05, 0.07)
+  crowd(fim + 0.8, 0.2, curta ? 0.07 : 0.11)
 }
 
 export const sfx = {
@@ -228,7 +255,7 @@ export const sfx = {
     stab(E, 0.25, b * 5, 0.1)
   },
 
-  /** Charanga da Banda do Terreiro (~3,2 s). `curta` = versão de 1,6 s para o início de cada round. */
+  /** Bateria de samba da Banda do Terreiro (~3,4 s). `curta` = ~1,7 s, no início de cada round. */
   charanga: (curta = false) => charanga(curta),
   /** Brilho de ferramenta ativando. */
   powerup: () => {

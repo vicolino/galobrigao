@@ -15,7 +15,7 @@ const INTRO_MS = 2900
 /** Quanto cada evento fica na tela (em múltiplos do tempo base). A charanga da Banda dura ~3 s. */
 function holdFor(ev?: BattleEvent) {
   if (ev?.t !== 'tool') return 1
-  if (ev.emoji === '🥁') return ev.text.includes('toca mais alto') ? 1.6 : 2.8
+  if (ev.emoji === '🥁') return ev.text.includes('toca mais alto') ? 1.6 : 3
   return 1.5
 }
 
