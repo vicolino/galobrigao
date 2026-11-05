@@ -18,6 +18,8 @@ export interface AppConfig {
   announcement: { text: string; kind: 'info' | 'promo' | 'alerta' }
   maintenance: { on: boolean; message: string }
   mvp: { on: boolean; creditCents: number }
+  /** 💵 Depósito de USDC → 🥚 ovos (só ida). Mínimo e limite diário em USDC por jogador. */
+  deposit: { eggsPerUsdc: number; minUsdc: number; dailyCapUsdc: number }
   bets: {
     intervalMin: number
     closeSec: number
@@ -43,6 +45,8 @@ export const DEFAULT_CONFIG: AppConfig = {
   maintenance: { on: false, message: t('Estamos ajeitando o terreiro. Voltamos já!') },
   // Modo MVP: cada conta ganha crédito de teste (sem valor real) para comprar na loja
   mvp: { on: true, creditCents: 10000 },
+  // (não chama `web3`: /api/config já usa `web3: boolean` para dizer se a carteira está ligada)
+  deposit: { eggsPerUsdc: 50, minUsdc: 1, dailyCapUsdc: 500 },
   // Agenda de lutas da casa: uma luta a cada `intervalMin`, apostas fecham `closeSec` antes.
   // Apostas usam 🎟️ fichas (nunca milho/ovos): ganha jogando, não compra, não troca.
   bets: { intervalMin: 10, closeSec: 30, horizonMin: 120, liveSec: 75, minBet: 10, maxBet: 5000, chipsStart: 1000, chipsDaily: 300, chipsArenaWin: 30, chipsFloor: 200 },
@@ -61,6 +65,7 @@ export function mergeConfig(saved: Partial<AppConfig> | null | undefined): AppCo
     announcement: { ...DEFAULT_CONFIG.announcement, ...s.announcement },
     maintenance: { ...DEFAULT_CONFIG.maintenance, ...s.maintenance },
     mvp: { ...DEFAULT_CONFIG.mvp, ...s.mvp },
+    deposit: { ...DEFAULT_CONFIG.deposit, ...s.deposit },
     bets: { ...DEFAULT_CONFIG.bets, ...s.bets },
   }
 }

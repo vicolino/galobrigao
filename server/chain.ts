@@ -1,7 +1,7 @@
 // Ponte com a blockchain (viem): clientes, carteiras custodiais e chamadas aos contratos.
 // Desligado (null) enquanto as variáveis WEB3_* não estiverem todas configuradas.
 import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto'
-import { createPublicClient, createWalletClient, defineChain, formatEther, http, parseEther, parseEventLogs, type Abi, type Address, type Chain, type Hash, type PublicClient, type WalletClient } from 'viem'
+import { createPublicClient, createWalletClient, defineChain, encodeFunctionData, formatEther, http, keccak256, parseEther, parseEventLogs, parseTransaction, type Abi, type Address, type Chain, type Hash, type PublicClient, type WalletClient } from 'viem'
 import { generatePrivateKey, privateKeyToAccount, type PrivateKeyAccount } from 'viem/accounts'
 import { polygon, polygonAmoy } from 'viem/chains'
 import { live } from '../src/game/config'
@@ -246,6 +246,13 @@ export const mintToken = (k: 'egg' | 'corn', to: Address, amount: number): Promi
     return (await send(c, c.operator, tokenAddr(c, k), TOKEN_ABI, 'mint', [to, BigInt(amount)])).transactionHash
   })
 
+/** Só rede de teste: cria USDC de teste (TestUSDC tem mint público) na carteira do jogador. */
+export const mintTestUsdc = (to: Address, units: bigint): Promise<Hash> =>
+  serial(async () => {
+    const c = need()
+    return (await send(c, c.operator, tokenAddr(c, 'usdc'), TOKEN_ABI, 'mint', [to, units])).transactionHash
+  })
+
 /** Ponte de entrada: queima EGG/CORN da carteira do jogador. */
 export const burnToken = (k: 'egg' | 'corn', from: Address, amount: number): Promise<Hash> =>
   serial(async () => {
@@ -298,6 +305,50 @@ export const buyNft = (account: PrivateKeyAccount, tokenId: number, priceUnits: 
     const ev = parseEventLogs({ abi: MARKET_ABI, logs: r.logs, eventName: 'Sold' })[0] as unknown as { args: { price: bigint; fee: bigint } } | undefined
     return { hash: r.transactionHash, price: ev?.args.price ?? priceUnits, fee: ev?.args.fee ?? 0n }
   })
+
+// ---------- 💵 Depósito USDC → ovos (server/deposito.ts) ----------
+
+/**
+ * Transfere USDC da carteira do jogador para a tesouraria. A tx é assinada antes e o hash + tx crua
+ * vão para `onSigned` ANTES de transmitir (se o servidor cair, o reconciliador acha/retransmite).
+ * `onSigned` pode lançar erro para abortar sem transmitir.
+ */
+export const payUsdc = (account: PrivateKeyAccount, to: Address, units: bigint, onSigned: (hash: Hash, raw: `0x${string}`) => void): Promise<{ hash: Hash; ok: boolean }> =>
+  serial(async () => {
+    const c = need()
+    await topUp(c, account.address)
+    await c.pub.simulateContract({ account, address: c.env.usdc, abi: USDC_ABI, functionName: 'transfer', args: [to, units] })
+    const w = wallet(c, account)
+    const data = encodeFunctionData({ abi: USDC_ABI, functionName: 'transfer', args: [to, units] })
+    const req = await w.prepareTransactionRequest({ account, chain: c.chain, to: c.env.usdc, data })
+    const raw = await w.signTransaction(req as Parameters<typeof w.signTransaction>[0])
+    const hash = keccak256(raw)
+    onSigned(hash, raw)
+    await c.pub.sendRawTransaction({ serializedTransaction: raw })
+    const receipt = await c.pub.waitForTransactionReceipt({ hash, timeout: 120_000 })
+    return { hash, ok: receipt.status === 'success' }
+  })
+
+/**
+ * Situação de uma tx de depósito já assinada: 'success' | 'reverted' | 'pending' (ainda na fila, retransmitida)
+ * | 'dropped' (o nonce foi usado por outra tx: nunca vai confirmar).
+ */
+export async function depositTxState(hash: Hash, raw: `0x${string}` | null, from: Address): Promise<'success' | 'reverted' | 'pending' | 'dropped'> {
+  const c = need()
+  const receipt = () => c.pub.getTransactionReceipt({ hash }).catch(() => null)
+  const r = await receipt()
+  if (r) return r.status === 'success' ? 'success' : 'reverted'
+  if (!raw) return 'pending'
+  const nonce = parseTransaction(raw).nonce ?? 0
+  const used = await c.pub.getTransactionCount({ address: from, blockTag: 'latest' })
+  if (used > nonce) {
+    const again = await receipt()
+    return again ? (again.status === 'success' ? 'success' : 'reverted') : 'dropped'
+  }
+  // Não chegou na rede (ou caiu do mempool): retransmite a mesma tx (mesmo hash)
+  await c.pub.sendRawTransaction({ serializedTransaction: raw }).catch(() => undefined)
+  return 'pending'
+}
 
 /** Envia EGG/CORN/USDC da carteira do jogador para um endereço externo. */
 export const transferToken = (account: PrivateKeyAccount, k: TokenKey, to: Address, units: bigint): Promise<Hash> =>

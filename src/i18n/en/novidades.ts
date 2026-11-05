@@ -1,5 +1,8 @@
 // Dicionário inglês das Novidades (notas de versão).
 const dict: Record<string, string> = {
+  'Deposite USDC e ganhe ovos': 'Deposit USDC, get eggs',
+  'Depósito em USDC': 'USDC deposits',
+  'Mande USDC (Polygon) para a sua carteira do jogo e converta em ovos de ouro. Na rede de teste, pegue 20 USDC de teste por dia.': 'Send USDC (Polygon) to your in-game wallet and convert it into Golden Eggs. On the test network, grab 20 test USDC a day.',
   'Chegaram os Brasileiros!': 'The Brazilians have arrived!',
   'Chapéu campeiro, bombacha e lenço vermelho. Bah, tchê!': 'Gaucho hat, baggy bombacha trousers and a red neckerchief. Bah, tchê!',
   'Bermuda florida, chinelo no pé e muito gingado.': 'Flowery shorts, flip-flops and plenty of swagger.',

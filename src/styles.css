@@ -1180,3 +1180,17 @@ tr.muted td { opacity: 0.55; }
 .brasileiros .football-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 @media (max-width: 520px) { .brasileiros .football-grid { grid-template-columns: 1fr; } }
 .brasileiros { background: linear-gradient(135deg, rgba(31, 157, 74, 0.28), #14281e 50%, rgba(255, 210, 63, 0.18)); }
+
+/* ===== 💵 Depósito USDC → ovos (src/pages/Deposito.tsx) ===== */
+.dep-top { display: flex; gap: 16px; align-items: flex-start; margin-bottom: 10px; }
+.dep-qr { flex: none; border-radius: 10px; background: #fff; padding: 4px; }
+.dep-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.dep-info .copy-row input { min-width: 0; font-size: 12px; }
+.dep-sub { margin: 16px 0 4px; }
+.dep-preview { font-size: 18px; margin: 6px 0 10px; }
+.dep-preview .gold { color: var(--gold); }
+.dep-recent { margin-top: 10px; }
+@media (max-width: 560px) {
+  .dep-top { flex-direction: column; align-items: center; }
+  .dep-info { width: 100%; }
+}

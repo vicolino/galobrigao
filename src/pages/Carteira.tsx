@@ -3,6 +3,7 @@ import { api, ApiError, type GaloLook, type KycStatus, type Web3Asset, type Web3
 import { Empty, Modal, PageHead, RarityTag, Tabs } from '../components/ui'
 import { ACC_BY_ID, BREED_BY_ID, SKIN_BY_ID } from '../game/data'
 import { GaloNftPanel, NftArt } from './GaloNft'
+import { DepositoUsdc } from './Deposito'
 import { TokenPrizes } from './Torneios'
 import { fmt } from '../game/rooster'
 import { useGame } from '../game/store'
@@ -70,11 +71,10 @@ const TX_KIND: Record<string, string> = {
   list: t('🏷️ Posto à venda'),
   cancel: t('↩️ Venda cancelada'),
   buy: t('🛒 Compra no Mercado'),
+  deposit: t('💵 Depósito → ovos'),
 }
 const TX_STATUS: Record<string, string> = { ok: t('concluída'), pending: t('pendente'), failed: t('falhou'), 'burned-uncredited': t('em análise pelo suporte'), 'paid-unmoved': t('em análise pelo suporte') }
 const ASSET_LABEL: Record<Web3Asset, string> = { egg: t('🥚 Ovos de ouro (EGG)'), corn: t('🌽 Milho (CORN)'), usdc: t('💵 USDC') }
-const FAUCET_ETH = 'https://faucet.polygon.technology/'
-const FAUCET_USDC = 'https://faucet.circle.com'
 
 // ---------- Página ----------
 
@@ -197,23 +197,8 @@ export function Carteira() {
         <Send info={info} kyc={kyc} busy={busy} run={run} okTx={okTx} />
       </div>
 
-      {/* Depósito */}
-      <h3 className="section-title">📥 {t('Receber / depositar')}</h3>
-      <div className="card">
-        <p>{t('Para receber tokens ou USDC, envie para o seu endereço:')}</p>
-        <div className="copy-row">
-          <input readOnly value={w.address} onFocus={(e) => e.target.select()} aria-label={t('Seu endereço')} />
-          <CopyBtn text={w.address} />
-        </div>
-        <div className="warn tiny">
-          ⚠️ {t('Somente rede de teste ({rede}). Não envie fundos reais: eles serão perdidos.', { rede: info.chain?.name ?? 'Polygon Amoy' })}
-        </div>
-        <p className="tiny muted">{t('Precisa de moedas de teste? Pegue de graça nas torneiras:')}</p>
-        <div className="row gap wrap">
-          <a className="btn btn-sm" href={FAUCET_ETH} target="_blank" rel="noreferrer">⛽ {t('POL de teste (Polygon Amoy)')} ↗</a>
-          <a className="btn btn-sm" href={FAUCET_USDC} target="_blank" rel="noreferrer">💵 {t('USDC de teste (Circle)')} ↗</a>
-        </div>
-      </div>
+      {/* 💵 Depósito USDC → ovos (src/pages/Deposito.tsx) */}
+      <DepositoUsdc info={info} busy={busy} run={run} okTx={okTx} />
 
       <GaloNftPanel info={info} busy={busy} run={run} okTx={okTx} />
 

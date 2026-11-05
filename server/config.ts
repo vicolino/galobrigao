@@ -57,6 +57,9 @@ export function validateConfig(input: AppConfig): AppConfig {
   c.bets.chipsDaily = Math.round(num(c.bets.chipsDaily, 0, 100_000, t('Fichas do bônus diário')))
   c.bets.chipsArenaWin = Math.round(num(c.bets.chipsArenaWin, 0, 10_000, t('Fichas por vitória na Arena')))
   c.bets.chipsFloor = Math.round(num(c.bets.chipsFloor, 0, 100_000, t('Piso de fichas no bônus diário')))
+  c.deposit.eggsPerUsdc = num(c.deposit.eggsPerUsdc, 1, 10_000, t('Ovos por 1 USDC (depósito)'))
+  c.deposit.minUsdc = num(c.deposit.minUsdc, 1, 1000, t('Depósito mínimo (USDC)'))
+  c.deposit.dailyCapUsdc = num(c.deposit.dailyCapUsdc, c.deposit.minUsdc, 100_000, t('Limite diário de depósito (USDC)'))
   c.maintenance.on = !!c.maintenance.on
   c.maintenance.message = String(c.maintenance.message ?? '').slice(0, 200)
   return c

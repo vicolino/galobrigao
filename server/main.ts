@@ -3,6 +3,7 @@ import { createReadStream, existsSync, statSync } from 'node:fs'
 import { createServer } from 'node:http'
 import { extname, join, normalize, sep } from 'node:path'
 import { handle } from './app'
+import { bootReconcile } from './deposito'
 import { CSP, baseHeaders } from './security'
 
 const PORT = Number(process.env.PORT ?? 8787)
@@ -67,7 +68,10 @@ const server = createServer((req, res) => {
 
 server.headersTimeout = 20_000
 server.requestTimeout = 30_000
-server.listen(PORT, HOST, () => console.log(`Galo Brigão rodando em http://${HOST}:${PORT}`))
+server.listen(PORT, HOST, () => {
+  console.log(`Galo Brigão rodando em http://${HOST}:${PORT}`)
+  bootReconcile() // 💵 termina depósitos USDC → ovos que ficaram pendentes
+})
 
 process.on('uncaughtException', (e) => console.error('[fatal]', e))
 process.on('unhandledRejection', (e) => console.error('[promise]', e))

@@ -581,6 +581,18 @@ function Web3Admin() {
           <Kpi label={t('⚠️ Anomalias')} value={n(d.anomalies)} />
         </div>
       )}
+      {d?.deposits && (
+        <div className="card" style={{ marginBottom: 14 }}>
+          <h3>{t('💵 Depósitos USDC → ovos')}</h3>
+          <div className="kpi-grid small">
+            <Kpi label={t('Depósitos')} value={n(d.deposits.count)} />
+            <Kpi label={t('Total em USDC')} value={d.deposits.usdc.toLocaleString(locale(), { maximumFractionDigits: 2 })} />
+            <Kpi label={t('🥚 Ovos emitidos')} value={n(d.deposits.eggs)} />
+            <Kpi label={t('⏳ Aguardando a rede')} value={n(d.deposits.pending)} />
+            {d.deposits.uncredited > 0 && <Kpi label={t('⚠️ Sem crédito (conta excluída)')} value={n(d.deposits.uncredited)} />}
+          </div>
+        </div>
+      )}
       {d && d.anomalies > 0 && <div className="warn tiny">{t('Anomalias: tokens queimados sem crédito no jogo ou venda paga sem mover o item. Resolva manualmente com "Ajustar saldo".')}</div>}
       {d && d.kycQueue.length > 0 && (
         <div className="card" style={{ marginBottom: 14 }}>
@@ -958,6 +970,12 @@ function Config() {
             <NumField label={t('Fichas do bônus diário')} step={50} value={cfg.bets.chipsDaily} onChange={(v) => set('bets', { chipsDaily: v })} />
             <NumField label={t('Fichas por vitória na Arena')} value={cfg.bets.chipsArenaWin} onChange={(v) => set('bets', { chipsArenaWin: v })} />
             <NumField label={t('Piso de fichas no bônus diário')} step={50} value={cfg.bets.chipsFloor} onChange={(v) => set('bets', { chipsFloor: v })} hint={t('O bônus diário completa até esse valor')} />
+          </div>
+          <h3>{t('💵 Depósito USDC → ovos')}</h3>
+          <div className="cfg-grid">
+            <NumField label={t('Ovos por 1 USDC (depósito)')} value={cfg.deposit.eggsPerUsdc} onChange={(v) => set('deposit', { eggsPerUsdc: v })} hint={t('Só ida: ovos não voltam a ser USDC')} />
+            <NumField label={t('Depósito mínimo (USDC)')} value={cfg.deposit.minUsdc} onChange={(v) => set('deposit', { minUsdc: v })} />
+            <NumField label={t('Limite diário de depósito (USDC)')} step={50} value={cfg.deposit.dailyCapUsdc} onChange={(v) => set('deposit', { dailyCapUsdc: v })} hint={t('Por jogador, por dia')} />
           </div>
           <h3>{t('🛡️ Economia e segurança')}</h3>
           <div className="cfg-grid">

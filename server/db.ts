@@ -181,6 +181,22 @@ export function getDb() {
       created_at INTEGER NOT NULL
     );
     CREATE INDEX IF NOT EXISTS web3_tx_user ON web3_tx(user_id, created_at);
+    -- 💵 Depósito USDC → ovos (server/deposito.ts). Fica após excluir a conta (auditoria; só o id).
+    CREATE TABLE IF NOT EXISTS deposits (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      amount_units INTEGER NOT NULL,
+      eggs INTEGER NOT NULL,
+      from_addr TEXT NOT NULL,
+      to_addr TEXT NOT NULL,
+      tx_hash TEXT UNIQUE,
+      raw_tx TEXT,
+      status TEXT NOT NULL,
+      created_at INTEGER NOT NULL,
+      done_at INTEGER
+    );
+    CREATE INDEX IF NOT EXISTS deposits_user ON deposits(user_id, created_at);
+    CREATE INDEX IF NOT EXISTS deposits_status ON deposits(status);
   `)
   // Moeda de cada aposta: as antigas foram feitas em milho (pagam em milho); as novas usam 🎟️ fichas
   const betCols = (db.prepare('PRAGMA table_info(house_bets)').all() as { name: string }[]).map((c) => c.name)

@@ -26,6 +26,7 @@ import { appName } from '../src/brand'
 import { SKIN_BY_ID } from '../src/game/data'
 import { grantPassPremium, hasPassPremium, mergeClientPass, PASS_DAILY_XP } from '../src/game/pass'
 import { handleWeb3, Web3Error, web3Enabled } from './web3'
+import { handleDeposito } from './deposito'
 import { afterShop, deleteOfferData, firstPurchaseSku, handleOfertas, isFirstPurchase, OfertasError, withStock } from './ofertas'
 import { CriacaoError, handleCriacao } from './criacao'
 import { arenaDeleteUser, EconomiaError, handleEconomia } from './economia'
@@ -426,7 +427,7 @@ export async function handle(req: Req, res: Res) {
       deleteOfferData(u.id)
       arenaDeleteUser(u.id)
       // Pedidos pagos são mantidos anonimizados por obrigação fiscal; os dados pessoais saem.
-      // Web3: carteira, NFTs e web3_tx ficam (ativos na chain + auditoria; só têm o id, sem dados pessoais).
+      // Web3: carteira, NFTs, web3_tx e deposits ficam (ativos na chain + auditoria; só têm o id, sem dados pessoais).
       // Anúncios do jogador somem do mercado porque a listagem exige a conta existir.
       db.prepare("UPDATE orders SET user_id = 'excluido', pix_code = NULL, pix_qr = NULL WHERE user_id = ?").run(u.id)
       db.prepare('DELETE FROM users WHERE id = ?').run(u.id)
@@ -545,6 +546,15 @@ export async function handle(req: Req, res: Res) {
       }
       const body = method === 'POST' ? await readBody(req) : {}
       const out = handleBets(path, method, body, u.id)
+      if (out) return json(res, out.status ?? 200, out.body)
+    }
+
+    // ----- 💵 Depósito USDC → ovos (server/deposito.ts) -----
+    if (path === '/api/web3/deposit' || path === '/api/web3/deposit-eggs' || path === '/api/web3/test-usdc') {
+      const u = needUser(req)
+      if (method === 'POST') blockIfMaintenance(u)
+      const body = method === 'POST' ? await readBody(req) : {}
+      const out = await handleDeposito(path, method, body, u)
       if (out) return json(res, out.status ?? 200, out.body)
     }
 

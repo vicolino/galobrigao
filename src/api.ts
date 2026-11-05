@@ -197,6 +197,10 @@ export const api = {
   kyc: () => call<{ kyc: KycStatus }>('/web3/kyc', { method: 'POST' }),
   mintGalo: (roosterId: string) => call<{ tokenId: number; tx: Web3Tx; rev: number; state: GameState }>('/web3/mint-galo', { method: 'POST', body: { roosterId } }),
   unmintGalo: (tokenId: number) => call<{ tx: Web3Tx; rev: number; state: GameState }>('/web3/unmint-galo', { method: 'POST', body: { tokenId } }),
+  // 💵 Depósito USDC → ovos (só ida)
+  deposit: () => call<DepositInfo>('/web3/deposit'),
+  testUsdc: () => call<{ ok: boolean; usdc: number; hash: string }>('/web3/test-usdc', { method: 'POST' }),
+  depositEggs: (amount: string) => call<{ rev?: number; state?: GameState; pending?: boolean; message?: string; deposit: DepositView }>('/web3/deposit-eggs', { method: 'POST', body: { amount } }),
   market: () => call<{ listings: MarketListing[]; feeBps: number }>('/market'),
   marketList: (tokenId: number, price: number) => call<{ tx?: Web3Tx }>('/market/list', { method: 'POST', body: { tokenId, price } }),
   marketCancel: (tokenId: number) => call<{ tx?: Web3Tx }>('/market/cancel', { method: 'POST', body: { tokenId } }),
@@ -235,6 +239,9 @@ export interface Web3Info {
   caps?: { send?: Partial<Record<Web3Asset, number>>; bridgeOut?: Partial<Record<Web3Asset, number>>; usedToday?: { send?: Partial<Record<Web3Asset, number>>; bridgeOut?: Partial<Record<Web3Asset, number>> } }
   recent?: Web3TxView[]
 }
+/** 💵 Depósito USDC → ovos. */
+export interface DepositView { id: string; usdc: number; eggs: number; status: 'pending' | 'done' | 'failed' | 'uncredited'; hash: string | null; at: number; url: string | null }
+export interface DepositInfo { network: { id: number; name: string; testnet: boolean }; usdc: string; address: string | null; balance: number | null; rate: number; min: number; cap: number; usedToday: number; kycRequired: boolean; recent: DepositView[] }
 export interface MarketListing { tokenId: number; kind: 'acc' | 'skin' | 'galo'; itemId: string; price: number; seller: string; mine: boolean; rooster?: GaloLook }
 export interface AdminWeb3TxRow {
   id: number | string
@@ -257,6 +264,7 @@ export interface AdminWeb3 {
   anomalies: number
   kycQueue: { id: string; email: string; name: string; created_at: number }[]
   recent: AdminWeb3TxRow[]
+  deposits?: { count: number; usdc: number; eggs: number; pending: number; uncredited: number }
 }
 
 // ---------- Tipos do backoffice ----------

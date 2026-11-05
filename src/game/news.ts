@@ -18,6 +18,14 @@ export interface Release {
 
 export const RELEASES = (): Release[] => [
   {
+    id: '2026-11-05-4',
+    date: '2026-11-05',
+    title: t('Deposite USDC e ganhe ovos'),
+    items: [
+      { emoji: '💵', title: t('Depósito em USDC'), text: t('Mande USDC (Polygon) para a sua carteira do jogo e converta em ovos de ouro. Na rede de teste, pegue 20 USDC de teste por dia.'), link: '/carteira' },
+    ],
+  },
+  {
     id: '2026-11-05-3',
     date: '2026-11-05',
     title: t('Chegaram os Brasileiros!'),
