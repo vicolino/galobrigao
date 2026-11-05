@@ -12,6 +12,7 @@ const DIFFS = [
   { label: 'Fácil', emoji: '🐣', cls: 'easy', reward: 'Pouco milho' },
   { label: 'Médio', emoji: '🐔', cls: 'medium', reward: 'Bom prêmio' },
   { label: 'Difícil', emoji: '🦅', cls: 'hard', reward: 'Prêmio alto + 🥚' },
+  { label: 'Chefão', emoji: '👑', cls: 'boss', reward: 'Prêmio máximo + 🥚🥚' },
 ] as const
 
 export function Rinha() {
@@ -30,7 +31,7 @@ export function Rinha() {
   }
 
   const opponents = useMemo(() => {
-    return ([0, 1, 2] as const).map((d) => {
+    return ([0, 1, 2, 3] as const).map((d) => {
       const o = makeOpponent(mine, d)
       o.owner = pick(NPC_OWNERS)
       return { d, o, tools: opponentTools(d) }
@@ -44,7 +45,7 @@ export function Rinha() {
     [opponents, mine.level, mine.style, JSON.stringify(mine.equipped), myTools.join()],
   )
 
-  const fight = (o: Rooster, d: 0 | 1 | 2, oppTools: string[]) => {
+  const fight = (o: Rooster, d: 0 | 1 | 2 | 3, oppTools: string[]) => {
     const r = actions.startRinha(mine.id, o, d, myTools, oppTools)
     if (!r.ok) {
       toast(r.error, 'erro')
@@ -116,7 +117,7 @@ export function Rinha() {
         </div>
       )}
 
-      <div className="opponents">
+      <div className="opponents arena-opps">
         {opponents.map(({ d, o, tools }, idx) => {
           const chance = chances[idx] ?? 0.5
           const b = BREED_BY_ID[o.breedId]

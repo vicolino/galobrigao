@@ -16,6 +16,8 @@ import { getDb, type OrderRow, type UserRow } from './db'
 import { sendMail } from './mail'
 import { loadSave, writeSave } from './saves'
 import { handlePvp, PvpError } from './pvp'
+import { BetError, creditSave, handleBets, migrateOldBets, takeCredits, tickBets } from './bets'
+import { applyBetCredit } from '../src/game/bets'
 import { fetchRemoteStatus, parseMpWebhook, providerName, startPayment } from './payments'
 
 try {
@@ -250,6 +252,23 @@ export const sandboxAllowed = () => !isProd() || process.env.ALLOW_SANDBOX === '
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 
+// Relógio das apostas: resolve lutas no horário e mantém a agenda cheia, mesmo sem ninguém online.
+const timers = globalThis as unknown as { __betsTimer?: ReturnType<typeof setInterval>; __betsMigrated?: boolean }
+if (timers.__betsTimer) clearInterval(timers.__betsTimer)
+timers.__betsTimer = setInterval(() => {
+  try {
+    loadConfig()
+    if (!timers.__betsMigrated) {
+      timers.__betsMigrated = true
+      migrateOldBets()
+    }
+    tickBets()
+  } catch (e) {
+    console.error('[apostas]', e)
+  }
+}, 5_000)
+timers.__betsTimer.unref?.()
+
 export async function handle(req: Req, res: Res) {
   const url = new URL(req.url ?? '/', 'http://localhost')
   const path = url.pathname
@@ -372,6 +391,7 @@ export async function handle(req: Req, res: Res) {
       db.prepare('DELETE FROM saves WHERE user_id = ?').run(u.id)
       db.prepare('DELETE FROM sessions WHERE user_id = ?').run(u.id)
       db.prepare('DELETE FROM ovos_guard WHERE user_id = ?').run(u.id)
+      db.prepare('DELETE FROM house_bets WHERE user_id = ?').run(u.id)
       db.prepare('DELETE FROM password_resets WHERE user_id = ?').run(u.id)
       // Pedidos pagos são mantidos anonimizados por obrigação fiscal; os dados pessoais saem.
       db.prepare("UPDATE orders SET user_id = 'excluido', pix_code = NULL, pix_qr = NULL WHERE user_id = ?").run(u.id)
@@ -395,7 +415,7 @@ export async function handle(req: Req, res: Res) {
     // ----- Save -----
     if (path === '/api/save' && method === 'GET') {
       const u = needUser(req)
-      return json(res, 200, loadSave(u.id) ?? { rev: 0, state: null })
+      return json(res, 200, creditSave(u.id) ?? { rev: 0, state: null })
     }
     if (path === '/api/save' && method === 'PUT') {
       const u = needUser(req)
@@ -418,8 +438,13 @@ export async function handle(req: Req, res: Res) {
       }
       // VIP só é dado pelo servidor
       incoming.vip = cur.state.vip
-      writeSave(u.id, incoming, cur.rev + 1)
-      return json(res, 200, { rev: cur.rev + 1 })
+      // Apostas são do servidor: o navegador não mexe nelas
+      incoming.bets = cur.state.bets
+      incoming.card = cur.state.card
+      // Prêmios de apostas resolvidas entram aqui; o navegador aplica o mesmo crédito no estado dele
+      const credit = takeCredits(u.id)
+      writeSave(u.id, credit ? applyBetCredit(incoming, credit) : incoming, cur.rev + 1)
+      return json(res, 200, { rev: cur.rev + 1, credit })
     }
     if (path === '/api/save' && method === 'DELETE') {
       const u = needUser(req)
@@ -433,6 +458,18 @@ export async function handle(req: Req, res: Res) {
       if (path !== '/api/pvp/poll') blockIfMaintenance(u)
       const body = method === 'POST' ? await readBody(req) : {}
       const out = handlePvp(path, method, url, body, u)
+      if (out) return json(res, out.status ?? 200, out.body)
+    }
+
+    // ----- Apostas na agenda de lutas -----
+    if (path.startsWith('/api/bets')) {
+      const u = needUser(req)
+      if (method === 'POST') {
+        blockIfMaintenance(u)
+        if (limited(`bets:${u.id}`, 30, 60_000)) throw new HttpError(429, 'Muitas apostas seguidas. Espere um pouco.')
+      }
+      const body = method === 'POST' ? await readBody(req) : {}
+      const out = handleBets(path, method, body, u.id)
       if (out) return json(res, out.status ?? 200, out.body)
     }
 
@@ -591,6 +628,7 @@ export async function handle(req: Req, res: Res) {
   } catch (e) {
     if (e instanceof HttpError) return json(res, e.status, { error: e.message, ...e.extra })
     if (e instanceof PvpError) return json(res, 400, { error: e.message })
+    if (e instanceof BetError) return json(res, 400, { error: e.message })
     if (e instanceof AdminError) return json(res, e.status, { error: e.message })
     console.error('[api]', e)
     return json(res, 500, { error: 'Erro interno. Tente de novo.' })

@@ -17,6 +17,7 @@ export interface AppConfig {
   announcement: { text: string; kind: 'info' | 'promo' | 'alerta' }
   maintenance: { on: boolean; message: string }
   mvp: { on: boolean; creditCents: number }
+  bets: { intervalMin: number; closeSec: number; horizonMin: number; liveSec: number; minBet: number; maxBet: number }
 }
 
 export const DEFAULT_CONFIG: AppConfig = {
@@ -28,6 +29,8 @@ export const DEFAULT_CONFIG: AppConfig = {
   maintenance: { on: false, message: 'Estamos ajeitando o terreiro. Voltamos já!' },
   // Modo MVP: cada conta ganha crédito de teste (sem valor real) para comprar na loja
   mvp: { on: true, creditCents: 10000 },
+  // Agenda de lutas da casa: uma luta a cada `intervalMin`, apostas fecham `closeSec` antes
+  bets: { intervalMin: 10, closeSec: 30, horizonMin: 120, liveSec: 75, minBet: 10, maxBet: 50000 },
 }
 
 /** Junta o que foi salvo com os padrões (campos novos sempre têm valor). */
@@ -43,6 +46,7 @@ export function mergeConfig(saved: Partial<AppConfig> | null | undefined): AppCo
     announcement: { ...DEFAULT_CONFIG.announcement, ...s.announcement },
     maintenance: { ...DEFAULT_CONFIG.maintenance, ...s.maintenance },
     mvp: { ...DEFAULT_CONFIG.mvp, ...s.mvp },
+    bets: { ...DEFAULT_CONFIG.bets, ...s.bets },
   }
 }
 
@@ -64,5 +68,5 @@ export function effectiveSku(id: string): (Sku & { active: boolean }) | undefine
 export const effectiveCatalog = () => CATALOG.map((s) => effectiveSku(s.id)!)
 
 /** Parte da configuração que o navegador precisa conhecer. */
-export const publicConfig = (c: AppConfig) => ({ rewards: c.rewards, pvp: c.pvp, announcement: c.announcement, maintenance: c.maintenance, mvp: c.mvp })
+export const publicConfig = (c: AppConfig) => ({ rewards: c.rewards, pvp: c.pvp, announcement: c.announcement, maintenance: c.maintenance, mvp: c.mvp, bets: c.bets })
 export type PublicConfig = ReturnType<typeof publicConfig> & { build?: string | null }

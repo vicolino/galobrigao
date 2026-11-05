@@ -5,6 +5,7 @@ import { addXp, currentEnergy, today, uid, withEnergy } from '../src/game/rooste
 import type { GameState, MissionKind, Rooster } from '../src/game/types'
 import { getDb, type UserRow } from './db'
 import { loadSave, writeSave } from './saves'
+import { betsNotice } from './bets'
 
 export class PvpError extends Error {}
 const fail = (m: string): never => {
@@ -142,6 +143,7 @@ export function handlePvp(path: string, method: string, url: URL, body: Record<s
         outgoing: outgoing ? view(outgoing, u.id) : null,
         updates: updates.map((c) => view(c, u.id)),
         online,
+        bets: betsNotice(u.id),
       },
     }
   }

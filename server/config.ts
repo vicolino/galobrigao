@@ -45,6 +45,12 @@ export function validateConfig(input: AppConfig): AppConfig {
   if (!['info', 'promo', 'alerta'].includes(c.announcement.kind)) c.announcement.kind = 'info'
   c.mvp.on = !!c.mvp.on
   c.mvp.creditCents = Math.round(num(c.mvp.creditCents, 0, 1_000_000, 'Crédito MVP (centavos)'))
+  c.bets.intervalMin = Math.round(num(c.bets.intervalMin, 2, 120, 'Intervalo entre lutas (min)'))
+  c.bets.closeSec = Math.round(num(c.bets.closeSec, 0, 600, 'Apostas fecham antes (s)'))
+  c.bets.horizonMin = Math.round(num(c.bets.horizonMin, 30, 24 * 60, 'Agenda à frente (min)'))
+  c.bets.liveSec = Math.round(num(c.bets.liveSec, 20, 600, 'Duração do ao vivo (s)'))
+  c.bets.minBet = Math.round(num(c.bets.minBet, 1, 100000, 'Aposta mínima'))
+  c.bets.maxBet = Math.round(num(c.bets.maxBet, c.bets.minBet, 10_000_000, 'Aposta máxima'))
   c.maintenance.on = !!c.maintenance.on
   c.maintenance.message = String(c.maintenance.message ?? '').slice(0, 200)
   return c

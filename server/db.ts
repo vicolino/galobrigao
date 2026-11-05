@@ -99,6 +99,40 @@ export function getDb() {
       day TEXT NOT NULL,
       PRIMARY KEY (user_id, day)
     );
+    CREATE TABLE IF NOT EXISTS house_fights (
+      id TEXT PRIMARY KEY,
+      starts_at INTEGER NOT NULL UNIQUE,
+      event TEXT NOT NULL,
+      num INTEGER NOT NULL,
+      featured INTEGER NOT NULL DEFAULT 0,
+      a TEXT NOT NULL,
+      b TEXT NOT NULL,
+      odds_a REAL NOT NULL,
+      odds_b REAL NOT NULL,
+      odds_ko REAL NOT NULL,
+      seed INTEGER NOT NULL,
+      status TEXT NOT NULL,
+      winner INTEGER,
+      method TEXT,
+      created_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS house_fights_status ON house_fights(status, starts_at);
+    CREATE TABLE IF NOT EXISTS house_bets (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      fight_id TEXT NOT NULL,
+      pick TEXT NOT NULL,
+      amount INTEGER NOT NULL,
+      odds REAL NOT NULL,
+      label TEXT NOT NULL,
+      status TEXT NOT NULL,
+      payout INTEGER NOT NULL DEFAULT 0,
+      created_at INTEGER NOT NULL,
+      settled_at INTEGER,
+      credited INTEGER NOT NULL DEFAULT 0
+    );
+    CREATE INDEX IF NOT EXISTS house_bets_user ON house_bets(user_id, created_at);
+    CREATE INDEX IF NOT EXISTS house_bets_fight ON house_bets(fight_id, status);
     CREATE TABLE IF NOT EXISTS ovos_guard (
       user_id TEXT NOT NULL,
       day TEXT NOT NULL,

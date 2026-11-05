@@ -21,13 +21,13 @@ const NAV = [
 ]
 
 export function Sidebar({ route, open, onClose }: { route: string; open: boolean; onClose: () => void }) {
-  const { state, actions, toast, isVip, wallet, pvp, user, pubConfig } = useGame()
+  const { state, actions, toast, isVip, wallet, pvp, user, pubConfig, betsInfo } = useGame()
   const [daily, setDaily] = useState<{ milho: number; ovo: number; streak: number } | null>(null)
   if (!state) return null
   const s = state
   const dailyReady = s.daily.last !== today()
   const missionsReady = s.missions.list.filter((m) => !m.claimed && m.progress >= m.goal).length
-  const openBets = s.bets.filter((b) => b.status === 'pendente').length
+  const openBets = betsInfo?.open ?? 0
 
   const claim = () => {
     const r = actions.claimDaily()

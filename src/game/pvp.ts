@@ -54,4 +54,5 @@ export interface PvpPoll {
   outgoing: ChallengeView | null
   updates: ChallengeView[]
   online: number
+  bets?: { open: number; ready: number; liveFightId: string | null }
 }

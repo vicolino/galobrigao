@@ -2,7 +2,8 @@ import type { Sku } from './game/catalog'
 import type { ShopOp } from './game/premium'
 import type { AppConfig, PublicConfig } from './game/config'
 import type { ChallengeView, LobbyEntry, PvpPoll } from './game/pvp'
-import type { GameState } from './game/types'
+import type { BetCredit, BetView, ScheduledFight } from './game/bets'
+import type { BetPick, GameState } from './game/types'
 
 export interface ApiUser {
   id: string
@@ -62,7 +63,7 @@ export const api = {
   deleteAccount: (password: string) => call('/account', { method: 'DELETE', body: { password } }),
   logout: () => call('/auth/logout', { method: 'POST' }),
   getSave: () => call<{ rev: number; state: GameState | null }>('/save'),
-  putSave: (state: GameState, rev: number) => call<{ rev: number }>('/save', { method: 'PUT', body: { state, rev } }),
+  putSave: (state: GameState, rev: number) => call<{ rev: number; credit: BetCredit | null }>('/save', { method: 'PUT', body: { state, rev } }),
   deleteSave: () => call('/save', { method: 'DELETE' }),
   startFree: (avatar: string) => call<{ rev: number; state: GameState }>('/onboarding/free', { method: 'POST', body: { avatar } }),
   catalog: () => call<{ items: CatalogItem[]; provider: string }>('/catalog'),
@@ -71,6 +72,9 @@ export const api = {
   simulate: (id: string) => call<{ order: ApiOrder }>(`/orders/${id}/simulate`, { method: 'POST' }),
   orders: () => call<{ orders: ApiOrder[] }>('/orders'),
   shop: (op: ShopOp) => call<{ rev: number; state: GameState; value: unknown }>('/shop', { method: 'POST', body: op }),
+  betsSchedule: () => call<{ now: number; closeMs: number; liveMs: number; fights: ScheduledFight[]; mine: BetView[] }>('/bets/schedule'),
+  betsMine: () => call<{ bets: BetView[] }>('/bets/mine'),
+  placeBet: (fightId: string, pick: BetPick, amount: number) => call<{ rev: number; state: GameState; credit: BetCredit | null }>('/bets', { method: 'POST', body: { fightId, pick, amount } }),
   pvpPoll: () => call<PvpPoll>('/pvp/poll'),
   pvpLobby: (roosterId: string) => call<{ players: LobbyEntry[]; myLevel: number }>(`/pvp/lobby?roosterId=${encodeURIComponent(roosterId)}`),
   pvpChallenge: (roosterId: string, toUserId: string, toRoosterId: string) => call<{ challenge: ChallengeView }>('/pvp/challenge', { method: 'POST', body: { roosterId, toUserId, toRoosterId } }),

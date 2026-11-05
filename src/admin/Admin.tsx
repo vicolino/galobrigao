@@ -678,6 +678,15 @@ function Config() {
             <NumField label="Desafios com prêmio por dia" value={cfg.pvp.dailyRewards} onChange={(v) => set('pvp', { dailyRewards: v })} />
             <NumField label="Tempo para aceitar (segundos)" value={cfg.pvp.challengeTtlSec} onChange={(v) => set('pvp', { challengeTtlSec: v })} />
           </div>
+          <h3>🎲 Agenda de apostas</h3>
+          <div className="cfg-grid">
+            <NumField label="Uma luta a cada (minutos)" value={cfg.bets.intervalMin} onChange={(v) => set('bets', { intervalMin: v })} hint="Vale para as lutas que ainda vão ser criadas" />
+            <NumField label="Apostas fecham antes (segundos)" value={cfg.bets.closeSec} onChange={(v) => set('bets', { closeSec: v })} />
+            <NumField label="Agenda à frente (minutos)" step={30} value={cfg.bets.horizonMin} onChange={(v) => set('bets', { horizonMin: v })} />
+            <NumField label="Tempo AO VIVO (segundos)" value={cfg.bets.liveSec} onChange={(v) => set('bets', { liveSec: v })} />
+            <NumField label="Aposta mínima (milho)" value={cfg.bets.minBet} onChange={(v) => set('bets', { minBet: v })} />
+            <NumField label="Aposta máxima (milho)" step={1000} value={cfg.bets.maxBet} onChange={(v) => set('bets', { maxBet: v })} />
+          </div>
           <h3>🛡️ Economia e segurança</h3>
           <div className="cfg-grid">
             <NumField label="Ovos grátis máximos por dia" value={cfg.economy.freeOvosPerDay} onChange={(v) => set('economy', { freeOvosPerDay: v })} hint="Acima disso o servidor recusa o progresso (anti-trapaça)" />

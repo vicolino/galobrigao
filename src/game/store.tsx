@@ -29,10 +29,11 @@ import { FEED_COOLDOWN, STAR_COST, type ShopOp } from './premium'
 import { challengeTtl, type ChallengeView, type PvpPoll } from './pvp'
 import { DAILY_OVOS, arenaOvos } from './rewards'
 import { live, setLiveConfig, type PublicConfig } from './config'
+import type { Difficulty } from './engine'
+import { applyBetCredit, type BetCredit, type BetView, type ScheduledFight } from './bets'
 
 import {
   checkAchievements,
-  genCard,
   genMarket,
   makeOpponent,
   migrate,
@@ -43,7 +44,7 @@ import {
   WEEKLY_DISCOUNT,
 } from './engine'
 
-export { genCard, genMarket, makeOpponent, opponentTools, skinPrice, weeklySkin, WEEKLY_DISCOUNT }
+export { genMarket, makeOpponent, opponentTools, skinPrice, weeklySkin, WEEKLY_DISCOUNT }
 
 // ---------- Contexto ----------
 
@@ -61,7 +62,7 @@ export interface Match {
   b: Rooster
   seed: number
   fightId?: string
-  difficulty?: 0 | 1 | 2
+  difficulty?: Difficulty
   tools?: [string[], string[]]
   rewards?: { milho: number; ovo: number; xp: number; points: number; levels: number }
   myBets?: Bet[]
@@ -94,6 +95,7 @@ function useGameEngine() {
   const [pvpDone, setPvpDone] = useState<ChallengeView[]>([])
   // Saldo mostrado durante a luta (para não entregar o resultado antes da hora)
   const [held, setHeld] = useState<{ milho: number; ovos: number } | null>(null)
+  const [betsInfo, setBetsInfo] = useState<{ open: number; ready: number; liveFightId: string | null } | null>(null)
 
   const toast = useCallback((text: string, kind: Toast['kind'] = 'info') => {
     const id = uid()
@@ -142,6 +144,19 @@ function useGameEngine() {
     }
   }, [])
 
+  /** O servidor pagou apostas resolvidas: aplica o mesmo crédito aqui e avisa o jogador. */
+  const receiveCredit = useCallback(
+    (c: BetCredit) => {
+      if (!ref.current) return
+      const next = applyBetCredit(ref.current, c)
+      ref.current = next
+      setState(next)
+      for (const e of c.entries.slice(0, 4)) toast(e.won ? `🎲 ${e.text}: +🌽 ${e.milho.toLocaleString('pt-BR')}` : `🎲 ${e.text}`, e.won ? 'ok' : 'info')
+      if (c.won) sfx.coin()
+    },
+    [toast],
+  )
+
   /** Envia o save ao servidor. Em conflito, o servidor vence. */
   const flush = useCallback(async () => {
     if (syncing.current) await syncing.current
@@ -152,6 +167,7 @@ function useGameEngine() {
       try {
         const r = await api.putSave(snapshot, rev.current)
         rev.current = r.rev
+        if (r.credit) receiveCredit(r.credit)
       } catch (e) {
         if (e instanceof ApiError && (e.status === 409 || e.status === 422) && 'rev' in e.body) {
           adopt(e.body as { rev: number; state: GameState | null })
@@ -182,6 +198,14 @@ function useGameEngine() {
         if (!alive) return
         setPvp(p)
         waiting = !!p.outgoing
+        if (p.bets) {
+          setBetsInfo(p.bets)
+          // Tem aposta resolvida esperando: manda o save para o servidor creditar
+          if (p.bets.ready > 0 && !syncing.current) {
+            dirty.current = true
+            void flush()
+          }
+        }
         if (p.updates.length) {
           // Só abre a luta sozinho se o desafio é recente (não um de ontem visto agora)
           const accepted = p.updates.find((u) => u.status === 'aceito' && Date.now() - u.createdAt < challengeTtl() + 60_000)
@@ -531,7 +555,7 @@ async function shop<T = unknown>(op: ShopOp, sound?: () => void): Promise<Result
     },
 
     /** Inicia uma luta na Rinha. O resultado é aplicado na hora (sem trapaça com F5). */
-    startRinha(roosterId: string, opp: Rooster, difficulty: 0 | 1 | 2, myTools: string[] = [], oppTools: string[] = []): Result<Match> {
+    startRinha(roosterId: string, opp: Rooster, difficulty: Difficulty, myTools: string[] = [], oppTools: string[] = []): Result<Match> {
       const s = S()
       const ro = s.roosters.find((r) => r.id === roosterId)!
       const e = currentEnergy(ro)
@@ -544,12 +568,12 @@ async function shop<T = unknown>(op: ShopOp, sound?: () => void): Promise<Result
       const seed = Math.floor(Math.random() * 1e9)
       const res = simulate(ro, opp, seed, tools)
       const won = res.winner === 0
-      const diffMult = [0.8, 1.1, 1.6][difficulty]
+      const diffMult = [0.8, 1.1, 1.6, 2.2][difficulty]
       const vip = isVip(s) ? 1 + VIP.milhoBonus : 1
       const milho = Math.round((won ? 180 + opp.level * 45 : 40 + opp.level * 10) * diffMult * vip * (won && res.method === 'ko' ? 1.25 : 1))
       const ovo = arenaOvos(won, difficulty)
       const xp = Math.round((won ? 60 + opp.level * 12 : 25 + opp.level * 5) * diffMult)
-      const points = won ? [15, 25, 40][difficulty] : -8
+      const points = won ? [15, 25, 40, 60][difficulty] : -8
       const { levels } = addXp(ro, xp)
       let n: GameState = { ...s, milho: s.milho + milho, ovos: s.ovos + ovo, tools: toolsLeft }
       n = updRooster(n, roosterId, (r) => {
@@ -586,94 +610,28 @@ async function shop<T = unknown>(op: ShopOp, sound?: () => void): Promise<Result
       return { ok: true, value: m }
     },
 
-    placeBet(fightId: string, pickSide: BetPick, amount: number): Result {
-      const s = S()
-      const f = s.card.fights.find((x) => x.id === fightId)
-      if (!f || f.status !== 'aberta') return { ok: false, error: 'Essa luta não está mais aberta.' }
-      amount = Math.floor(amount)
-      if (amount < 10) return { ok: false, error: 'Aposta mínima: 10 de milho.' }
-      if (amount > 50000) return { ok: false, error: 'Aposta máxima: 50.000 de milho.' }
-      if (s.milho < amount) return noMoney('milho')
-      const odds = pickSide === 'a' ? f.oddsA : pickSide === 'b' ? f.oddsB : f.oddsKo
-      const label = pickSide === 'a' ? `${f.a.name} vence` : pickSide === 'b' ? `${f.b.name} vence` : 'Termina em K.O.'
-      const bet: Bet = { id: uid(), fightId, pick: pickSide, amount, odds, label, status: 'pendente', payout: 0, at: Date.now() }
-      let n: GameState = { ...s, milho: s.milho - amount, bets: [bet, ...s.bets].slice(0, 100) }
-      n = { ...n, stats: { ...n.stats, betsPlaced: n.stats.betsPlaced + 1 } }
-      n = bump(n, 'apostar')
-      n = log(n, `Aposta: ${label} @ ${odds.toFixed(2)}`, -amount, 0)
-      commit(n)
-      sfx.coin()
-      return { ok: true }
+    /** Aposta numa luta da agenda (o servidor desconta o milho e guarda a aposta). */
+    async placeBet(fightId: string, pick: BetPick, amount: number): Promise<Result> {
+      try {
+        await flush()
+        const r = await api.placeBet(fightId, pick, amount)
+        adopt({ rev: r.rev, state: r.state })
+        if (r.credit) for (const e of r.credit.entries.slice(0, 4)) toast(e.won ? `🎲 ${e.text}: +🌽 ${e.milho.toLocaleString('pt-BR')}` : `🎲 ${e.text}`, e.won ? 'ok' : 'info')
+        sfx.coin()
+        setBetsInfo((b) => (b ? { ...b, open: b.open + 1 } : b))
+        return { ok: true }
+      } catch (e) {
+        if (e instanceof ApiError && 'rev' in e.body) adopt(e.body as { rev: number; state: GameState | null })
+        return { ok: false, error: (e as Error).message }
+      }
     },
 
-    /** Encerra uma luta da casa e paga as apostas. */
-    resolveFight(fightId: string, watch: boolean): Match | null {
+    /** Assiste a uma luta da agenda que já começou. */
+    watchHouse(f: ScheduledFight, myBets: BetView[]) {
+      if (f.seed === undefined) return
       const s = S()
-      const f = s.card.fights.find((x) => x.id === fightId)
-      if (!f || f.status !== 'aberta') return null
-      const res = simulate(f.a, f.b, f.seed)
-      let n: GameState = {
-        ...s,
-        card: { ...s.card, fights: s.card.fights.map((x) => (x.id === fightId ? { ...x, status: 'encerrada', winner: res.winner, method: res.method } : x)) },
-      }
-      const myBets: Bet[] = []
-      let won = 0
-      n = {
-        ...n,
-        bets: n.bets.map((b) => {
-          if (b.fightId !== fightId || b.status !== 'pendente') return b
-          const hit = (b.pick === 'a' && res.winner === 0) || (b.pick === 'b' && res.winner === 1) || (b.pick === 'ko' && res.method === 'ko')
-          const payout = hit ? Math.floor(b.amount * b.odds) : 0
-          const nb: Bet = { ...b, status: hit ? 'ganhou' : 'perdeu', payout }
-          myBets.push(nb)
-          if (hit) won++
-          return nb
-        }),
-      }
-      const total = myBets.reduce((a, b) => a + b.payout, 0)
-      if (total) {
-        n = { ...n, milho: n.milho + total }
-        n = log(n, `Prêmio de aposta: ${f.a.name} x ${f.b.name}`, total, 0)
-      }
-      const zebra = myBets.some((b) => b.status === 'ganhou' && b.odds >= 3)
-      n = {
-        ...n,
-        stats: {
-          ...n.stats,
-          betsWon: n.stats.betsWon + won,
-          biggestWin: Math.max(n.stats.biggestWin, ...myBets.map((b) => b.payout)),
-          milhoEarned: n.stats.milhoEarned + total,
-        },
-        achievements: zebra && !n.achievements.includes('zebra') ? [...n.achievements, 'zebra'] : n.achievements,
-      }
-      if (won) n = bump(n, 'ganhar_aposta', won)
-      if (watch) {
-        n = bump(n, 'assistir')
-        setHeld({ milho: s.milho, ovos: s.ovos })
-      }
-      commit(n)
-      const m: Match = { kind: 'casa', a: f.a, b: f.b, seed: f.seed, fightId, myBets }
-      if (watch) setMatch(m)
-      return m
-    },
-
-    resolveAll(): number {
-      const s = S()
-      const open = s.card.fights.filter((f) => f.status === 'aberta')
-      let total = 0
-      for (const f of open) {
-        const m = actions.resolveFight(f.id, false)
-        total += m?.myBets?.reduce((a, b) => a + b.payout, 0) ?? 0
-      }
-      return total
-    },
-
-    newCard(): Result {
-      const s = S()
-      const pending = s.card.fights.some((f) => f.status === 'aberta' && s.bets.some((b) => b.fightId === f.id && b.status === 'pendente'))
-      if (pending) return { ok: false, error: 'Você tem apostas pendentes nesse card. Assista ou encerre as lutas primeiro.' }
-      commit({ ...s, card: { at: Date.now(), fights: genCard() } })
-      return { ok: true }
+      commit(bump(s, 'assistir'))
+      setMatch({ kind: 'casa', a: f.a, b: f.b, seed: f.seed, fightId: f.id, myBets })
     },
 
     claimMission(id: string): Result {
@@ -790,7 +748,7 @@ async function shop<T = unknown>(op: ShopOp, sound?: () => void): Promise<Result
     },
   }
 
-  return { state, actions, toasts, toast, match, phase, user, provider, paymentsLive, updateReady, pvp, pvpDone, pubConfig, wallet: held ?? (state ? { milho: state.milho, ovos: state.ovos } : null), isVip: state ? isVip(state) : false }
+  return { state, actions, toasts, toast, match, phase, betsInfo, user, provider, paymentsLive, updateReady, pvp, pvpDone, pubConfig, wallet: held ?? (state ? { milho: state.milho, ovos: state.ovos } : null), isVip: state ? isVip(state) : false }
 }
 
 /** Monta a luta para assistir a partir de um desafio resolvido. */
