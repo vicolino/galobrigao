@@ -2,13 +2,12 @@
 // para que ninguém consiga criar ovos, skins ou itens premium editando o save.
 import { ACCESSORIES, ACC_BY_ID, BOXES, BREED_BY_ID, CORN_PACKS, ELECTION_ROOSTERS, FOOTBALL_ROOSTERS, SPECIAL_ROOSTERS, ITEM_BY_ID, RARITY, SKIN_BY_ID, SKIN_BUNDLES, TOOL_BY_ID, TOOL_KITS } from './data'
 import { genMarket, skinPrice } from './engine'
-import { addXp, currentEnergy, makeRooster, pick, uid, withEnergy, xpToNext } from './rooster'
+import { addXp, currentEnergy, feedInstantCost, makeRooster, pick, uid, withEnergy, xpToNext } from './rooster'
 import { t } from '../i18n'
 import type { Accessory, Currency, GameState, MissionKind, Rarity, Rooster } from './types'
 
 export const FEED_COOLDOWN = 4 * 3600_000
 export const STAR_COST = [0, 40, 80, 150, 250] // ovos para subir de N para N+1 estrelas
-export const FEED_INSTANT_COST = 3
 export const MARKET_REFRESH_COST = 5
 export const MARKET_TTL = 30 * 60_000
 
@@ -161,7 +160,7 @@ export function runShop(s: GameState, o: ShopOp): { state: GameState; value?: un
     }
     case 'feedInstant': {
       const ro = findRooster(s, o.roosterId)
-      let n = pay(s, FEED_INSTANT_COST, 'ovo')
+      let n = pay(s, feedInstantCost(ro.level), 'ovo')
       const xp = 30 + ro.level * 6
       const { levels } = addXp(ro, xp)
       n = { ...n, roosters: n.roosters.map((r) => (r.id === ro.id ? { ...withEnergy(addXp(r, xp).rooster, currentEnergy(r) + 15), fedAt: Date.now() } : r)) }
@@ -208,7 +207,7 @@ export function premiumViolation(cur: GameState, next: GameState): string | null
       continue
     }
     if (!same(old, r)) return 'estrelas' // i18n-ok (só log do servidor)
-    // Comida grátis só a cada 4h
+    // Comida comum só a cada 4h
     if (r.fedAt && r.fedAt !== old.fedAt && old.fedAt && r.fedAt - old.fedAt < FEED_COOLDOWN - 60_000) return 'comida' // i18n-ok (só log do servidor)
   }
   return null

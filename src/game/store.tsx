@@ -15,7 +15,9 @@ import {
   ENERGY_COST,
   addXp,
   currentEnergy,
+  feedCost,
   marketPrice,
+  trainCost,
   sellPrice,
   today,
   uid,
@@ -559,7 +561,7 @@ async function shop<T = unknown>(op: ShopOp, sound?: () => void): Promise<Result
       const ro = s.roosters.find((r) => r.id === roosterId)!
       const e = currentEnergy(ro)
       if (e < 15) return { ok: false, error: t('{nome} está cansado demais para treinar.', { nome: ro.name }) }
-      const cost = 100 + ro.level * 25
+      const cost = trainCost(ro.level)
       let n = pay(s, cost, 'milho')
       if (!n) return noMoney('milho')
       const xp = 40 + ro.level * 8
@@ -700,7 +702,7 @@ async function shop<T = unknown>(op: ShopOp, sound?: () => void): Promise<Result
     exchange: (id: string) => shop({ op: 'exchange', id }, sfx.coin),
     upgradeStars: (roosterId: string) => shop({ op: 'upgradeStars', roosterId }, sfx.win),
 
-    /** Alimentar: grátis a cada 4h (local), ou na hora pagando ovos (servidor). */
+    /** Alimentar: a cada 4h pagando milho (local), ou na hora pagando ovos (servidor). Os dois sobem com o nível. */
     async feed(roosterId: string, instant = false): Promise<Result<string>> {
       const s = S()
       const ro = s.roosters.find((r) => r.id === roosterId)!
@@ -709,9 +711,11 @@ async function shop<T = unknown>(op: ShopOp, sound?: () => void): Promise<Result
         if (!instant) return { ok: false, error: t('{nome} ainda está de papo cheio.', { nome: ro.name }) }
         return shop<string>({ op: 'feedInstant', roosterId }, sfx.coin)
       }
+      const paid = pay(s, feedCost(ro.level), 'milho')
+      if (!paid) return noMoney('milho')
       const xp = 30 + ro.level * 6
       const { levels } = addXp(ro, xp)
-      commit(updRooster(s, roosterId, (r) => ({ ...withEnergy(addXp(r, xp).rooster, currentEnergy(r) + 15), fedAt: Date.now() })))
+      commit(updRooster(paid, roosterId, (r) => ({ ...withEnergy(addXp(r, xp).rooster, currentEnergy(r) + 15), fedAt: Date.now() })))
       sfx.coin()
       return { ok: true, value: levels ? t('🎉 {nome} comeu e subiu para o nível {n}!', { nome: ro.name, n: ro.level + levels }) : t('{nome} comeu! +{xp} XP e +15 de energia 🌽', { nome: ro.name, xp }) }
     },

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { RoosterSvg, type Anim } from '../components/RoosterSvg'
 import { Bar, Empty, Modal, PageHead, RarityTag, RoosterCard, Stars, StyleTag, go } from '../components/ui'
 import { ACCESSORIES, ACC_BY_ID, BREED_BY_ID, ITEMS, SKIN_BY_ID, SLOTS, STYLES } from '../game/data'
-import { currentEnergy, finalStats, fmt, power, sellPrice, xpToNext } from '../game/rooster'
+import { currentEnergy, feedCost, feedInstantCost, finalStats, fmt, power, sellPrice, trainCost, xpToNext } from '../game/rooster'
 import { FEED_COOLDOWN, STAR_COST, useGame } from '../game/store'
 import type { Slot, Style } from '../game/types'
 import { t, tn, tp, tx } from '../i18n'
@@ -219,16 +219,16 @@ function RoosterDetail({ id }: { id: string }) {
               <div className="grow">
                 <b>{t('Alimentar')}</b>
                 <div className="tiny muted">
-                  {t('+{xp} XP e +15 energia.', { xp: 30 + ro.level * 6 })} {feedReady ? t('Pronto para comer!') : t('Grátis de novo em {t}.', { t: feedLeft })}
+                  {t('+{xp} XP e +15 energia.', { xp: 30 + ro.level * 6 })} {feedReady ? t('Pronto para comer!') : t('Pode comer de novo em {t}.', { t: feedLeft })}
                 </div>
               </div>
               {feedReady ? (
                 <button className="btn btn-primary btn-sm pulse" onClick={() => doFeed(false)}>
-                  {t('Dar comida')}
+                  {t('Dar comida')} · 🌽 {fmt(feedCost(ro.level))}
                 </button>
               ) : (
                 <button className="btn btn-sm" onClick={() => doFeed(true)}>
-                  {t('Agora · 🥚 3')}
+                  {t('Agora · 🥚 {n}', { n: feedInstantCost(ro.level) })}
                 </button>
               )}
             </div>
@@ -263,7 +263,7 @@ function RoosterDetail({ id }: { id: string }) {
               {t('⚔️ Lutar')}
             </button>
             <button className="btn" onClick={train}>
-              {t('💪 Treinar')} <small>(🌽{100 + ro.level * 25} · ⚡15)</small>
+              {t('💪 Treinar')} <small>(🌽{fmt(trainCost(ro.level))} · ⚡15)</small>
             </button>
             <button className="btn" onClick={() => setItemsOpen(true)}>
               {t('🍽️ Usar item')}

@@ -107,6 +107,15 @@ export function withEnergy(ro: Rooster, energy: number, now = Date.now()): Roost
   return { ...ro, energy: Math.max(0, Math.min(ENERGY_MAX, energy)), energyAt: now }
 }
 
+/** Custos que crescem com o nível (cada vez mais rápido): galo forte custa caro para manter. */
+const round10 = (v: number) => Math.round(v / 10) * 10
+/** Treinar (🌽): nv1 120 · nv10 450 · nv20 1.100 · nv30 2.050 · nv50 4.850 */
+export const trainCost = (level: number) => round10(100 + level * 20 + level * level * 1.5)
+/** Dar comida (🌽): nv1 30 · nv10 120 · nv20 310 · nv30 600 · nv50 1.480 */
+export const feedCost = (level: number) => Math.max(30, round10(30 + level * 4 + level * level * 0.5))
+/** Comer na hora sem esperar (🥚): 3 até o nv9, +1 a cada 10 níveis */
+export const feedInstantCost = (level: number) => 3 + Math.floor(level / 10)
+
 /** Aplica XP e sobe de nível quantas vezes for preciso. */
 export function addXp(ro: Rooster, xp: number): { rooster: Rooster; levels: number } {
   let { level, xp: cur } = ro

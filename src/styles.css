@@ -695,6 +695,8 @@ select { background: var(--bg2); border: 1px solid var(--line); color: var(--tex
 .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; }
 .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 4px; vertical-align: -1px; }
 .admin-table td { vertical-align: middle; }
+/* Colunas numéricas: título e valor centralizados juntos */
+.admin-table th.right, .admin-table td.right { text-align: center; }
 .clickable-row { cursor: pointer; }
 .clickable-row:hover td { background: rgba(232, 243, 234, 0.04); }
 .mono { font-family: ui-monospace, monospace; }
