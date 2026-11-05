@@ -41,6 +41,7 @@ const en: Record<string, string> = {
   'Mão Divina': 'The Divine Hand',
   'Cabelo cacheado e um gol de mão que ninguém esquece.': 'Curly hair and a handball goal nobody forgets.',
   'Rei do Gramado': 'King of the Pitch',
+  'O Rei: mais de mil gols, três Copas e coroa na cabeça.': 'The King: over a thousand goals, three World Cups and a crown on his head.',
   'Mais de mil gols e coroa na cabeça.': 'Over a thousand goals and a crown on his head.',
   'Topete dourado, gravata vermelha e um bronzeado que ninguém explica.': 'Golden combover, long red tie and a tan nobody can explain.',
   'Galo Livre': 'Free Rooster',

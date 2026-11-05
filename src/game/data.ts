@@ -149,7 +149,7 @@ BREEDS.push({
 const BRASIL = { body: '#ffd91f', wing: '#e9bf10', tail: '#1e4fa8', tail2: '#1f9d4a', neck: '#f3dfb8', comb: '#e23b3b', legs: '#e8b04a' }
 const INGLATERRA = { body: '#f5f5f5', wing: '#dfe1e8', tail: '#1c2a4a', tail2: '#c8102e', neck: '#f3dfb8', comb: '#e23b3b', legs: '#e8b04a' }
 const ARGENTINA = { body: '#ffffff', wing: '#75aadb', tail: '#1a1a1a', tail2: '#75aadb', neck: '#f3dfb8', comb: '#e23b3b', legs: '#e8b04a' }
-const futebol = (id: string, name: string, desc: string, colors: Breed['colors'], base: Breed['base']): Breed => ({ id, name, desc, rarity: 'lendario', pattern: 'solido', special: true, colors, base, price: 99 })
+const futebol = (id: string, name: string, desc: string, colors: Breed['colors'], base: Breed['base'], price = 99): Breed => ({ id, name, desc, rarity: 'lendario', pattern: 'solido', special: true, colors, base, price })
 BREEDS.push(
   futebol('fenomeno', t('Careca Fenomenal'), t('Careca, gordinho e imparável na frente do gol.'), BRASIL, { hp: 122, atk: 22, def: 11, spd: 11 }),
   futebol('bruxo', t('Bruxo Dentuço'), t('Cabelão, faixa na testa e um sorriso que dribla qualquer um.'), { ...BRASIL, neck: '#6b4226' }, { hp: 114, atk: 19, def: 15, spd: 18 }),
@@ -157,7 +157,7 @@ BREEDS.push(
   futebol('curva', t('Galã do Chute Curvo'), t('Topete loiro e uma bola que faz curva no ar.'), INGLATERRA, { hp: 118, atk: 19, def: 15, spd: 14 }),
   futebol('pulga', t('Pulga Albiceleste'), t('Barbinha, camisa 10 e a bola grudada no pé.'), ARGENTINA, { hp: 110, atk: 21, def: 17, spd: 18 }),
   futebol('mao', t('Mão Divina'), t('Cabelo cacheado e um gol de mão que ninguém esquece.'), ARGENTINA, { hp: 116, atk: 22, def: 14, spd: 14 }),
-  futebol('rei', t('Rei do Gramado'), t('Mais de mil gols e coroa na cabeça.'), { ...BRASIL, neck: '#5a3820' }, { hp: 116, atk: 21, def: 15, spd: 14 }),
+  futebol('rei', t('Rei do Gramado'), t('O Rei: mais de mil gols, três Copas e coroa na cabeça.'), { ...BRASIL, neck: '#5a3820' }, { hp: 126, atk: 24, def: 16, spd: 18 }, 199),
 )
 
 // Galo Livre: grátis no cadastro, fraco e com potencial baixo (1 estrela).
@@ -183,10 +183,10 @@ export const SPECIAL_ROOSTERS = [{ breedId: 'trump', name: t('Topete Laranja'), 
 
 /** Edição Futebol (mesmo preço para todos). */
 export const FOOTBALL_ROOSTERS = [
+  { breedId: 'rei', name: t('Rei do Gramado'), emoji: '👑' },
   { breedId: 'fenomeno', name: t('Careca Fenomenal'), emoji: '🇧🇷' },
   { breedId: 'bruxo', name: t('Bruxo Dentuço'), emoji: '🇧🇷' },
   { breedId: 'baixinho', name: t('Baixinho Matador'), emoji: '🇧🇷' },
-  { breedId: 'rei', name: t('Rei do Gramado'), emoji: '🇧🇷' },
   { breedId: 'curva', name: t('Galã do Chute Curvo'), emoji: '🇬🇧' },
   { breedId: 'pulga', name: t('Pulga Albiceleste'), emoji: '🇦🇷' },
   { breedId: 'mao', name: t('Mão Divina'), emoji: '🇦🇷' },

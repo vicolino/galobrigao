@@ -40,12 +40,13 @@ type Look = {
   num?: string
   numColor?: string
   stripes?: string
+  aura?: boolean
 }
 const LOOKS: Record<string, Look> = {
   fenomeno: { hair: 'careca', chubby: true, num: '9', numColor: '#1f9d4a' },
   bruxo: { hair: 'longo', hairColor: '#1b1410', band: '#ffffff', teeth: true, num: '10', numColor: '#1f9d4a' },
   baixinho: { hair: 'raspado', hairColor: '#1b1410', num: '11', numColor: '#1f9d4a' },
-  rei: { hair: 'raspado', hairColor: '#1b1410', crown: true, num: '10', numColor: '#1f9d4a' },
+  rei: { hair: 'raspado', hairColor: '#1b1410', crown: true, num: '10', numColor: '#1f9d4a', aura: true },
   curva: { hair: 'moicano', hairColor: '#f2cf5b', num: '7', numColor: '#c8102e' },
   pulga: { hair: 'curto', hairColor: '#5a3a1e', beard: '#5a3a1e', num: '10', numColor: '#1a1a1a', stripes: '#75aadb' },
   mao: { hair: 'cachos', hairColor: '#1b1410', num: '10', numColor: '#1a1a1a', stripes: '#75aadb' },
@@ -111,6 +112,17 @@ export function RoosterSvg({ breedId, skin, equipped = {}, flip, anim = 'idle', 
       <g className={`r-anim r-${anim}`}>
         {fx === 'sombra' || fx === 'fogo' || fx === 'lava' ? <ellipse cx="104" cy="120" rx="80" ry="70" fill={fx === 'sombra' ? '#5b1030' : '#ff6a1f'} opacity="0.18" className="fx-aura" /> : null}
 
+        {look?.aura && (
+          <g>
+            <ellipse cx="104" cy="118" rx="84" ry="74" fill="#ffd23f" opacity="0.2" className="fx-aura" />
+            <g className="fx-sparkle" fill="#ffe680">
+              <text x="30" y="96" fontSize="13">✦</text>
+              <text x="182" y="118" fontSize="11">✦</text>
+              <text x="100" y="40" fontSize="10">✦</text>
+              <text x="186" y="40" fontSize="9">✦</text>
+            </g>
+          </g>
+        )}
         {e.corpo === 'capa' && (
           <path d="M128,96 C96,90 50,112 26,172 C52,162 70,178 94,168 C100,140 114,118 136,106 Z" fill="#c92a35" stroke="#5e1018" strokeWidth="3.5" strokeLinejoin="round" />
         )}
@@ -336,8 +348,12 @@ function FootballHead({ look, outline, hat }: { look: Look; outline: string; hat
       {!hat && look.band && <path d="M122,62 C134,52 154,48 170,54" stroke={look.band} strokeWidth="7" fill="none" strokeLinecap="round" />}
       {!hat && look.crown && (
         <g {...st}>
-          <path d="M128,46 L130,26 L140,36 L148,20 L156,36 L166,26 L166,48 C154,44 140,44 128,46 Z" fill="#f5c542" />
-          <circle cx="148" cy="38" r="3.5" fill="#d42a2a" strokeWidth={1.5} />
+          <path d="M126,48 L126,22 L138,34 L148,14 L158,34 L170,22 L168,50 C154,45 140,45 126,48 Z" fill="#f5c542" />
+          <path d="M128,44 C142,40 156,40 168,45" stroke="#b07d0a" strokeWidth="2" fill="none" />
+          <circle cx="148" cy="34" r="3.8" fill="#1f9d4a" strokeWidth={1.5} />
+          <circle cx="135" cy="39" r="2.6" fill="#1e4fa8" strokeWidth={1.2} />
+          <circle cx="161" cy="39" r="2.6" fill="#1e4fa8" strokeWidth={1.2} />
+          <circle cx="148" cy="13" r="2.4" fill="#fff6c8" strokeWidth={1.2} />
         </g>
       )}
     </g>

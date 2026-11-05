@@ -128,19 +128,21 @@ function Galos() {
       <div className="card football">
         <div className="election-head">
           <span className="sale-tag">{t('⚽ EDIÇÃO FUTEBOL')}</span>
-          <span className="tiny muted">{t('Lendas da bola com a camisa da seleção. Cada um custa 🥚 {n}.', { n: 99 })}</span>
+          <span className="tiny muted">{t('Lendas da bola com a camisa da seleção. A partir de 🥚 {n}.', { n: 99 })}</span>
         </div>
         <div className="football-grid">
           {FOOTBALL_ROOSTERS.map((e) => {
             const b = BREED_BY_ID[e.breedId]
             const owned = s.roosters.some((r) => r.breedId === e.breedId)
             return (
-              <div key={e.breedId} className="football-item">
-                <RoosterSvg breedId={e.breedId} size={130} anim="idle" />
+              <div key={e.breedId} className={`football-item ${e.breedId === 'rei' ? 'king' : ''}`}>
+                {e.breedId === 'rei' && <span className="king-tag">{t('👑 O REI DO FUTEBOL')}</span>}
+                <RoosterSvg breedId={e.breedId} size={e.breedId === 'rei' ? 230 : 130} anim="idle" />
                 <b>
                   {e.emoji} {e.name}
                 </b>
                 <p className="tiny muted italic">"{b.desc}"</p>
+                {e.breedId === 'rei' && <p className="king-titles">{t('🏆🏆🏆 3 Copas do Mundo · ⚽ 1.000+ gols')}</p>}
                 <p className="tiny">
                   ❤️ {b.base.hp} · 🗡️ {b.base.atk} · 🛡️ {b.base.def} · 💨 {b.base.spd}
                 </p>

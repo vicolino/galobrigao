@@ -567,6 +567,12 @@ g.fx-lava { animation: lavaPulse 1.4s ease-in-out infinite alternate; }
 .football-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; margin-top: 8px; }
 .football-item { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; background: rgba(0, 0, 0, 0.18); border: 1px solid var(--line); border-radius: 12px; padding: 10px; }
 .football-item .tiny.italic { flex: 1; }
+.football-item.king { grid-column: span 2; grid-row: span 2; justify-content: center; position: relative; border: 2px solid #f5c542; background: radial-gradient(circle at 50% 35%, rgba(245, 197, 66, 0.28), rgba(0, 0, 0, 0.18) 70%); box-shadow: 0 0 24px rgba(245, 197, 66, 0.25); }
+.football-item.king b { font-size: 20px; color: #f5c542; }
+.football-item.king .tiny.italic { flex: 0; }
+.king-titles { font-weight: 900; font-size: 14px; color: #ffe680; }
+.king-tag { background: linear-gradient(90deg, #f5c542, #ffe680); color: #2a1606; font-weight: 900; font-size: 12px; padding: 2px 10px; border-radius: 8px; }
+@media (max-width: 520px) { .football-item.king { grid-column: span 1; grid-row: auto; } }
 /* ---------- Edição Eleições ---------- */
 .election { margin-bottom: 16px; background: linear-gradient(90deg, rgba(212, 42, 42, 0.22), #14281e 45%, #14281e 55%, rgba(31, 157, 74, 0.22)); }
 .election-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
