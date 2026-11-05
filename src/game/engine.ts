@@ -160,61 +160,48 @@ export type Difficulty = 0 | 1 | 2 | 3
 /** Chance de vitória que cada dificuldade tenta oferecer (Fácil, Médio, Difícil, Chefão). */
 export const ARENA_TARGETS = [0.72, 0.5, 0.3, 0.13]
 
+/** Faixa de nível do adversário em relação ao seu galo (Fácil, Médio, Difícil, Chefão): sempre em ordem. */
+export const ARENA_LEVEL_BAND: [number, number][] = [
+  [-4, -2],
+  [-1, 1],
+  [2, 3],
+  [4, 6],
+]
+
 /**
- * Adversário calibrado pela força do SEU galo: simula lutas e ajusta o nível
- * até a chance de vitória ficar perto do alvo da dificuldade. Galo muito forte
- * recebe adversários de nível bem mais alto (até 50).
+ * Adversário calibrado pela força do SEU galo. O nível fica numa faixa perto do seu
+ * (Fácil abaixo, Chefão acima, sempre em ordem) e a força fina é ajustada nos atributos,
+ * simulando lutas até a chance de vitória chegar perto do alvo da dificuldade.
  */
 export function makeOpponent(mine: Rooster, difficulty: Difficulty): Rooster {
   const target = ARENA_TARGETS[difficulty]
   const chance = (o: Rooster) => estimate(mine, o, 120).pA
-  const build = (strong: boolean): Rooster => {
-    const o = makeRooster({
-      level: 1,
-      stars: strong ? 5 : Math.min(5, [1 + Math.floor(Math.random() * 2), 2 + Math.floor(Math.random() * 2), 3 + Math.floor(Math.random() * 3), 4 + Math.floor(Math.random() * 2)][difficulty]),
-      rarityMax: difficulty >= 2 || strong ? 'lendario' : undefined,
-    })
-    if (difficulty > 0 || strong) o.equipped = randomGear()
-    if (Math.random() < 0.12 + difficulty * 0.1) o.skin = pick(SKINS).id
-    return o
-  }
-  // Busca binária no nível: mesmo galo, só muda o nível, até a chance chegar perto do alvo
-  const search = (base: Rooster, maxLevel = 50) => {
-    let lo = 1
-    let hi = maxLevel
-    let best = { o: { ...base, level: Math.max(1, mine.level) }, err: Infinity, p: 0.5 }
-    while (lo <= hi) {
-      const mid = Math.floor((lo + hi) / 2)
-      const o = { ...base, level: mid }
-      const p = chance(o)
-      const err = Math.abs(p - target)
-      // Empate: fica com o nível mais recente (a busca anda na direção certa)
-      if (err <= best.err) best = { o, err, p }
-      if (err < 0.04) break
-      if (p > target) lo = mid + 1 // fácil demais: sobe o nível
-      else hi = mid - 1
-    }
-    return best
-  }
-  let best = search(build(false))
-  // Seu galo é forte demais até para um nível 50 comum? Vem um adversário de elite.
-  for (let i = 0; i < 3 && best.p > target + 0.08; i++) {
-    const elite = search(build(true), 70) // elite pode passar do nível 50
-    if (elite.err < best.err) best = elite
-  }
-  // Seu galo é fraco demais até para um nível 1? Vem um frangote: raça comum, 1 estrela, sem acessórios e mais fraco.
-  if (best.p < target - 0.12) {
-    const base = makeRooster({ level: 1, stars: 1, rarityMax: 'comum' })
-    let lo = 0.3
-    let hi = 1
-    for (let i = 0; i < 7; i++) {
+  const [a, b] = ARENA_LEVEL_BAND[difficulty]
+  const level = Math.max(1, Math.min(70, mine.level + a + Math.floor(Math.random() * (b - a + 1))))
+  const o0 = makeRooster({
+    level,
+    stars: Math.min(5, [1 + Math.floor(Math.random() * 2), 2 + Math.floor(Math.random() * 2), 3 + Math.floor(Math.random() * 3), 4 + Math.floor(Math.random() * 2)][difficulty]),
+    rarityMax: difficulty >= 2 ? 'lendario' : undefined,
+  })
+  if (difficulty > 0) o0.equipped = randomGear()
+  if (Math.random() < 0.12 + difficulty * 0.1) o0.skin = pick(SKINS).id
+  const scaled = (k: number): Rooster => ({
+    ...o0,
+    base: { hp: Math.round(o0.base.hp * k), atk: Math.max(1, Math.round(o0.base.atk * k)), def: Math.max(1, Math.round(o0.base.def * k)), spd: Math.max(1, Math.round(o0.base.spd * k)) },
+  })
+  // Busca binária no multiplicador dos atributos (mais fraco ↔ mais forte) até acertar a chance
+  let lo = 0.25
+  let hi = 3
+  let best = { o: o0, err: Math.abs(chance(o0) - target) }
+  if (best.err >= 0.04) {
+    for (let i = 0; i < 9; i++) {
       const k = (lo + hi) / 2
-      const o: Rooster = { ...base, base: { hp: Math.round(base.base.hp * k), atk: Math.round(base.base.atk * k), def: Math.round(base.base.def * k), spd: Math.round(base.base.spd * k) } }
+      const o = scaled(k)
       const p = chance(o)
       const err = Math.abs(p - target)
-      if (err <= best.err) best = { o, err, p }
+      if (err <= best.err) best = { o, err }
       if (err < 0.04) break
-      if (p > target) lo = k // fácil demais: menos enfraquecido
+      if (p > target) lo = k // fácil demais: fortalece
       else hi = k
     }
   }
