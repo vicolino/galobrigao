@@ -12,6 +12,13 @@ const BASE_MS = 1150
 /** Duração da entrada dos lutadores (acompanha a vinheta de 6 tempos a 128 BPM). */
 const INTRO_MS = 2900
 
+/** Quanto cada evento fica na tela (em múltiplos do tempo base). A charanga da Banda dura ~3 s. */
+function holdFor(ev?: BattleEvent) {
+  if (ev?.t !== 'tool') return 1
+  if (ev.emoji === '🥁') return ev.text.includes('toca mais alto') ? 1.6 : 2.8
+  return 1.5
+}
+
 /** Texto curto do efeito da ferramenta quando ela age. */
 function procLabel(t: Tool) {
   const pct = Math.round(t.value * 100)
@@ -66,7 +73,7 @@ export function Luta() {
   // Avança a narração
   useEffect(() => {
     if (!result || done || intro) return
-    const t = setTimeout(() => setIdx((i) => i + 1), idx === 0 ? 300 : (events[idx - 1]?.t === 'tool' ? BASE_MS * 1.5 : BASE_MS) / speed)
+    const t = setTimeout(() => setIdx((i) => i + 1), idx === 0 ? 300 : (BASE_MS * holdFor(events[idx - 1])) / speed)
     return () => clearTimeout(t)
   }, [idx, speed, result, done, intro])
 
@@ -112,8 +119,8 @@ export function Luta() {
       const id = Object.values(TOOL_BY_ID).find((t) => t.emoji === ev.emoji)?.id ?? ''
       setToolCard({ key: idx, side: ev.side, id, text: ev.text })
       setProcs({ key: idx, list: id ? [{ side: ev.side, tool: id }] : [] })
-      setTimeout(() => setToolCard((c) => (c?.key === idx ? null : c)), (BASE_MS * 1.4) / speed)
-      if (ev.emoji === '🥁') sfx.drums()
+      setTimeout(() => setToolCard((c) => (c?.key === idx ? null : c)), (BASE_MS * (holdFor(ev) - 0.1)) / speed)
+      if (ev.emoji === '🥁') sfx.charanga(ev.text.includes('toca mais alto'))
       else sfx.powerup()
       reset()
     } else if (ev.t === 'defend') {
