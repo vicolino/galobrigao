@@ -7,7 +7,7 @@ import { effectiveCatalog, effectiveSku, live, publicConfig } from '../src/game/
 import { AdminError, handleAdmin, isAdmin } from './admin'
 import { loadConfig } from './config'
 import { newGame } from '../src/game/engine'
-import { premiumViolation, runShop, ShopError, softViolation, type ShopOp } from '../src/game/premium'
+import { addMintable, premiumViolation, runShop, ShopError, softViolation, type ShopOp } from '../src/game/premium'
 import { makeRooster, today } from '../src/game/rooster'
 import type { GameState } from '../src/game/types'
 import { checkPassword, clearCookie, createSession, destroySession, dummyPasswordCheck, hashPassword, sessionCookie, userFromRequest } from './auth'
@@ -16,11 +16,13 @@ import { getDb, type OrderRow, type UserRow } from './db'
 import { sendMail } from './mail'
 import { loadSave, writeSave } from './saves'
 import { handlePvp, PvpError } from './pvp'
-import { BetError, creditSave, handleBets, migrateOldBets, takeCredits, tickBets } from './bets'
+import { BetError, creditSave, handleBets, migrateOldBets, plausibleChips, takeCredits, tickBets } from './bets'
 import { applyBetCredit } from '../src/game/bets'
 import { fetchRemoteStatus, parseMpWebhook, providerName, startPayment } from './payments'
 import { t, tx, withLang, type Lang } from '../src/i18n'
 import { appName } from '../src/brand'
+import { SKIN_BY_ID } from '../src/game/data'
+import { handleWeb3, Web3Error } from './web3'
 
 try {
   process.loadEnvFile?.('.env')
@@ -190,7 +192,8 @@ function grant(state: GameState | null, sku: Sku, user: UserRow): GameState {
       s = { ...s, roosters: [...s.roosters, ro] }
     }
     if (sku.skin) {
-      if (!s.skins.includes(sku.skin)) s = { ...s, skins: [...s.skins, sku.skin] }
+      // Skin lendária paga com dinheiro pode virar NFT
+      if (!s.skins.includes(sku.skin)) s = SKIN_BY_ID[sku.skin]?.rarity === 'lendario' ? addMintable({ ...s, skins: [...s.skins, sku.skin] }, `skin:${sku.skin}`) : { ...s, skins: [...s.skins, sku.skin] }
       const idx = s.roosters.length - 1
       s = { ...s, roosters: s.roosters.map((r, i) => (i === idx ? { ...r, skin: sku.skin } : r)) }
     }
@@ -402,6 +405,8 @@ export async function handle(req: Req, res: Res) {
       db.prepare('DELETE FROM house_bets WHERE user_id = ?').run(u.id)
       db.prepare('DELETE FROM password_resets WHERE user_id = ?').run(u.id)
       // Pedidos pagos são mantidos anonimizados por obrigação fiscal; os dados pessoais saem.
+      // Web3: carteira, NFTs e web3_tx ficam (ativos na chain + auditoria; só têm o id, sem dados pessoais).
+      // Anúncios do jogador somem do mercado porque a listagem exige a conta existir.
       db.prepare("UPDATE orders SET user_id = 'excluido', pix_code = NULL, pix_qr = NULL WHERE user_id = ?").run(u.id)
       db.prepare('DELETE FROM users WHERE id = ?').run(u.id)
       db.exec('COMMIT')
@@ -449,6 +454,10 @@ export async function handle(req: Req, res: Res) {
       // Apostas são do servidor: o navegador não mexe nelas
       incoming.bets = cur.state.bets
       incoming.card = cur.state.card
+      // Créditos de NFT são do servidor
+      incoming.mintable = cur.state.mintable
+      // 🎟️ Fichas: só sobem o que dá para ganhar jogando (bônus diário e vitórias na Arena)
+      incoming.fichas = plausibleChips(u.id, cur.state, incoming)
       // Prêmios de apostas resolvidas entram aqui; o navegador aplica o mesmo crédito no estado dele
       const credit = takeCredits(u.id)
       writeSave(u.id, credit ? applyBetCredit(incoming, credit) : incoming, cur.rev + 1)
@@ -478,6 +487,19 @@ export async function handle(req: Req, res: Res) {
       }
       const body = method === 'POST' ? await readBody(req) : {}
       const out = handleBets(path, method, body, u.id)
+      if (out) return json(res, out.status ?? 200, out.body)
+    }
+
+    // ----- Carteira cripto, NFTs e mercado (server/web3.ts) -----
+    if (path.startsWith('/api/web3') || path.startsWith('/api/market') || path.startsWith('/api/nft/')) {
+      const u = path.startsWith('/api/nft/') ? null : needUser(req)
+      if (u && method === 'POST') blockIfMaintenance(u)
+      const body = method === 'POST' ? await readBody(req) : {}
+      const out = await handleWeb3(path, method, body, u)
+      if (out && 'svg' in out) {
+        res.writeHead(200, { 'Content-Type': 'image/svg+xml; charset=utf-8', 'Cache-Control': 'public, max-age=3600', 'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'", ...baseHeaders() })
+        return res.end(out.svg)
+      }
       if (out) return json(res, out.status ?? 200, out.body)
     }
 
@@ -639,6 +661,7 @@ export async function handle(req: Req, res: Res) {
     if (e instanceof PvpError) return json(res, 400, { error: e.message })
     if (e instanceof BetError) return json(res, 400, { error: e.message })
     if (e instanceof AdminError) return json(res, e.status, { error: e.message })
+    if (e instanceof Web3Error) return json(res, e.status, { error: e.message, ...e.extra })
     console.error('[api]', e)
     return json(res, 500, { error: t('Erro interno. Tente de novo.') })
   }

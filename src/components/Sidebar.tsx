@@ -19,12 +19,14 @@ const NAV = [
   { path: '/loja/skins', label: t('Skins'), emoji: '🎨' },
   { path: '/loja/ferramentas', label: t('Ferramentas'), emoji: '🧰' },
   { path: '/loja', label: t('Loja'), emoji: '🛒' },
+  { path: '/carteira', label: t('Carteira'), emoji: '👛' },
+  { path: '/mercado', label: t('Mercado'), emoji: '🏪' },
   { path: '/perfil', label: t('Perfil'), emoji: '👤' },
 ]
 
 export function Sidebar({ route, open, onClose }: { route: string; open: boolean; onClose: () => void }) {
   const { state, actions, toast, isVip, wallet, pvp, user, pubConfig, betsInfo } = useGame()
-  const [daily, setDaily] = useState<{ milho: number; ovo: number; streak: number } | null>(null)
+  const [daily, setDaily] = useState<{ milho: number; ovo: number; fichas: number; streak: number } | null>(null)
   if (!state) return null
   const s = state
   const dailyReady = s.daily.last !== today()
@@ -84,6 +86,10 @@ export function Sidebar({ route, open, onClose }: { route: string; open: boolean
               <span>🥚 {t('Ovo de ouro')}</span>
               <b>{fmt(wallet!.ovos)}</b>
             </div>
+            <div className="wallet-row" onClick={() => go('/apostas')} title={t('Fichas são só para apostar: você ganha jogando, não dá para comprar nem trocar.')}>
+              <span>🎟️ {t('Fichas')}</span>
+              <b>{fmt(wallet!.fichas)}</b>
+            </div>
             {pubConfig?.mvp.on && (
               <div className="wallet-row credit-row" onClick={() => go('/loja/ovos')} title={t('Crédito de teste do Modo MVP (sem valor real)')}>
                 <span>🎁 {t('Crédito MVP')}</span>
@@ -142,6 +148,7 @@ export function Sidebar({ route, open, onClose }: { route: string; open: boolean
             </div>
             <p className="reward-big">
               +🌽 {fmt(daily.milho)} &nbsp; +🥚 {daily.ovo}
+              {daily.fichas > 0 && <> &nbsp; +🎟️ {fmt(daily.fichas)}</>}
             </p>
             <p className="muted">{t('Volte amanhã para manter a sequência! O 7º dia dá um prêmio especial.')}</p>
             <button className="btn btn-primary" onClick={() => setDaily(null)}>

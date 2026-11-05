@@ -47,6 +47,9 @@ function settle(b: BetView, f: ScheduledFight): BetView {
   return { ...b, status: hit ? 'ganhou' : 'perdeu', payout: hit ? Math.floor(b.amount * b.odds) : 0 }
 }
 
+/** Moeda da aposta: as antigas foram em milho; as novas, em 🎟️ fichas. */
+const cur = (b: BetView) => (b.currency === 'milho' ? '🌽' : '🎟️')
+
 export function Apostas() {
   const { state, actions, toast } = useGame()
   const s = state!
@@ -127,11 +130,14 @@ export function Apostas() {
   }, [fights, Math.floor(now / 5000)])
 
   const settled = history.filter((b) => b.status !== 'pendente')
-  const staked = settled.reduce((a, b) => a + b.amount, 0)
-  const returned = settled.reduce((a, b) => a + b.payout, 0)
+  // Lucro conta só as apostas em fichas (as antigas, em milho, ficam fora da conta)
+  const settledChips = settled.filter((b) => b.currency !== 'milho')
+  const staked = settledChips.reduce((a, b) => a + b.amount, 0)
+  const returned = settledChips.reduce((a, b) => a + b.payout, 0)
+  const chips = s.fichas ?? 0
 
   const odds = slip ? (slip.pick === 'a' ? slip.fight.oddsA : slip.pick === 'b' ? slip.fight.oddsB : slip.fight.oddsKo) : 0
-  const maxBet = Math.min(live.bets.maxBet, Math.floor(s.milho))
+  const maxBet = Math.min(live.bets.maxBet, Math.floor(chips))
 
   const place = async () => {
     if (!slip) return
@@ -139,7 +145,7 @@ export function Apostas() {
     const r = await actions.placeBet(slip.fight.id, slip.pick, amount)
     setBusy(false)
     if (r.ok) {
-      toast(t('Aposta feita! Luta às {hora}. Retorno possível: 🌽 {n}', { hora: hhmm(slip.fight.startsAt), n: fmt(amount * odds) }), 'ok')
+      toast(t('Aposta feita! Luta às {hora}. Retorno possível: 🎟️ {n}', { hora: hhmm(slip.fight.startsAt), n: fmt(amount * odds) }), 'ok')
       setSlip(null)
       void load()
       void loadHistory()
@@ -163,7 +169,7 @@ export function Apostas() {
     <>
       <PageHead
         title={t('🎲 Apostas')}
-        subtitle={t('Lutas da casa o dia todo, uma a cada {n} minutos. Aposte e pode sair: o prêmio cai sozinho no seu milho.', { n: live.bets.intervalMin })}
+        subtitle={t('Lutas da casa o dia todo, uma a cada {n} minutos. Aposte fichas e pode sair: o prêmio cai sozinho nas suas fichas.', { n: live.bets.intervalMin })}
         right={
           <button className="btn btn-sm btn-ghost" onClick={() => setInfo(true)}>
             {t('ℹ️ Como funciona')}
@@ -180,7 +186,7 @@ export function Apostas() {
             </b>
             <div className="tiny muted">
               {evName(myLive.startsAt)} · {t('Luta {n}', { n: myLive.num })}
-              {betsOn(myLive.id).length > 0 && ` · ${t('você apostou 🌽 {n}', { n: fmt(betsOn(myLive.id).reduce((a, b) => a + b.amount, 0)) })}`}
+              {betsOn(myLive.id).length > 0 && ` · ${t('você apostou 🎟️ {n}', { n: fmt(betsOn(myLive.id).reduce((a, b) => a + b.amount, 0)) })}`}
             </div>
           </div>
           <button className="btn btn-primary" onClick={() => watch(myLive)}>
@@ -224,17 +230,20 @@ export function Apostas() {
           <b>{settled.length ? Math.round((settled.filter((b) => b.status === 'ganhou').length / settled.length) * 100) : 0}%</b>
         </div>
         <div className="kpi">
-          <span title={t('Quanto você ganhou em prêmios menos quanto apostou. Não é o seu milho.')}>{t('Lucro nas apostas')}</span>
+          <span title={t('Fichas ganhas em prêmios menos fichas apostadas. Não é o seu saldo.')}>{t('Lucro nas apostas')}</span>
           <b className={returned - staked >= 0 ? 'pos' : 'neg'}>
-            {returned - staked >= 0 ? '+' : '−'}🌽 {fmt(Math.abs(returned - staked))}
+            {returned - staked >= 0 ? '+' : '−'}🎟️ {fmt(Math.abs(returned - staked))}
           </b>
-          <small className="tiny muted">{t('prêmios − apostado · seu milho: 🌽 {n}', { n: fmt(s.milho) })}</small>
+          <small className="tiny muted">{t('prêmios − apostado · suas fichas: 🎟️ {n}', { n: fmt(chips) })}</small>
         </div>
         <div className="kpi">
           <span>{t('Maior prêmio')}</span>
-          <b>🌽 {fmt(s.stats.biggestWin)}</b>
+          <b>🎟️ {fmt(s.stats.biggestWin)}</b>
         </div>
       </div>
+      <p className="tiny muted">
+        🎟️ <b>{t('Suas fichas: {n}', { n: fmt(chips) })}</b> · {t('Fichas são só para apostar: você ganha jogando, não dá para comprar nem trocar.')}
+      </p>
 
       <Tabs
         value={tab}
@@ -307,8 +316,10 @@ export function Apostas() {
                       <div className="tiny muted">{b.fight}</div>
                     </td>
                     <td className="hide-m">{b.odds.toFixed(2)}</td>
-                    <td>🌽 {fmt(b.amount)}</td>
-                    <td>{b.status === 'pendente' ? `🌽 ${fmt(b.amount * b.odds)}` : b.payout ? `🌽 ${fmt(b.payout)}` : '—'}</td>
+                    <td>
+                      {cur(b)} {fmt(b.amount)}
+                    </td>
+                    <td>{b.status === 'pendente' ? `${cur(b)} ${fmt(b.amount * b.odds)}` : b.payout ? `${cur(b)} ${fmt(b.payout)}` : '—'}</td>
                     <td>
                       <span className={`status status-${b.status}`}>{b.status === 'pendente' ? t('⏳ Aguardando') : b.status === 'ganhou' ? t('✅ Ganhou') : t('❌ Perdeu')}</span>
                     </td>
@@ -335,7 +346,7 @@ export function Apostas() {
               <span className="odd-big">{odds.toFixed(2)}</span>
             </div>
             <label className="field">
-              <span>{t('Valor (🌽 milho)')}</span>
+              <span>{t('Valor (🎟️ fichas)')}</span>
               <input type="number" min={live.bets.minBet} max={maxBet} value={amount} onChange={(e) => setAmount(Number(e.target.value))} />
             </label>
             <div className="chips">
@@ -349,15 +360,17 @@ export function Apostas() {
               </button>
             </div>
             <div className="slip-return">
-              {tn('Retorno possível: {n}', { n: <b>🌽 {fmt(amount * odds)}</b> })}
+              {tn('Retorno possível: {n}', { n: <b>🎟️ {fmt(amount * odds)}</b> })}
             </div>
             <p className="tiny muted center">
               {t('Apostas fecham em {t}. O resultado sai às {hora} e o prêmio entra sozinho.', { t: countdown(slip.fight.startsAt - live.bets.closeSec * 1000 - now), hora: hhmm(slip.fight.startsAt) })}
             </p>
-            <button className="btn btn-primary full btn-lg" onClick={place} disabled={busy || amount < live.bets.minBet || amount > s.milho || phase(slip.fight) !== 'aberta'}>
+            <button className="btn btn-primary full btn-lg" onClick={place} disabled={busy || amount < live.bets.minBet || amount > chips || phase(slip.fight) !== 'aberta'}>
               {busy ? <span className="spinner" /> : t('🎲 Confirmar aposta')}
             </button>
-            <p className="tiny muted center">{t('Moeda virtual do jogo. Não há dinheiro real envolvido.')}</p>
+            <p className="tiny muted center">
+              {t('Suas fichas: {n}', { n: fmt(chips) })} · {t('Fichas são só para apostar: você ganha jogando, não dá para comprar nem trocar.')}
+            </p>
           </div>
         )}
       </Modal>
@@ -372,15 +385,24 @@ export function Apostas() {
             })}
           </li>
           <li>{t('As apostas fecham {n} segundos antes de cada luta. Na hora marcada a luta acontece sozinha, mesmo que você esteja fora do jogo.', { n: live.bets.closeSec })}</li>
-          <li>{tn('Durante a luta ela fica {aovivo} e você pode assistir. Depois o prêmio entra automaticamente no seu milho.', { aovivo: <b>{t('AO VIVO')}</b> })}</li>
+          <li>{tn('Durante a luta ela fica {aovivo} e você pode assistir. Depois o prêmio entra automaticamente nas suas fichas.', { aovivo: <b>{t('AO VIVO')}</b> })}</li>
           <li>{t('Cada luta é simulada centenas de vezes para calcular a chance de cada galo. As odds incluem uma margem da casa de {n}%.', { n: Math.round(HOUSE_EDGE * 100) })}</li>
           <li>
             <b>💥 K.O.</b> {t('paga se a luta terminar em nocaute, não importa quem vença.')}
           </li>
           <li>
-            {t('Aposta mínima 🌽 {min}, máxima 🌽 {max}.', { min: fmt(live.bets.minBet), max: fmt(live.bets.maxBet) })}
+            {t('Aposta mínima 🎟️ {min}, máxima 🎟️ {max}.', { min: fmt(live.bets.minBet), max: fmt(live.bets.maxBet) })}
           </li>
-          <li>{t('Tudo usa moeda virtual. Milho e ovos não podem ser trocados por dinheiro.')}</li>
+          <li>
+            {tn('Apostas usam {fichas}, nunca milho nem ovos. Fichas são só para apostar: você ganha jogando, não dá para comprar nem trocar.', { fichas: <b>{t('🎟️ fichas')}</b> })}
+          </li>
+          <li>
+            {t('Você ganha 🎟️ {d} fichas no bônus diário (ele sempre completa até 🎟️ {piso}) e 🎟️ {v} a cada vitória na Arena.', {
+              d: fmt(live.bets.chipsDaily),
+              piso: fmt(live.bets.chipsFloor),
+              v: fmt(live.bets.chipsArenaWin),
+            })}
+          </li>
         </ul>
       </Modal>
     </>
@@ -432,9 +454,9 @@ function FightCard({
       <div className="fr-foot">
         <span className="tiny muted">
           {myBets.length
-            ? t('Suas apostas: {lista}', { lista: myBets.map((b) => `${tx(b.label)} (🌽${fmt(b.amount)}${b.status === 'ganhou' ? ` → ✅ +${fmt(b.payout)}` : b.status === 'perdeu' ? ' → ❌' : ''})`).join(', ') })
+            ? t('Suas apostas: {lista}', { lista: myBets.map((b) => `${tx(b.label)} (${cur(b)}${fmt(b.amount)}${b.status === 'ganhou' ? ` → ✅ +${fmt(b.payout)}` : b.status === 'perdeu' ? ' → ❌' : ''})`).join(', ') })
             : f.pool.bets
-              ? tp('👥 {n} aposta · 🌽 {total} em jogo', '👥 {n} apostas · 🌽 {total} em jogo', f.pool.bets, { total: fmt(f.pool.a + f.pool.b + f.pool.ko) })
+              ? tp('👥 {n} aposta · 🎟️ {total} em jogo', '👥 {n} apostas · 🎟️ {total} em jogo', f.pool.bets, { total: fmt(f.pool.a + f.pool.b + f.pool.ko) })
               : t('Ninguém apostou ainda')}
         </span>
         {onWatch && (phase === 'aovivo' || closed) && (

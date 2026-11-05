@@ -9,18 +9,24 @@
     "build:server": "esbuild server/main.ts server/cli.ts --bundle --platform=node --format=esm --target=node22 --outdir=dist-server --out-extension:.js=.mjs --external:node:sqlite",
     "start": "node dist-server/main.mjs",
     "preview": "vite preview",
-    "admin": "node dist-server/cli.mjs admin"
+    "admin": "node dist-server/cli.mjs admin",
+    "contracts:compile": "node scripts/compile-contracts.mjs",
+    "contracts:deploy": "node scripts/deploy-contracts.mjs",
+    "contracts:test": "node scripts/test-contracts.mjs"
   },
   "dependencies": {
     "react": "18.3.1",
-    "react-dom": "18.3.1"
+    "react-dom": "18.3.1",
+    "viem": "2.21.54"
   },
   "devDependencies": {
+    "@openzeppelin/contracts": "5.1.0",
     "@types/node": "22.10.2",
     "@types/react": "18.3.12",
     "@types/react-dom": "18.3.1",
     "@vitejs/plugin-react": "4.3.4",
     "esbuild": "0.21.5",
+    "solc": "0.8.28",
     "typescript": "5.6.3",
     "vite": "5.4.21"
   }

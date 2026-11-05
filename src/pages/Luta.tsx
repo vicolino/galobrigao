@@ -203,6 +203,8 @@ export function Luta() {
   const bets = match.myBets ?? []
   const betTotal = bets.reduce((a, b) => a + b.payout, 0)
   const betStake = bets.reduce((a, b) => a + b.amount, 0)
+  // Apostas novas são em 🎟️ fichas; as antigas (antes das fichas) foram em milho
+  const betCur = (b: (typeof bets)[number]) => (b.currency === 'milho' ? '🌽' : '🎟️')
 
   return (
     <div className="fight-page">
@@ -335,6 +337,7 @@ export function Luta() {
                 <div className="rewards">
                   <span>🌽 +{fmt(match.rewards.milho)}</span>
                   {match.rewards.ovo > 0 && <span>🥚 +{match.rewards.ovo}</span>}
+                  {(match.rewards.fichas ?? 0) > 0 && <span title={t('Fichas são só para apostar: você ganha jogando, não dá para comprar nem trocar.')}>🎟️ +{fmt(match.rewards.fichas!)}</span>}
                   <span>✨ +{match.rewards.xp} XP</span>
                   <span>
                     🏆 {match.rewards.points >= 0 ? '+' : ''}
@@ -372,11 +375,13 @@ export function Luta() {
                       <div className="grow">
                         {tx(b.label)} @ {b.odds.toFixed(2)}
                       </div>
-                      <b>{b.status === 'ganhou' ? `+🌽 ${fmt(b.payout)}` : `-🌽 ${fmt(b.amount)}`}</b>
+                      <b>{b.status === 'ganhou' ? `+${betCur(b)} ${fmt(b.payout)}` : `-${betCur(b)} ${fmt(b.amount)}`}</b>
                     </div>
                   ))}
                   <p className="center">
-                    {tn('Resultado: {valor}', { valor: <b className={betTotal - betStake >= 0 ? 'pos' : 'neg'}>{betTotal - betStake >= 0 ? '+' : ''}🌽 {fmt(betTotal - betStake)}</b> })}
+                    {tn('Resultado: {valor}', { valor: <b className={betTotal - betStake >= 0 ? 'pos' : 'neg'}>{betTotal - betStake >= 0 ? '+' : ''}
+                          {bets.every((b) => b.currency === 'milho') ? '🌽' : '🎟️'} {fmt(betTotal - betStake)}
+                        </b> })}
                   </p>
                 </div>
               )}

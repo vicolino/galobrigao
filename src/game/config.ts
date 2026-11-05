@@ -18,7 +18,20 @@ export interface AppConfig {
   announcement: { text: string; kind: 'info' | 'promo' | 'alerta' }
   maintenance: { on: boolean; message: string }
   mvp: { on: boolean; creditCents: number }
-  bets: { intervalMin: number; closeSec: number; horizonMin: number; liveSec: number; minBet: number; maxBet: number }
+  bets: {
+    intervalMin: number
+    closeSec: number
+    horizonMin: number
+    liveSec: number
+    /** Em 🎟️ fichas. */
+    minBet: number
+    maxBet: number
+    /** Fichas iniciais, bônus diário, por vitória na Arena e piso garantido pelo bônus diário. */
+    chipsStart: number
+    chipsDaily: number
+    chipsArenaWin: number
+    chipsFloor: number
+  }
 }
 
 export const DEFAULT_CONFIG: AppConfig = {
@@ -30,8 +43,9 @@ export const DEFAULT_CONFIG: AppConfig = {
   maintenance: { on: false, message: t('Estamos ajeitando o terreiro. Voltamos já!') },
   // Modo MVP: cada conta ganha crédito de teste (sem valor real) para comprar na loja
   mvp: { on: true, creditCents: 10000 },
-  // Agenda de lutas da casa: uma luta a cada `intervalMin`, apostas fecham `closeSec` antes
-  bets: { intervalMin: 10, closeSec: 30, horizonMin: 120, liveSec: 75, minBet: 10, maxBet: 50000 },
+  // Agenda de lutas da casa: uma luta a cada `intervalMin`, apostas fecham `closeSec` antes.
+  // Apostas usam 🎟️ fichas (nunca milho/ovos): ganha jogando, não compra, não troca.
+  bets: { intervalMin: 10, closeSec: 30, horizonMin: 120, liveSec: 75, minBet: 10, maxBet: 5000, chipsStart: 1000, chipsDaily: 300, chipsArenaWin: 30, chipsFloor: 200 },
 }
 
 /** Junta o que foi salvo com os padrões (campos novos sempre têm valor). */

@@ -36,7 +36,7 @@ function Termos() {
         <li>Milho e ovos de ouro são moedas virtuais usadas só dentro do jogo.</li>
         <li>Moedas e itens virtuais <b>não têm valor em dinheiro, não podem ser sacados, trocados por dinheiro nem transferidos</b> para outras contas.</li>
         <li>Você recebe uma licença de uso dos itens virtuais, não a propriedade deles.</li>
-        <li>As "apostas" do jogo usam apenas milho e nunca pagam prêmios em dinheiro ou bens.</li>
+        <li>As "apostas" do jogo usam apenas fichas (🎟️), que só servem para apostar: são ganhas jogando, não podem ser compradas, transferidas nem trocadas por milho, ovos, itens ou dinheiro. Apostas nunca pagam prêmios em dinheiro, moedas ou bens.</li>
       </ul>
       <h3>4. Compras</h3>
       <ul>
@@ -110,7 +110,7 @@ function TermsEn() {
         <li>Corn and golden eggs are virtual currencies that can only be used inside the game.</li>
         <li>Virtual currencies and items <b>have no monetary value and cannot be withdrawn, exchanged for money or transferred</b> to other accounts.</li>
         <li>You receive a license to use virtual items, not ownership of them.</li>
-        <li>The in-game "bets" use corn only and never pay out prizes in money or goods.</li>
+        <li>The in-game "bets" use chips (🎟️) only. Chips exist only for betting: they are earned by playing and cannot be bought, transferred or exchanged for corn, eggs, items or money. Bets never pay out prizes in money, coins or goods.</li>
       </ul>
       <h3>4. Purchases</h3>
       <ul>

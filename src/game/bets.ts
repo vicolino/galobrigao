@@ -26,7 +26,7 @@ export interface ScheduledFight {
   seed?: number
   winner?: 0 | 1
   method?: 'ko' | 'decisao'
-  /** Quantas apostas e quanto milho os jogadores já colocaram. */
+  /** Quantas apostas e quantas fichas os jogadores já colocaram. */
   pool: { bets: number; a: number; b: number; ko: number }
 }
 
@@ -42,16 +42,23 @@ export interface BetView {
   at: number
   startsAt: number
   fight: string
+  /** Apostas antigas foram feitas em milho; as novas são em 🎟️ fichas. */
+  currency: BetCurrency
 }
+
+export type BetCurrency = 'fichas' | 'milho'
 
 /** O que o servidor creditou no save por apostas resolvidas. */
 export interface BetCredit {
+  /** Só de apostas antigas (feitas em milho antes das fichas). */
   milho: number
   ovos: number
+  /** 🎟️ Fichas ganhas nas apostas novas. */
+  fichas?: number
   won: number
   biggest: number
   zebra: boolean
-  entries: { text: string; milho: number; won: boolean }[]
+  entries: { text: string; milho: number; fichas?: number; won: boolean }[]
 }
 
 export const phaseOf = (startsAt: number, resolved: boolean, now = Date.now()): FightPhase =>
@@ -80,6 +87,7 @@ export function applyBetCredit(s: GameState, c: BetCredit): GameState {
     ...s,
     milho: s.milho + c.milho,
     ovos: s.ovos + c.ovos,
+    fichas: (s.fichas ?? 0) + (c.fichas ?? 0),
     stats: {
       ...s.stats,
       betsWon: s.stats.betsWon + c.won,
@@ -88,7 +96,7 @@ export function applyBetCredit(s: GameState, c: BetCredit): GameState {
     },
     achievements: c.zebra && !s.achievements.includes('zebra') ? [...s.achievements, 'zebra'] : s.achievements,
     history: [
-      ...c.entries.filter((e) => e.won).map((e) => ({ id: uid(), at: Date.now(), text: e.text, milho: e.milho, ovo: 0 })),
+      ...c.entries.filter((e) => e.won).map((e) => ({ id: uid(), at: Date.now(), text: e.text, milho: e.milho, ovo: 0, fichas: e.fichas || undefined })),
       ...s.history,
     ].slice(0, 80),
   }
@@ -96,13 +104,13 @@ export function applyBetCredit(s: GameState, c: BetCredit): GameState {
   return n
 }
 
-/** Desconta a aposta do save (usado pelo servidor ao registrar a aposta). */
+/** Desconta a aposta (em 🎟️ fichas) do save (usado pelo servidor ao registrar a aposta). */
 export function applyBetPlaced(s: GameState, amount: number, label: string, odds: number): GameState {
   let n: GameState = {
     ...s,
-    milho: s.milho - amount,
+    fichas: (s.fichas ?? 0) - amount,
     stats: { ...s.stats, betsPlaced: s.stats.betsPlaced + 1 },
-    history: [{ id: uid(), at: Date.now(), text: t('Aposta: {palpite} @ {odd}', { palpite: label, odd: odds.toFixed(2) }), milho: -amount, ovo: 0 }, ...s.history].slice(0, 80),
+    history: [{ id: uid(), at: Date.now(), text: t('Aposta: {palpite} @ {odd}', { palpite: label, odd: odds.toFixed(2) }), milho: 0, ovo: 0, fichas: -amount }, ...s.history].slice(0, 80),
   }
   n = bump(n, 'apostar', 1)
   return n

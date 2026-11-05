@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { api, type AdminLogRow, type AdminOrderRow, type AdminOverview, type AdminUserDetail, type AdminUserRow } from '../api'
+import { api, type AdminWeb3, type KycStatus, type AdminLogRow, type AdminOrderRow, type AdminOverview, type AdminUserDetail, type AdminUserRow } from '../api'
 import { APP_NAME } from '../brand'
 import { Modal } from '../components/ui'
 import { CATALOG, brl } from '../game/catalog'
@@ -9,7 +9,7 @@ import { SKIN_BY_ID } from '../game/data'
 import { locale, t, tp, tx } from '../i18n'
 import { C1, C2, DailyBars, HBars, Kpi, SplitBar } from './Charts'
 
-type Tab = 'geral' | 'jogadores' | 'pedidos' | 'config' | 'auditoria'
+type Tab = 'geral' | 'jogadores' | 'pedidos' | 'config' | 'auditoria' | 'cripto'
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'geral', label: t('📈 Visão geral') },
@@ -17,6 +17,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'pedidos', label: t('💳 Pedidos') },
   { id: 'config', label: t('⚙️ Configurações') },
   { id: 'auditoria', label: t('🧾 Auditoria') },
+  { id: 'cripto', label: t('⛓️ Cripto') },
 ]
 
 const n = (v: number) => v.toLocaleString(locale())
@@ -68,6 +69,7 @@ export function Admin({ tab: tabParam }: { tab?: string }) {
         {tab === 'pedidos' && <Orders />}
         {tab === 'config' && <Config />}
         {tab === 'auditoria' && <Audit />}
+        {tab === 'cripto' && <Web3Admin />}
       </main>
     </div>
   )
@@ -317,6 +319,8 @@ function UserDetail({ id, onClose, onChange }: { id: string | null; onClose: () 
             <p className="muted">{t('Ainda não escolheu o primeiro galo.')}</p>
           )}
 
+          <KycCard d={d} onDone={load} />
+
           <h3>{t('Compras')}</h3>
           {d.orders.length === 0 ? (
             <p className="muted tiny">{t('Nenhuma compra.')}</p>
@@ -445,6 +449,7 @@ const AUDIT_LABEL: Record<string, string> = {
   bloqueio: t('⛔ Bloqueio'),
   desbloqueio: t('✅ Desbloqueio'),
   reconsultar_pedido: t('💳 Reconsulta de pedido'),
+  kyc: t('🪪 Verificação (KYC)'),
 }
 
 function Stat({ label, value }: { label: string; value: string }) {
@@ -453,6 +458,122 @@ function Stat({ label, value }: { label: string; value: string }) {
       <span>{label}</span>
       <b>{value}</b>
     </div>
+  )
+}
+
+// ---------------- Cripto (testnet) ----------------
+
+const KYC_ADMIN_LABEL: Record<string, string> = { none: t('Não solicitada'), pending: t('⏳ Pendente'), verified: t('✅ Verificada'), rejected: t('⛔ Recusada') }
+
+/** Verificação de identidade (KYC) e carteira do jogador. */
+function KycCard({ d, onDone }: { d: AdminUserDetail; onDone: () => void }) {
+  const { toast } = useGame()
+  const extra = d as AdminUserDetail & { user: { kyc?: KycStatus; kycStatus?: KycStatus; wallet?: string | null } }
+  const kyc: KycStatus = d.kyc ?? extra.user.kyc ?? extra.user.kycStatus ?? 'none'
+  const w = d.wallet ?? extra.user.wallet ?? null
+  const addr = typeof w === 'string' ? w : (w?.address ?? null)
+  const set = async (status: KycStatus) => {
+    try {
+      await api.admin.kyc(d.user.id, status)
+      toast(t('Verificação atualizada.'), 'ok')
+      onDone()
+    } catch (e) {
+      toast(tx((e as Error).message), 'erro')
+    }
+  }
+  return (
+    <div className="card admin-action">
+      <h3>{t('⛓️ Carteira cripto e verificação')}</h3>
+      <div className="ud-stats cols-3">
+        <Stat label={t('🪪 Verificação (KYC)')} value={KYC_ADMIN_LABEL[kyc] ?? kyc} />
+        <Stat label={t('👛 Endereço')} value={addr ?? t('Sem carteira')} />
+      </div>
+      <div className="row gap wrap" style={{ marginTop: 10 }}>
+        <button className="btn btn-primary btn-sm" disabled={kyc === 'verified'} onClick={() => set('verified')}>
+          {t('✅ Verificar')}
+        </button>
+        <button className="btn btn-danger btn-sm" disabled={kyc === 'rejected'} onClick={() => set('rejected')}>
+          {t('⛔ Recusar')}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function Web3Admin() {
+  const [d, setD] = useState<AdminWeb3 | null>(null)
+  const [err, setErr] = useState<string | null>(null)
+  useEffect(() => {
+    api.admin.web3().then(setD).catch((e) => setErr(tx((e as Error).message)))
+  }, [])
+  const rows = d?.recent ?? []
+  return (
+    <>
+      <h1>{t('Cripto')}</h1>
+      <p className="tiny muted">{t('Carteiras, NFTs e transações na rede de teste.')}</p>
+      {err && <div className="warn">{err}</div>}
+      {d && !d.enabled && <div className="warn">{t('Web3 desligado: configure as variáveis WEB3_* no servidor.')}</div>}
+      {d && (
+        <div className="kpi-grid small">
+          <Kpi label={t('👛 Carteiras')} value={n(d.wallets)} />
+          <Kpi label={t('💎 NFTs')} value={n(d.nfts)} />
+          <Kpi label={t('🏷️ À venda')} value={n(d.listed)} />
+          <Kpi label={t('⏳ KYC pendente')} value={n(d.kycPending)} />
+          <Kpi label={t('⚠️ Anomalias')} value={n(d.anomalies)} />
+        </div>
+      )}
+      {d && d.anomalies > 0 && <div className="warn tiny">{t('Anomalias: tokens queimados sem crédito no jogo ou venda paga sem mover o item. Resolva manualmente com "Ajustar saldo".')}</div>}
+      {d && d.kycQueue.length > 0 && (
+        <div className="card" style={{ marginBottom: 14 }}>
+          <h3>{t('Fila de verificação (KYC)')}</h3>
+          <p className="tiny muted">{t('Abra o jogador em Jogadores para verificar ou recusar.')}</p>
+          <table className="table admin-table">
+            <tbody>
+              {d.kycQueue.map((u) => (
+                <tr key={u.id}>
+                  <td><b>{u.name}</b></td>
+                  <td className="tiny">{u.email}</td>
+                  <td className="tiny muted">{dt(u.created_at)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      <div className="card">
+        <h3>{t('Transações recentes')}</h3>
+        <table className="table admin-table">
+          <thead>
+            <tr>
+              <th>{t('Quando')}</th>
+              <th>{t('Jogador')}</th>
+              <th>{t('Tipo')}</th>
+              <th>{t('Valor')}</th>
+              <th>{t('Status')}</th>
+              <th>{t('Hash')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.id}>
+                <td className="tiny">{dt(r.created_at)}</td>
+                <td className="tiny">{tx(r.email ?? r.user_id)}</td>
+                <td>{r.kind}</td>
+                <td className="tiny">
+                  {r.amount ?? ''} {r.asset?.toUpperCase() ?? ''}
+                  {r.to_addr && <span className="muted mono"> → {r.to_addr.slice(0, 8)}…</span>}
+                </td>
+                <td>
+                  <span className={`tiny status-${r.status === 'ok' ? 'ganhou' : r.status === 'pending' ? 'pendente' : 'perdeu'}`}>{r.status}</span>{/* i18n-ok */}
+                </td>
+                <td className="tiny mono">{r.tx_hash ? `${r.tx_hash.slice(0, 10)}…` : '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {d && rows.length === 0 && <p className="muted center">{t('Nenhuma transação ainda.')}</p>}
+      </div>
+    </>
   )
 }
 
@@ -699,8 +820,12 @@ function Config() {
             <NumField label={t('Apostas fecham antes (segundos)')} value={cfg.bets.closeSec} onChange={(v) => set('bets', { closeSec: v })} />
             <NumField label={t('Agenda à frente (minutos)')} step={30} value={cfg.bets.horizonMin} onChange={(v) => set('bets', { horizonMin: v })} />
             <NumField label={t('Tempo AO VIVO (segundos)')} value={cfg.bets.liveSec} onChange={(v) => set('bets', { liveSec: v })} />
-            <NumField label={t('Aposta mínima (milho)')} value={cfg.bets.minBet} onChange={(v) => set('bets', { minBet: v })} />
-            <NumField label={t('Aposta máxima (milho)')} step={1000} value={cfg.bets.maxBet} onChange={(v) => set('bets', { maxBet: v })} />
+            <NumField label={t('Aposta mínima (fichas)')} value={cfg.bets.minBet} onChange={(v) => set('bets', { minBet: v })} />
+            <NumField label={t('Aposta máxima (fichas)')} step={1000} value={cfg.bets.maxBet} onChange={(v) => set('bets', { maxBet: v })} />
+            <NumField label={t('Fichas iniciais')} step={100} value={cfg.bets.chipsStart} onChange={(v) => set('bets', { chipsStart: v })} hint={t('Só para quem ainda não tem fichas')} />
+            <NumField label={t('Fichas do bônus diário')} step={50} value={cfg.bets.chipsDaily} onChange={(v) => set('bets', { chipsDaily: v })} />
+            <NumField label={t('Fichas por vitória na Arena')} value={cfg.bets.chipsArenaWin} onChange={(v) => set('bets', { chipsArenaWin: v })} />
+            <NumField label={t('Piso de fichas no bônus diário')} step={50} value={cfg.bets.chipsFloor} onChange={(v) => set('bets', { chipsFloor: v })} hint={t('O bônus diário completa até esse valor')} />
           </div>
           <h3>{t('🛡️ Economia e segurança')}</h3>
           <div className="cfg-grid">

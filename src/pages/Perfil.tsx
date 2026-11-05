@@ -37,7 +37,7 @@ export function Perfil() {
     [t('💥 K.O.s'), s.stats.kos],
     [t('🎲 Apostas'), s.stats.betsPlaced],
     [t('✅ Apostas ganhas'), s.stats.betsWon],
-    [t('💰 Maior prêmio'), `🌽 ${fmt(s.stats.biggestWin)}`],
+    [t('💰 Maior prêmio'), `🎟️ ${fmt(s.stats.biggestWin)}`],
     [t('🌽 Milho ganho'), fmt(s.stats.milhoEarned)],
     [t('🎁 Caixas abertas'), s.stats.boxesOpened],
   ]
@@ -186,6 +186,7 @@ export function Perfil() {
                   <td>{tx(h.text)}</td>
                   <td className={`right ${h.milho >= 0 ? 'pos' : 'neg'}`}>{h.milho ? `${h.milho > 0 ? '+' : ''}🌽 ${fmt(h.milho)}` : ''}</td>
                   <td className={`right ${h.ovo >= 0 ? 'pos' : 'neg'}`}>{h.ovo ? `${h.ovo > 0 ? '+' : ''}🥚 ${h.ovo}` : ''}</td>
+                  <td className={`right ${(h.fichas ?? 0) >= 0 ? 'pos' : 'neg'}`}>{h.fichas ? `${h.fichas > 0 ? '+' : ''}🎟️ ${fmt(h.fichas)}` : ''}</td>
                 </tr>
               ))}
             </tbody>

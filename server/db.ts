@@ -148,6 +148,43 @@ export function getDb() {
   if (!cols.includes('mvp_granted_at')) db.exec('ALTER TABLE users ADD COLUMN mvp_granted_at INTEGER')
   if (!cols.includes('role')) db.exec("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'player'")
   if (!cols.includes('lang')) db.exec("ALTER TABLE users ADD COLUMN lang TEXT NOT NULL DEFAULT 'pt'")
+  if (!cols.includes('kyc_status')) db.exec("ALTER TABLE users ADD COLUMN kyc_status TEXT NOT NULL DEFAULT 'none'")
+  // Web3: carteiras custodiais, NFTs de itens e registro de todas as operações na chain
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS wallets (
+      user_id TEXT PRIMARY KEY,
+      address TEXT UNIQUE NOT NULL,
+      enc_key TEXT NOT NULL,
+      created_at INTEGER NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS nfts (
+      token_id INTEGER PRIMARY KEY,
+      kind TEXT NOT NULL,
+      item_id TEXT NOT NULL,
+      owner_user_id TEXT NOT NULL,
+      status TEXT NOT NULL,
+      price_units INTEGER,
+      minted_at INTEGER NOT NULL,
+      tx TEXT
+    );
+    CREATE INDEX IF NOT EXISTS nfts_owner ON nfts(owner_user_id);
+    CREATE INDEX IF NOT EXISTS nfts_status ON nfts(status);
+    CREATE TABLE IF NOT EXISTS web3_tx (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      kind TEXT NOT NULL,
+      asset TEXT NOT NULL,
+      amount TEXT NOT NULL,
+      to_addr TEXT,
+      tx_hash TEXT,
+      status TEXT NOT NULL,
+      created_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS web3_tx_user ON web3_tx(user_id, created_at);
+  `)
+  // Moeda de cada aposta: as antigas foram feitas em milho (pagam em milho); as novas usam 🎟️ fichas
+  const betCols = (db.prepare('PRAGMA table_info(house_bets)').all() as { name: string }[]).map((c) => c.name)
+  if (!betCols.includes('currency')) db.exec("ALTER TABLE house_bets ADD COLUMN currency TEXT NOT NULL DEFAULT 'milho'")
   return db
 }
 
@@ -168,6 +205,8 @@ export interface UserRow {
   mvp_credit_cents?: number
   mvp_granted_at?: number | null
   ban_reason?: string | null
+  /** Verificação de identidade para envios externos: 'none' | 'pending' | 'verified' | 'rejected'. */
+  kyc_status?: string
 }
 
 export interface OrderRow {

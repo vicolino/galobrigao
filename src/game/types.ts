@@ -212,6 +212,8 @@ export interface Transaction {
   text: string
   milho: number
   ovo: number
+  /** Fichas de aposta (só existem para apostar; não são moeda). */
+  fichas?: number
 }
 
 export interface GameState {
@@ -219,6 +221,8 @@ export interface GameState {
   player: { name: string; avatar: string; createdAt: number }
   milho: number
   ovos: number
+  /** 🎟️ Fichas: só servem para apostar. Ganha jogando; não compra, não troca, não transfere. */
+  fichas: number
   roosters: Rooster[]
   accessories: Record<string, number>
   items: Record<string, number>
@@ -244,6 +248,8 @@ export interface GameState {
     toolWins: number
   }
   vip: { until: number }
+  /** Itens lendários comprados com ovos ou dinheiro que ainda podem virar NFT (chave 'acc:id' | 'skin:id'). Só o servidor mexe. */
+  mintable?: Record<string, number>
   achievements: string[]
   history: Transaction[]
   settings: { volume: number; muted: boolean }

@@ -7,6 +7,7 @@ import { loadConfig, saveConfig, validateConfig } from './config'
 import { getDb, type OrderRow, type UserRow } from './db'
 import { loadSave, writeSave } from './saves'
 import { t } from '../src/i18n'
+import { setKyc, walletAddress, web3Overview } from './web3'
 
 export class AdminError extends Error {
   constructor(
@@ -152,6 +153,9 @@ export async function handleAdmin(path: string, method: string, url: URL, body: 
     return overview(days)
   }
 
+  // Web3 (carteiras, NFTs, fila de KYC)
+  if (path === '/api/admin/web3' && method === 'GET') return web3Overview()
+
   // Jogadores
   if (path === '/api/admin/users' && method === 'GET') {
     const q = `%${(url.searchParams.get('q') ?? '').trim().toLowerCase()}%`
@@ -175,7 +179,7 @@ export async function handleAdmin(path: string, method: string, url: URL, body: 
     }
   }
 
-  const userMatch = path.match(/^\/api\/admin\/users\/([\w-]+)(\/grant|\/ban)?$/)
+  const userMatch = path.match(/^\/api\/admin\/users\/([\w-]+)(\/grant|\/ban|\/kyc)?$/)
   if (userMatch) {
     const id = userMatch[1]
     const u = db().prepare('SELECT * FROM users WHERE id = ?').get(id) as unknown as UserRow | undefined
@@ -190,7 +194,7 @@ export async function handleAdmin(path: string, method: string, url: URL, body: 
       const log = db().prepare('SELECT at, admin_email, action, detail FROM admin_log WHERE target = ? ORDER BY at DESC LIMIT 20').all(id)
       const s = save?.state
       return {
-        user: { id: u.id, email: u.email, name: u.name, mvpCreditCents: u.mvp_credit_cents ?? 0, createdAt: u.created_at, bannedAt: u.banned_at, banReason: u.ban_reason, monthlyLimitCents: u.monthly_limit_cents, lastSeen: lastSeen?.last_seen ?? null },
+        user: { id: u.id, email: u.email, name: u.name, mvpCreditCents: u.mvp_credit_cents ?? 0, createdAt: u.created_at, bannedAt: u.banned_at, banReason: u.ban_reason, monthlyLimitCents: u.monthly_limit_cents, lastSeen: lastSeen?.last_seen ?? null, kyc: u.kyc_status ?? 'none', wallet: walletAddress(id) },
         game: s
           ? {
               milho: s.milho,
@@ -237,6 +241,12 @@ export async function handleAdmin(path: string, method: string, url: URL, body: 
       writeSave(id, next, save.rev + 1)
       audit(admin, 'ajuste_saldo', id, { ovos, milho, creditCents, reason })
       return { ok: true, ovos: next.ovos, milho: next.milho }
+    }
+
+    if (userMatch[2] === '/kyc' && method === 'POST') {
+      const status = setKyc(id, body.status)
+      audit(admin, 'kyc', id, { status })
+      return { ok: true, kyc: status }
     }
 
     if (userMatch[2] === '/ban' && method === 'POST') {

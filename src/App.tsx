@@ -15,6 +15,8 @@ import { ChallengeAlert, Desafios } from './pages/Desafios'
 import { Admin } from './admin/Admin'
 import { Perfil } from './pages/Perfil'
 import { Rinha } from './pages/Rinha'
+import { Carteira } from './pages/Carteira'
+import { Mercado } from './pages/Mercado'
 import { APP_NAME } from './brand'
 import { t, tx } from './i18n'
 
@@ -60,6 +62,8 @@ export default function App() {
     case 'liga': page = <Liga />; break
     case 'loja': page = <Loja tab={param} />; break
     case 'perfil': page = <Perfil />; break
+    case 'carteira': page = <Carteira />; break
+    case 'mercado': page = <Mercado />; break
     default: page = <Galinheiro selectedId={param} />
   }
 

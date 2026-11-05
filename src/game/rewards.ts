@@ -8,3 +8,9 @@ export const arenaOvos = (won: boolean, difficulty: 0 | 1 | 2 | 3) =>
   won && difficulty === 3 ? live.rewards.arenaHardWinOvos * 2 : won && difficulty === 2 ? live.rewards.arenaHardWinOvos : won && Math.random() < 0.15 ? 1 : 0
 /** Multiplicador dos ovos das missões. */
 export const missionOvos = (base: number) => Math.round(base * live.rewards.missionOvosMultiplier)
+
+// ---------- 🎟️ Fichas (só para apostar) ----------
+/** Fichas do bônus diário: soma `chipsDaily` e garante pelo menos `chipsFloor` (ninguém fica zerado). */
+export const dailyChips = (current: number) => Math.max(live.bets.chipsDaily, live.bets.chipsFloor - current, 0)
+/** Fichas por vitória na Arena. */
+export const arenaChips = (won: boolean) => (won ? live.bets.chipsArenaWin : 0)

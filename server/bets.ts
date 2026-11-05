@@ -7,6 +7,7 @@ import { live } from '../src/game/config'
 import { electionFight, houseFight } from '../src/game/engine'
 import type { BetPick, GameState, Rooster } from '../src/game/types'
 import { getDb } from './db'
+import { today } from '../src/game/rooster'
 import { loadSave, writeSave } from './saves'
 import { locale, t } from '../src/i18n'
 
@@ -45,6 +46,8 @@ interface BetRow {
   created_at: number
   settled_at: number | null
   credited: number
+  /** 'milho' = aposta antiga (antes das fichas), paga em milho; 'fichas' = aposta nova. */
+  currency: 'milho' | 'fichas' | null
 }
 
 const db = () => getDb()
@@ -149,6 +152,7 @@ const betView = (b: BetRow & { starts_at?: number; fa?: string; fb?: string }): 
   at: b.created_at,
   startsAt: b.starts_at ?? 0,
   fight: b.fa && b.fb ? `${(JSON.parse(b.fa) as Rooster).name} x ${(JSON.parse(b.fb) as Rooster).name}` : '',
+  currency: b.currency === 'fichas' ? 'fichas' : 'milho',
 })
 
 /** Junta o resultado das apostas já reveladas (depois do "ao vivo") que ainda não foram para o save. */
@@ -160,16 +164,19 @@ export function takeCredits(userId: string, now = Date.now()): BetCredit | null 
     )
     .all(userId, now - liveMs()) as unknown as (BetRow & { starts_at: number; fa: string; fb: string })[]
   if (!rows.length) return null
-  const c: BetCredit = { milho: 0, ovos: 0, won: 0, biggest: 0, zebra: false, entries: [] }
+  const c: BetCredit = { milho: 0, ovos: 0, fichas: 0, won: 0, biggest: 0, zebra: false, entries: [] }
   for (const r of rows) {
     const fight = betView(r).fight
+    // Cada aposta paga na moeda em que foi feita (as antigas, em milho; as novas, em fichas)
+    const chips = r.currency === 'fichas'
     if (r.status === 'ganhou') {
-      c.milho += r.payout
+      if (chips) c.fichas! += r.payout
+      else c.milho += r.payout
       c.won++
       c.biggest = Math.max(c.biggest, r.payout)
       if (r.odds >= 3) c.zebra = true
     }
-    c.entries.push({ text: r.status === 'ganhou' ? t('Prêmio de aposta: {aposta} ({luta})', { aposta: r.label, luta: fight }) : t('Aposta perdida: {aposta} ({luta})', { aposta: r.label, luta: fight }), milho: r.status === 'ganhou' ? r.payout : -r.amount, won: r.status === 'ganhou' })
+    c.entries.push({ text: r.status === 'ganhou' ? t('Prêmio de aposta: {aposta} ({luta})', { aposta: r.label, luta: fight }) : t('Aposta perdida: {aposta} ({luta})', { aposta: r.label, luta: fight }), ...(chips ? { milho: 0, fichas: r.status === 'ganhou' ? r.payout : -r.amount } : { milho: r.status === 'ganhou' ? r.payout : -r.amount }), won: r.status === 'ganhou' })
   }
   const mark = db().prepare('UPDATE house_bets SET credited = 1 WHERE id = ?')
   for (const r of rows) mark.run(r.id)
@@ -185,6 +192,35 @@ export function creditSave(userId: string): { rev: number; state: GameState } | 
   const state = applyBetCredit(save.state, c)
   writeSave(userId, state, save.rev + 1)
   return { rev: save.rev + 1, state }
+}
+
+/** Soma no contador diário (tabela ovos_guard, com prefixo); devolve quanto coube dentro do limite. */
+function takeDaily(userId: string, key: string, want: number, max: number): number {
+  if (want <= 0) return 0
+  const day = `${key}:${today()}`
+  const row = db().prepare('SELECT gained FROM ovos_guard WHERE user_id = ? AND day = ?').get(userId, day) as { gained: number } | undefined
+  const used = row?.gained ?? 0
+  const ok = Math.max(0, Math.min(want, max - used))
+  if (ok > 0) db().prepare('INSERT INTO ovos_guard (user_id, day, gained) VALUES (?, ?, ?) ON CONFLICT(user_id, day) DO UPDATE SET gained = excluded.gained').run(userId, day, used + ok)
+  return ok
+}
+
+/**
+ * 🎟️ Fichas que o save enviado pelo navegador pode ter. O navegador nunca gasta fichas (aposta passa
+ * pelo servidor) e só ganha com o bônus diário (uma vez por dia) e com vitórias na Arena. Qualquer
+ * coisa além disso é ignorada: o servidor guarda o valor plausível, sem recusar o save.
+ */
+export function plausibleChips(userId: string, cur: GameState, next: GameState): number {
+  const before = cur.fichas ?? 0
+  const want = Math.floor(Number(next.fichas))
+  if (!Number.isFinite(want) || want <= before) return before
+  let allowed = 0
+  if (next.daily?.last && next.daily.last !== cur.daily.last && takeDaily(userId, 'fd', 1, 1)) {
+    allowed += Math.max(live.bets.chipsDaily, live.bets.chipsFloor - before, 0)
+  }
+  const wins = Math.max(0, Math.min(20, (next.stats?.wins ?? 0) - cur.stats.wins))
+  allowed += takeDaily(userId, 'fa', wins * live.bets.chipsArenaWin, live.bets.chipsArenaWin * 300)
+  return Math.min(want, before + allowed)
 }
 
 /** Novidades das apostas para o aviso periódico do navegador. */
@@ -242,13 +278,13 @@ export function handleBets(path: string, method: string, body: Record<string, un
     const pick = String(body.pick) as BetPick
     if (!['a', 'b', 'ko'].includes(pick)) fail(t('Escolha inválida'))
     const amount = Math.floor(Number(body.amount))
-    if (!Number.isFinite(amount) || amount < live.bets.minBet) fail(t('Aposta mínima: {n} de milho.', { n: live.bets.minBet }))
-    if (amount > live.bets.maxBet) fail(t('Aposta máxima: {n} de milho.', { n: live.bets.maxBet.toLocaleString(locale()) }))
+    if (!Number.isFinite(amount) || amount < live.bets.minBet) fail(t('Aposta mínima: 🎟️ {n} fichas.', { n: live.bets.minBet }))
+    if (amount > live.bets.maxBet) fail(t('Aposta máxima: 🎟️ {n} fichas.', { n: live.bets.maxBet.toLocaleString(locale()) }))
     const save = loadSave(userId) ?? fail(t('Sem galinheiro'))
     let state = save!.state
     const c = takeCredits(userId)
     if (c) state = applyBetCredit(state, c)
-    if (state.milho < amount) fail(t('Milho insuficiente 🌽'))
+    if ((state.fichas ?? 0) < amount) fail(t('Fichas insuficientes 🎟️'))
     const a = JSON.parse(f!.a) as Rooster
     const b = JSON.parse(f!.b) as Rooster
     const odds = pick === 'a' ? f!.odds_a : pick === 'b' ? f!.odds_b : f!.odds_ko
@@ -258,7 +294,7 @@ export function handleBets(path: string, method: string, body: Record<string, un
     d.exec('BEGIN')
     try {
       writeSave(userId, state, save!.rev + 1)
-      d.prepare("INSERT INTO house_bets (id, user_id, fight_id, pick, amount, odds, label, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'pendente', ?)").run(
+      d.prepare("INSERT INTO house_bets (id, user_id, fight_id, pick, amount, odds, label, status, created_at, currency) VALUES (?, ?, ?, ?, ?, ?, ?, 'pendente', ?, 'fichas')").run(
         randomUUID(),
         userId,
         f!.id,

@@ -423,7 +423,7 @@ function Trocar() {
   const { state, actions, toast } = useGame()
   return (
     <>
-      <p className="muted">{t('Troque ovos de ouro por milho para comprar galos, treinar e apostar.')}</p>
+      <p className="muted">{t('Troque ovos de ouro por milho para comprar galos e treinar.')}</p>
       <div className="grid-shop">
         {CORN_PACKS.map((p) => (
           <div key={p.id} className="card shop-item center">

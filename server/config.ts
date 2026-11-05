@@ -50,8 +50,12 @@ export function validateConfig(input: AppConfig): AppConfig {
   c.bets.closeSec = Math.round(num(c.bets.closeSec, 0, 600, t('Apostas fecham antes (s)')))
   c.bets.horizonMin = Math.round(num(c.bets.horizonMin, 30, 24 * 60, t('Agenda à frente (min)')))
   c.bets.liveSec = Math.round(num(c.bets.liveSec, 20, 600, t('Duração do ao vivo (s)')))
-  c.bets.minBet = Math.round(num(c.bets.minBet, 1, 100000, t('Aposta mínima')))
-  c.bets.maxBet = Math.round(num(c.bets.maxBet, c.bets.minBet, 10_000_000, t('Aposta máxima')))
+  c.bets.minBet = Math.round(num(c.bets.minBet, 1, 100000, t('Aposta mínima (fichas)')))
+  c.bets.maxBet = Math.round(num(c.bets.maxBet, c.bets.minBet, 10_000_000, t('Aposta máxima (fichas)')))
+  c.bets.chipsStart = Math.round(num(c.bets.chipsStart, 0, 1_000_000, t('Fichas iniciais')))
+  c.bets.chipsDaily = Math.round(num(c.bets.chipsDaily, 0, 100_000, t('Fichas do bônus diário')))
+  c.bets.chipsArenaWin = Math.round(num(c.bets.chipsArenaWin, 0, 10_000, t('Fichas por vitória na Arena')))
+  c.bets.chipsFloor = Math.round(num(c.bets.chipsFloor, 0, 100_000, t('Piso de fichas no bônus diário')))
   c.maintenance.on = !!c.maintenance.on
   c.maintenance.message = String(c.maintenance.message ?? '').slice(0, 200)
   return c

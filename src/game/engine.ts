@@ -3,6 +3,7 @@ import { ACCESSORIES, ACHIEVEMENTS, BREED_BY_ID, ELECTION_ROOSTERS, SKINS, SKIN_
 import { estimate, toOdds } from './battle'
 import { makeRooster, pick, rarityRank, rng, today, uid } from './rooster'
 import { missionOvos } from './rewards'
+import { live } from './config'
 import { lang, t } from '../i18n'
 import type { GameState, HouseFight, LeagueRow, Mission, MissionKind, Rarity, Rooster, Slot } from './types'
 
@@ -249,6 +250,7 @@ export function newGame(name: string, avatar: string, starterBreed: string, opts
     player: { name, avatar, createdAt: Date.now() },
     milho: 5000,
     ovos: 50,
+    fichas: live.bets.chipsStart,
     roosters: [starter],
     accessories: { bone: 1 },
     items: { racao: 3, vitamina: 1 },
@@ -290,6 +292,8 @@ export function migrate(s: GameState): GameState {
   s.tools ??= {}
   s.stats.toolsUsed ??= 0
   s.stats.toolWins ??= 0
+  // Fichas de aposta (novas): todo mundo começa com o valor inicial da configuração
+  if (typeof s.fichas !== 'number' || !Number.isFinite(s.fichas)) s.fichas = live.bets.chipsStart
   return s
 }
 

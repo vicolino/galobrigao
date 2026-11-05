@@ -53,12 +53,19 @@ const purchase = (s: GameState): GameState => bump({ ...s, stats: { ...s.stats, 
 const qtyOk = (q: unknown) => (Number.isInteger(q) && (q as number) >= 1 && (q as number) <= 20 ? (q as number) : fail(t('Quantidade inválida')))
 const findRooster = (s: GameState, id: string) => s.roosters.find((r) => r.id === id) ?? fail(t('Galo não encontrado'))
 
+/** Crédito de NFT: item lendário obtido com ovos ou dinheiro pode virar NFT (milho nunca). */
+export function addMintable(s: GameState, key: string, n = 1): GameState {
+  return { ...s, mintable: { ...s.mintable, [key]: (s.mintable?.[key] ?? 0) + n } }
+}
+const legendaryOvo = (s: GameState, key: string, rarity: Rarity, c: Currency) => (rarity === 'lendario' && c === 'ovo' ? addMintable(s, key) : s)
+
 export function runShop(s: GameState, o: ShopOp): { state: GameState; value?: unknown } {
   switch (o.op) {
     case 'buyAccessory': {
       const acc = ACC_BY_ID[o.id] ?? fail(t('Acessório não existe'))
       let n = pay(s, acc.price, acc.currency)
       n = { ...n, accessories: { ...n.accessories, [o.id]: (n.accessories[o.id] ?? 0) + 1 } }
+      n = legendaryOvo(n, `acc:${o.id}`, acc.rarity, acc.currency)
       return { state: log(purchase(n), t('Comprou {nome}', { nome: acc.name }), ...spent(acc.currency, acc.price)) }
     }
     case 'buyItem': {
@@ -99,6 +106,7 @@ export function runShop(s: GameState, o: ShopOp): { state: GameState; value?: un
       const prize: Accessory = pick(ACCESSORIES.filter((a) => a.rarity === rarity))
       n = { ...n, accessories: { ...n.accessories, [prize.id]: (n.accessories[prize.id] ?? 0) + 1 } }
       n = { ...n, stats: { ...n.stats, boxesOpened: n.stats.boxesOpened + 1 } }
+      n = legendaryOvo(n, `acc:${prize.id}`, prize.rarity, box.currency)
       n = log(purchase(n), t('{caixa}: {premio} ({raridade})', { caixa: box.name, premio: prize.name, raridade: RARITY[rarity].label }), ...spent(box.currency, box.price))
       return { state: n, value: prize }
     }
@@ -108,6 +116,7 @@ export function runShop(s: GameState, o: ShopOp): { state: GameState; value?: un
       const price = skinPrice(o.id)
       let n = pay(s, price, sk.currency)
       n = { ...n, skins: [...n.skins, o.id] }
+      n = legendaryOvo(n, `skin:${o.id}`, sk.rarity, sk.currency)
       return { state: log(purchase(n), t('Skin: {nome}', { nome: sk.name }), ...spent(sk.currency, price)) }
     }
     case 'buySkinBundle': {
@@ -116,6 +125,7 @@ export function runShop(s: GameState, o: ShopOp): { state: GameState; value?: un
       if (!missing.length) fail(t('Você já tem todas as skins desse pacote.'))
       let n = pay(s, b.price, 'ovo')
       n = { ...n, skins: [...n.skins, ...missing] }
+      for (const k of missing) n = legendaryOvo(n, `skin:${k}`, SKIN_BY_ID[k]?.rarity ?? 'comum', 'ovo')
       return { state: log(purchase(n), b.name, 0, -b.price) }
     }
     case 'buyElection': {

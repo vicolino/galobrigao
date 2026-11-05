@@ -109,8 +109,65 @@ export const api = {
     getConfig: () => call<{ config: AppConfig; defaults: AppConfig; updatedAt: number | null; updatedBy: string | null }>('/admin/config'),
     putConfig: (config: AppConfig) => call<{ config: AppConfig; changes: string[] }>('/admin/config', { method: 'PUT', body: { config } }),
     audit: () => call<{ log: AdminLogRow[] }>('/admin/audit'),
+    kyc: (id: string, status: KycStatus) => call<{ ok: true }>(`/admin/users/${id}/kyc`, { method: 'POST', body: { status } }),
+    web3: () => call<AdminWeb3>('/admin/web3'),
   },
+  // ---------- Carteira cripto (testnet) ----------
+  web3: () => call<Web3Info>('/web3'),
+  bridge: (token: 'egg' | 'corn', dir: 'out' | 'in', amount: number) => call<{ rev: number; state: GameState; tx: Web3Tx }>('/web3/bridge', { method: 'POST', body: { token, dir, amount } }),
+  send: (asset: Web3Asset, to: string, amount: number) => call<{ tx: Web3Tx }>('/web3/send', { method: 'POST', body: { asset, to, amount } }),
+  mint: (key: string) => call<{ tokenId: number; tx: Web3Tx; rev: number; state: GameState }>('/web3/mint', { method: 'POST', body: { key } }),
+  kyc: () => call<{ kyc: KycStatus }>('/web3/kyc', { method: 'POST' }),
+  market: () => call<{ listings: MarketListing[]; feeBps: number }>('/market'),
+  marketList: (tokenId: number, price: number) => call<{ tx?: Web3Tx }>('/market/list', { method: 'POST', body: { tokenId, price } }),
+  marketCancel: (tokenId: number) => call<{ tx?: Web3Tx }>('/market/cancel', { method: 'POST', body: { tokenId } }),
+  marketBuy: (tokenId: number) => call<{ rev: number; state: GameState; tx: Web3Tx }>('/market/buy', { method: 'POST', body: { tokenId } }),
   setLimit: (monthlyCents: number) => call<{ user: ApiUser }>('/limits', { method: 'PUT', body: { monthlyCents } }),
+}
+
+// ---------- Tipos da carteira cripto ----------
+export type KycStatus = 'none' | 'pending' | 'verified' | 'rejected'
+export type Web3Asset = 'egg' | 'corn' | 'usdc'
+/** Transação registrada (web3_tx) como o servidor devolve. */
+export interface Web3TxView { id: string; kind: string; asset: string; amount: string; to: string | null; hash: string | null; status: string; at: number; url: string | null }
+export type Web3Tx = Web3TxView | string | null
+/** Saldos null = não deu para ler a rede agora. */
+export interface Web3Wallet { address: string; eth: number | string | null; egg: number | string | null; corn: number | string | null; usdc: number | string | null }
+export interface Web3Mintable { key: string; kind: 'acc' | 'skin'; itemId: string; count: number }
+export interface Web3Nft { tokenId: number; kind: 'acc' | 'skin'; itemId: string; status: 'held' | 'listed'; price: number | null }
+export interface Web3Info {
+  enabled: boolean
+  chain?: { id: number; name: string; explorer: string }
+  wallet?: Web3Wallet | null
+  kyc?: KycStatus
+  mintable?: Web3Mintable[]
+  nfts?: Web3Nft[]
+  feeBps?: number | null
+  caps?: { send?: Partial<Record<Web3Asset, number>>; bridgeOut?: Partial<Record<Web3Asset, number>>; usedToday?: { send?: Partial<Record<Web3Asset, number>>; bridgeOut?: Partial<Record<Web3Asset, number>> } }
+  recent?: Web3TxView[]
+}
+export interface MarketListing { tokenId: number; kind: 'acc' | 'skin'; itemId: string; price: number; seller: string; mine: boolean }
+export interface AdminWeb3TxRow {
+  id: number | string
+  user_id: string
+  email?: string
+  kind: string
+  asset: string | null
+  amount: number | string | null
+  to_addr: string | null
+  tx_hash: string | null
+  status: string
+  created_at: number
+}
+export interface AdminWeb3 {
+  enabled: boolean
+  wallets: number
+  nfts: number
+  listed: number
+  kycPending: number
+  anomalies: number
+  kycQueue: { id: string; email: string; name: string; created_at: number }[]
+  recent: AdminWeb3TxRow[]
 }
 
 // ---------- Tipos do backoffice ----------
@@ -182,6 +239,8 @@ export interface AdminUserDetail {
   pvpFights: number
   activeDays: number
   log: { at: number; admin_email: string; action: string; detail: string | null }[]
+  kyc?: KycStatus
+  wallet?: string | { address: string } | null
 }
 export interface AdminOrderRow {
   id: string
