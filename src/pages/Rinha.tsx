@@ -2,17 +2,18 @@ import { useMemo, useState } from 'react'
 import { RoosterSvg } from '../components/RoosterSvg'
 import { PageHead, RarityTag, RoosterCard, Stars, StyleTag, go } from '../components/ui'
 import { estimate } from '../game/battle'
-import { BREED_BY_ID, MAX_TOOLS, NPC_OWNERS, TOOLS, TOOL_BY_ID } from '../game/data'
+import { BREED_BY_ID, MAX_TOOLS, TOOLS, TOOL_BY_ID, npcOwners } from '../game/data'
 import { ENERGY_COST, currentEnergy, pick, power } from '../game/rooster'
 import { sfx } from '../game/sound'
 import { makeOpponent, opponentTools, tierFor, useGame } from '../game/store'
 import type { Rooster } from '../game/types'
+import { t, tn, tx } from '../i18n'
 
 const DIFFS = [
-  { label: 'Fácil', emoji: '🐣', cls: 'easy', reward: 'Pouco milho' },
-  { label: 'Médio', emoji: '🐔', cls: 'medium', reward: 'Bom prêmio' },
-  { label: 'Difícil', emoji: '🦅', cls: 'hard', reward: 'Prêmio alto + 🥚' },
-  { label: 'Chefão', emoji: '👑', cls: 'boss', reward: 'Prêmio máximo + 🥚🥚' },
+  { label: t('Fácil'), emoji: '🐣', cls: 'easy', reward: t('Pouco milho') },
+  { label: t('Médio'), emoji: '🐔', cls: 'medium', reward: t('Bom prêmio') },
+  { label: t('Difícil'), emoji: '🦅', cls: 'hard', reward: t('Prêmio alto + 🥚') },
+  { label: t('Chefão'), emoji: '👑', cls: 'boss', reward: t('Prêmio máximo + 🥚🥚') },
 ] as const
 
 export function Rinha() {
@@ -33,7 +34,7 @@ export function Rinha() {
   const opponents = useMemo(() => {
     return ([0, 1, 2, 3] as const).map((d) => {
       const o = makeOpponent(mine, d)
-      o.owner = pick(NPC_OWNERS)
+      o.owner = pick(npcOwners())
       return { d, o, tools: opponentTools(d) }
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -48,7 +49,7 @@ export function Rinha() {
   const fight = (o: Rooster, d: 0 | 1 | 2 | 3, oppTools: string[]) => {
     const r = actions.startRinha(mine.id, o, d, myTools, oppTools)
     if (!r.ok) {
-      toast(r.error, 'erro')
+      toast(tx(r.error), 'erro')
       return
     }
     sfx.bell()
@@ -60,16 +61,16 @@ export function Rinha() {
   return (
     <>
       <PageHead
-        title="⚔️ Arena"
-        subtitle="Escolha seu galo e um adversário. Vitórias dão milho, XP e pontos de liga."
+        title={t('⚔️ Arena')}
+        subtitle={t('Escolha seu galo e um adversário. Vitórias dão milho, XP e pontos de liga.')}
         right={
           <div className="pill">
-            {tier.emoji} {tier.name} · {s.league.points} pts
+            {tier.emoji} {tx(tier.name)} · {t('{n} pts', { n: s.league.points })}
           </div>
         }
       />
 
-      <h2 className="section-title">1. Seu lutador</h2>
+      <h2 className="section-title">{t('1. Seu lutador')}</h2>
       <div className="scroller">
         {sorted.map((r) => (
           <div key={r.id} className="scroller-item">
@@ -79,9 +80,9 @@ export function Rinha() {
       </div>
 
       <div className="row-between">
-        <h2 className="section-title">2. Ferramentas de luta <span className="tiny muted">(até {MAX_TOOLS})</span></h2>
+        <h2 className="section-title">{t('2. Ferramentas de luta')} <span className="tiny muted">{t('(até {n})', { n: MAX_TOOLS })}</span></h2>
         <a className="btn btn-sm" href="#/loja/ferramentas">
-          🧰 Comprar mais
+          {t('🧰 Comprar mais')}
         </a>
       </div>
       <div className="tool-pick">
@@ -99,21 +100,25 @@ export function Rinha() {
       </div>
       {myTools.length > 0 && (
         <p className="tiny pos">
-          Levando: {myTools.map((t) => `${TOOL_BY_ID[t].emoji} ${TOOL_BY_ID[t].name}`).join(' + ')} · serão gastas na luta
+          {t('Levando: {itens} · serão gastas na luta', { itens: myTools.map((id) => `${TOOL_BY_ID[id].emoji} ${TOOL_BY_ID[id].name}`).join(' + ') })}
         </p>
       )}
 
       <div className="row-between">
-        <h2 className="section-title">3. Escolha o adversário</h2>
+        <h2 className="section-title">{t('3. Escolha o adversário')}</h2>
         <button className="btn btn-sm" onClick={() => setNonce((n) => n + 1)}>
-          🔄 Outros adversários
+          {t('🔄 Outros adversários')}
         </button>
       </div>
 
       {currentEnergy(mine) < ENERGY_COST && (
         <div className="warn">
-          ⚡ {mine.name} está sem energia ({currentEnergy(mine)}/{ENERGY_COST}). Espere recuperar (+1/min) ou{' '}
-          <a href={`#/galinheiro/${mine.id}`}>dê uma ração</a>.
+          {tn('⚡ {nome} está sem energia ({atual}/{custo}). Espere recuperar (+1/min) ou {link}.', {
+            nome: mine.name,
+            atual: currentEnergy(mine),
+            custo: ENERGY_COST,
+            link: <a href={`#/galinheiro/${mine.id}`}>{t('dê uma ração')}</a>,
+          })}
         </div>
       )}
 
@@ -137,7 +142,7 @@ export function Rinha() {
               </div>
               <div className="rc-name">{o.name}</div>
               <div className="rc-sub">
-                {o.owner} · {b.name} · Nv {o.level}
+                {t('{dono} · {raca} · Nv {nivel}', { dono: o.owner, raca: b.name, nivel: o.level })}
               </div>
               <div className="rc-row">
                 <RarityTag rarity={b.rarity} /> <Stars n={o.stars} />
@@ -148,17 +153,17 @@ export function Rinha() {
               </div>
               {tools.length > 0 && (
                 <div className="tiny opp-tools">
-                  Leva: {tools.map((t) => <span key={t} className="tool-chip" title={TOOL_BY_ID[t].name}>{TOOL_BY_ID[t].emoji}</span>)}
+                  {t('Leva:')} {tools.map((id) => <span key={id} className="tool-chip" title={TOOL_BY_ID[id].name}>{TOOL_BY_ID[id].emoji}</span>)}
                 </div>
               )}
               <div className="chance">
                 <div className="chance-bar">
                   <div style={{ width: `${Math.round(chance * 100)}%` }} />
                 </div>
-                <span>Chance de vitória: ~{Math.round(chance * 100)}%</span>
+                <span>{t('Chance de vitória: ~{n}%', { n: Math.round(chance * 100) })}</span>
               </div>
               <button className="btn btn-primary full" onClick={() => fight(o, d, tools)} disabled={currentEnergy(mine) < ENERGY_COST}>
-                ⚔️ Lutar (⚡{ENERGY_COST})
+                {t('⚔️ Lutar (⚡{n})', { n: ENERGY_COST })}
               </button>
             </div>
           )

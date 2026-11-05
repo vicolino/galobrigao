@@ -8,6 +8,8 @@ import { brl } from '../game/catalog'
 import { sfx } from '../game/sound'
 import { useGame } from '../game/store'
 import { APP_NAME, APP_TAGLINE } from '../brand'
+import { LangSwitch } from '../components/LangSwitch'
+import { locale, t, tn, tx } from '../i18n'
 
 // ---------------- Cadastro / Login ----------------
 
@@ -35,51 +37,54 @@ export function AuthScreen() {
     }
     const r = mode === 'cadastro' ? await actions.signup({ email, password, name, adult, terms }) : await actions.login(email, password)
     setBusy(false)
-    if (!r.ok) setError(r.error)
+    if (!r.ok) setError(tx(r.error))
     else sfx.crow()
   }
 
   return (
     <div className="onboarding">
       <div className="ob-card">
+        <div style={{ alignSelf: 'flex-end' }}>
+          <LangSwitch compact />
+        </div>
         <div className="ob-hero">
           <RoosterSvg breedId="dourado" skin="fogo" anim="idle" size={170} equipped={{ cabeca: 'coroa' }} />
           <div>
             <h1 className="title-font">{APP_NAME}</h1>
-            <p className="muted">{APP_TAGLINE}</p>
+            <p className="muted">{t(APP_TAGLINE)}</p>
           </div>
         </div>
 
         <div className="tabs">
           <button className={`tab ${mode === 'cadastro' ? 'active' : ''}`} onClick={() => setMode('cadastro')}>
-            Criar conta
+            {t('Criar conta')}
           </button>
           <button className={`tab ${mode === 'login' ? 'active' : ''}`} onClick={() => setMode('login')}>
-            Já tenho conta
+            {t('Já tenho conta')}
           </button>
         </div>
 
         <form onSubmit={submit}>
           {mode === 'cadastro' && (
             <label className="field">
-              <span>Nome de criador</span>
-              <input maxLength={16} value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex.: Zé do Terreiro" required />
+              <span>{t('Nome de criador')}</span>
+              <input maxLength={16} value={name} onChange={(e) => setName(e.target.value)} placeholder={t('Ex.: Zé do Terreiro')} required />
             </label>
           )}
           <label className="field">
-            <span>E-mail</span>
-            <input type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="voce@email.com" required />
+            <span>{t('E-mail')}</span>
+            <input type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t('voce@email.com')} required />
           </label>
           {mode !== 'esqueci' && (
           <label className="field">
-            <span>Senha</span>
+            <span>{t('Senha')}</span>
             <input
               type="password"
               autoComplete={mode === 'cadastro' ? 'new-password' : 'current-password'}
               minLength={8}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Mínimo 8 caracteres"
+              placeholder={t('Mínimo 8 caracteres')}
               required
             />
           </label>
@@ -87,31 +92,38 @@ export function AuthScreen() {
           {mode === 'cadastro' && (
             <>
               <label className="check">
-                <input type="checkbox" checked={adult} onChange={(e) => setAdult(e.target.checked)} /> Tenho 18 anos ou mais
+                <input type="checkbox" checked={adult} onChange={(e) => setAdult(e.target.checked)} /> {t('Tenho 18 anos ou mais')}
               </label>
               <label className="check">
-                <input type="checkbox" checked={terms} onChange={(e) => setTerms(e.target.checked)} /> Li e aceito os{' '}
-                <a href="#/termos" target="_blank">
-                  termos de uso
-                </a>{' '}
-                e a{' '}
-                <a href="#/privacidade" target="_blank">
-                  política de privacidade
-                </a>
+                <input type="checkbox" checked={terms} onChange={(e) => setTerms(e.target.checked)} />{' '}
+                <>
+                  {tn('Li e aceito os {termos} e a {privacidade}', {
+                    termos: (
+                      <a key="t" href="#/termos" target="_blank">
+                        {t('termos de uso')}
+                      </a>
+                    ),
+                    privacidade: (
+                      <a key="p" href="#/privacidade" target="_blank">
+                        {t('política de privacidade')}
+                      </a>
+                    ),
+                  })}
+                </>
               </label>
             </>
           )}
           {error && <p className="neg">{error}</p>}
           {sent && mode === 'esqueci' ? (
-            <p className="pos">Se existir uma conta com esse e-mail, enviamos um link para criar uma senha nova. Confira sua caixa de entrada.</p>
+            <p className="pos">{t('Se existir uma conta com esse e-mail, enviamos um link para criar uma senha nova. Confira sua caixa de entrada.')}</p>
           ) : (
             <button className="btn btn-primary btn-lg full" disabled={busy || (mode === 'cadastro' && (!adult || !terms))}>
-              {busy ? 'Aguarde...' : mode === 'cadastro' ? '🐓 Criar conta' : mode === 'login' ? 'Entrar' : 'Enviar link'}
+              {busy ? t('Aguarde...') : mode === 'cadastro' ? t('🐓 Criar conta') : mode === 'login' ? t('Entrar') : t('Enviar link')}
             </button>
           )}
           {mode === 'login' && (
             <button type="button" className="btn btn-ghost btn-sm full" onClick={() => setMode('esqueci')}>
-              Esqueci minha senha
+              {t('Esqueci minha senha')}
             </button>
           )}
           {mode === 'esqueci' && (
@@ -123,12 +135,12 @@ export function AuthScreen() {
                 setSent(false)
               }}
             >
-              ← Voltar para o login
+              {t('← Voltar para o login')}
             </button>
           )}
         </form>
         <p className="tiny muted center">
-          <a href="#/termos">Termos de uso</a> · <a href="#/privacidade">Privacidade</a> · Proibido para menores de 18 anos
+          <a href="#/termos">{t('Termos de uso')}</a> · <a href="#/privacidade">{t('Privacidade')}</a> · {t('Proibido para menores de 18 anos')}
         </p>
       </div>
     </div>
@@ -153,7 +165,7 @@ export function StarterScreen() {
     setBusy(true)
     const r = await actions.startFree(avatar)
     setBusy(false)
-    if (!r.ok) toast(r.error, 'erro')
+    if (!r.ok) toast(tx(r.error), 'erro')
   }
 
   const livre = BREED_BY_ID.livre
@@ -162,11 +174,12 @@ export function StarterScreen() {
     <div className="onboarding">
       <div className="starter-page">
         <div className="center">
-          <h1 className="title-font">Bem-vindo, {user?.name}! 🐣</h1>
-          <p className="muted">Escolha como começar. Galos melhores ganham mais lutas e sobem de nível mais rápido.</p>
+          <h1 className="title-font">{t('Bem-vindo, {nome}! 🐣', { nome: user?.name ?? '' })}</h1>
+          <p className="muted">{t('Escolha como começar. Galos melhores ganham mais lutas e sobem de nível mais rápido.')}</p>
           {mvp && (
             <div className="mvp-banner">
-              🎁 <b>MODO MVP:</b> você ganhou <b>{brl(user?.mvpCreditCents ?? 0)}</b> de crédito de teste para gastar na loja. Escolha um kit abaixo!
+              🎁 <b>{t('MODO MVP:')}</b>{' '}
+              <>{tn('você ganhou {valor} de crédito de teste para gastar na loja. Escolha um kit abaixo!', { valor: <b key="v">{brl(user?.mvpCreditCents ?? 0)}</b> })}</>
             </div>
           )}
           <div className="avatar-pick center-row">
@@ -180,20 +193,20 @@ export function StarterScreen() {
 
         <div className="starter-grid">
           <div className="card starter-card">
-            <span className="pill-free">GRÁTIS</span>
+            <span className="pill-free">{t('GRÁTIS')}</span>
             <RoosterSvg breedId="livre" size={150} anim="idle" />
-            <h3>🐔 Galo Livre</h3>
+            <h3>🐔 {t('Galo Livre')}</h3>
             <p className="tiny muted italic">"{livre.desc}"</p>
             <div className="tiny">
               <RarityTag rarity="comum" /> <Stars n={1} />
             </div>
             <ul className="starter-list">
               <li>❤️ {livre.base.hp} · 🗡️ {livre.base.atk} · 🛡️ {livre.base.def} · 💨 {livre.base.spd}</li>
-              <li>🌽 1.500 de milho · 🥚 10 ovos</li>
-              <li>Potencial baixo: cresce devagar</li>
+              <li>{t('🌽 {milho} de milho · 🥚 {ovos} ovos', { milho: (1500).toLocaleString(locale()), ovos: 10 })}</li>
+              <li>{t('Potencial baixo: cresce devagar')}</li>
             </ul>
             <button className="btn full" disabled={busy} onClick={free}>
-              Começar de graça
+              {t('Começar de graça')}
             </button>
           </div>
 
@@ -201,10 +214,10 @@ export function StarterScreen() {
             const b = BREED_BY_ID[it.breedId!]
             return (
               <div key={it.id} className={`card starter-card rar-${b.rarity} ${it.tag ? 'tagged' : ''}`}>
-                {it.tag && <span className="pack-tag">{it.tag}</span>}
+                {it.tag && <span className="pack-tag">{tx(it.tag)}</span>}
                 <RoosterSvg breedId={b.id} skin={it.skin} size={150} anim="idle" />
                 <h3>
-                  {it.emoji} {it.name}
+                  {it.emoji} {tx(it.name)}
                 </h3>
                 <div className="tiny">
                   <RarityTag rarity={b.rarity} /> <Stars n={it.stars ?? 3} />
@@ -213,23 +226,23 @@ export function StarterScreen() {
                   <li>
                     🐓 {b.name}: ❤️ {b.base.hp} · 🗡️ {b.base.atk} · 🛡️ {b.base.def} · 💨 {b.base.spd}
                   </li>
-                  {it.skin && <li>🎨 Skin {SKIN_BY_ID[it.skin].name}</li>}
-                  <li>🥚 {it.ovos} ovos de ouro</li>
-                  {it.tools && <li>🧰 {Object.entries(it.tools).map(([t, q]) => `${TOOL_BY_ID[t].emoji}×${q}`).join(' ')}</li>}
+                  {it.skin && <li>{t('🎨 Skin {nome}', { nome: SKIN_BY_ID[it.skin].name })}</li>}
+                  <li>{t('🥚 {n} ovos de ouro', { n: (it.ovos ?? 0).toLocaleString(locale()) })}</li>
+                  {it.tools && <li>🧰 {Object.entries(it.tools).map(([tid, q]) => `${TOOL_BY_ID[tid].emoji}×${q}`).join(' ')}</li>}
                 </ul>
                 <button className="btn btn-gold full btn-lg" onClick={() => setBuying(it)}>
-                  {mvp ? `🎁 Usar crédito · ${brl(it.priceCents)}` : `⚡ ${brl(it.priceCents)} no Pix`}
+                  {mvp ? t('🎁 Usar crédito · {preco}', { preco: brl(it.priceCents) }) : t('⚡ {preco} no Pix', { preco: brl(it.priceCents) })}
                 </button>
               </div>
             )
           })}
         </div>
         <p className="tiny muted center">
-          Pagamento por Pix ou cartão. Itens virtuais, sem valor em dinheiro e sem saque. Você pode trocar de ideia: o kit também aparece depois na Loja (uma vez por conta).
+          {t('Pagamento por Pix ou cartão. Itens virtuais, sem valor em dinheiro e sem saque. Você pode trocar de ideia: o kit também aparece depois na Loja (uma vez por conta).')}
         </p>
         <div className="center">
           <button className="btn btn-ghost btn-sm" onClick={() => actions.logout()}>
-            Sair
+            {t('Sair')}
           </button>
         </div>
       </div>
@@ -258,29 +271,29 @@ export function ResetScreen() {
             await api.reset(token, password)
             setDone(true)
           } catch (err) {
-            setError((err as Error).message)
+            setError(tx((err as Error).message))
           } finally {
             setBusy(false)
           }
         }}
       >
-        <h2>🔑 Criar senha nova</h2>
+        <h2>{t('🔑 Criar senha nova')}</h2>
         {done ? (
           <>
-            <p className="pos">Senha alterada! Entre com a senha nova.</p>
+            <p className="pos">{t('Senha alterada! Entre com a senha nova.')}</p>
             <a className="btn btn-primary" href="#/">
-              Ir para o login
+              {t('Ir para o login')}
             </a>
           </>
         ) : (
           <>
             <label className="field">
-              <span>Nova senha</span>
+              <span>{t('Nova senha')}</span>
               <input type="password" autoComplete="new-password" minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} required />
             </label>
             {error && <p className="neg">{error}</p>}
             <button className="btn btn-primary btn-lg full" disabled={busy}>
-              Salvar senha
+              {t('Salvar senha')}
             </button>
           </>
         )}

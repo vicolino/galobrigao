@@ -5,6 +5,7 @@ import { ACCESSORIES, ACC_BY_ID, BREED_BY_ID, ITEMS, SKIN_BY_ID, SLOTS, STYLES }
 import { currentEnergy, finalStats, fmt, power, sellPrice, xpToNext } from '../game/rooster'
 import { FEED_COOLDOWN, STAR_COST, useGame } from '../game/store'
 import type { Slot, Style } from '../game/types'
+import { t, tn, tp, tx } from '../i18n'
 
 export function Galinheiro({ selectedId }: { selectedId?: string }) {
   const { state } = useGame()
@@ -19,30 +20,30 @@ export function Galinheiro({ selectedId }: { selectedId?: string }) {
   return (
     <>
       <PageHead
-        title="🏠 Galinheiro"
-        subtitle={`${s.roosters.length}/12 galos · clique em um galo para cuidar, treinar e vestir`}
+        title={t('🏠 Galinheiro')}
+        subtitle={t('{n}/12 galos · clique em um galo para cuidar, treinar e vestir', { n: s.roosters.length })}
         right={
           <button className="btn" onClick={() => go('/loja/galos')}>
-            🛒 Comprar galos
+            {t('🛒 Comprar galos')}
           </button>
         }
       />
       <div className="grid-cards">
         {s.roosters.map((r) => (
-          <RoosterCard key={r.id} ro={r} onClick={() => go(`/galinheiro/${r.id}`)} footer={<div className="rc-record">{r.wins}V · {r.losses}D · {r.kos} K.O.</div>} />
+          <RoosterCard key={r.id} ro={r} onClick={() => go(`/galinheiro/${r.id}`)} footer={<div className="rc-record">{t('{w}V · {l}D · {k} K.O.', { w: r.wins, l: r.losses, k: r.kos })}</div>} />
         ))}
         <div className="card add-card clickable" onClick={() => go('/loja/galos')}>
           <div className="add-plus">＋</div>
-          <span>Novo galo</span>
+          <span>{t('Novo galo')}</span>
         </div>
       </div>
 
-      <h2 className="section-title">🎒 Inventário</h2>
+      <h2 className="section-title">{t('🎒 Inventário')}</h2>
       <div className="two-col">
         <div className="card">
-          <h3>Acessórios guardados</h3>
+          <h3>{t('Acessórios guardados')}</h3>
           {freeAcc.length === 0 ? (
-            <p className="muted">Nenhum acessório livre. <a href="#/loja/acessorios">Ver na loja →</a></p>
+            <p className="muted">{t('Nenhum acessório livre.')} <a href="#/loja/acessorios">{t('Ver na loja →')}</a></p>
           ) : (
             <div className="chips">
               {freeAcc.map(([id, n]) => (
@@ -54,9 +55,9 @@ export function Galinheiro({ selectedId }: { selectedId?: string }) {
           )}
         </div>
         <div className="card">
-          <h3>Itens</h3>
+          <h3>{t('Itens')}</h3>
           {items.length === 0 ? (
-            <p className="muted">Sem itens. <a href="#/loja/itens">Ver na loja →</a></p>
+            <p className="muted">{t('Sem itens.')} <a href="#/loja/itens">{t('Ver na loja →')}</a></p>
           ) : (
             <div className="chips">
               {items.map(([id, n]) => {
@@ -100,20 +101,20 @@ function RoosterDetail({ id }: { id: string }) {
     const r = actions.train(ro.id)
     if (r.ok) {
       flash('attack')
-      toast(r.value!, 'ok')
-    } else toast(r.error, 'erro')
+      toast(tx(r.value!), 'ok')
+    } else toast(tx(r.error), 'erro')
   }
 
   const feedReady = !ro.fedAt || Date.now() - ro.fedAt >= FEED_COOLDOWN
   const leftMs = ro.fedAt ? FEED_COOLDOWN - (Date.now() - ro.fedAt) : 0
   const leftMin = Math.ceil(leftMs / 60_000)
-  const feedLeft = `${Math.floor(leftMin / 60)}h ${leftMin % 60}min`
+  const feedLeft = t('{h}h {m}min', { h: Math.floor(leftMin / 60), m: leftMin % 60 })
   const doFeed = async (instant: boolean) => {
     const r = await actions.feed(ro.id, instant)
     if (r.ok) {
       flash('win', 900)
-      toast(r.value!, 'ok')
-    } else toast(r.error, 'erro')
+      toast(tx(r.value!), 'ok')
+    } else toast(tx(r.error), 'erro')
   }
 
   const ownedFor = (sl: Slot) => ACCESSORIES.filter((a) => a.slot === sl && (s.accessories[a.id] ?? 0) > 0)
@@ -122,7 +123,7 @@ function RoosterDetail({ id }: { id: string }) {
   return (
     <>
       <button className="btn btn-ghost back" onClick={() => go('/galinheiro')}>
-        ← Voltar ao galinheiro
+        {t('← Voltar ao galinheiro')}
       </button>
       <div className="detail">
         <div className="card detail-art">
@@ -155,10 +156,10 @@ function RoosterDetail({ id }: { id: string }) {
                   }}
                 >
                   <input autoFocus maxLength={18} value={newName} onChange={(e) => setNewName(e.target.value)} />
-                  <button className="btn btn-sm btn-primary">Salvar</button>
+                  <button className="btn btn-sm btn-primary">{t('Salvar')}</button>
                 </form>
               ) : (
-                <h1 className="detail-name" onClick={() => setRenaming(true)} title="Clique para renomear">
+                <h1 className="detail-name" onClick={() => setRenaming(true)} title={t('Clique para renomear')}>
                   {ro.name} <span className="edit">✏️</span>
                 </h1>
               )}
@@ -168,75 +169,75 @@ function RoosterDetail({ id }: { id: string }) {
               </p>
             </div>
             <div className="level-badge">
-              <small>Nível</small>
+              <small>{t('Nível')}</small>
               <b>{ro.level}</b>
             </div>
           </div>
           <p className="muted italic">"{breed.desc}"</p>
 
           <div className="bars">
-            <Bar value={ro.xp} max={xpMax} kind="xp" label={`XP ${fmt(ro.xp)}/${fmt(xpMax)}`} />
-            <Bar value={en} max={100} kind="energy" label={`Energia ${en}/100 ${en < 100 ? '(+1/min)' : ''}`} />
+            <Bar value={ro.xp} max={xpMax} kind="xp" label={t('XP {xp}/{max}', { xp: fmt(ro.xp), max: fmt(xpMax) })} />
+            <Bar value={en} max={100} kind="energy" label={t('Energia {en}/100 {extra}', { en, extra: en < 100 ? '(+1/min)' : '' })} />
           </div>
 
           <div className="stat-grid">
-            <Stat emoji="❤️" label="Vida" value={st.hp} max={260} />
-            <Stat emoji="🗡️" label="Ataque" value={st.atk} max={60} />
-            <Stat emoji="🛡️" label="Defesa" value={st.def} max={50} />
-            <Stat emoji="💨" label="Velocidade" value={st.spd} max={50} />
+            <Stat emoji="❤️" label={t('Vida')} value={st.hp} max={260} />
+            <Stat emoji="🗡️" label={t('Ataque')} value={st.atk} max={60} />
+            <Stat emoji="🛡️" label={t('Defesa')} value={st.def} max={50} />
+            <Stat emoji="💨" label={t('Velocidade')} value={st.spd} max={50} />
           </div>
 
           <div className="row-between wrap gap">
             <div>
-              <StyleTag style={ro.style} /> <span className="muted tiny">Especial: {STYLES[ro.style].special}</span>
+              <StyleTag style={ro.style} /> <span className="muted tiny">{t('Especial: {x}', { x: STYLES[ro.style].special })}</span>
             </div>
-            <span className="power big">⚡ Poder {power(ro)}</span>
+            <span className="power big">{t('⚡ Poder {n}', { n: power(ro) })}</span>
           </div>
           <div className="record">
             <div>
               <b>{ro.wins}</b>
-              <span>Vitórias</span>
+              <span>{t('Vitórias')}</span>
             </div>
             <div>
               <b>{ro.losses}</b>
-              <span>Derrotas</span>
+              <span>{t('Derrotas')}</span>
             </div>
             <div>
               <b>{ro.kos}</b>
-              <span>K.O.s</span>
+              <span>{t('K.O.s')}</span>
             </div>
             <div>
               <b>{ro.wins + ro.losses ? Math.round((ro.wins / (ro.wins + ro.losses)) * 100) : 0}%</b>
-              <span>Aproveitamento</span>
+              <span>{t('Aproveitamento')}</span>
             </div>
           </div>
-          {(ro.lucky ?? 0) > 0 && <p className="lucky">🍀 Sortudo por mais {ro.lucky} luta(s)</p>}
+          {(ro.lucky ?? 0) > 0 && <p className="lucky">{tp('🍀 Sortudo por mais {n} luta', '🍀 Sortudo por mais {n} lutas', ro.lucky ?? 0)}</p>}
 
           <div className="grow-box">
             <div className="grow-item">
               <span className="big-emoji">🌽</span>
               <div className="grow">
-                <b>Alimentar</b>
+                <b>{t('Alimentar')}</b>
                 <div className="tiny muted">
-                  +{30 + ro.level * 6} XP e +15 energia. {feedReady ? 'Pronto para comer!' : `Grátis de novo em ${feedLeft}.`}
+                  {t('+{xp} XP e +15 energia.', { xp: 30 + ro.level * 6 })} {feedReady ? t('Pronto para comer!') : t('Grátis de novo em {t}.', { t: feedLeft })}
                 </div>
               </div>
               {feedReady ? (
                 <button className="btn btn-primary btn-sm pulse" onClick={() => doFeed(false)}>
-                  Dar comida
+                  {t('Dar comida')}
                 </button>
               ) : (
                 <button className="btn btn-sm" onClick={() => doFeed(true)}>
-                  Agora · 🥚 3
+                  {t('Agora · 🥚 3')}
                 </button>
               )}
             </div>
             <div className="grow-item">
               <span className="big-emoji">⭐</span>
               <div className="grow">
-                <b>Evoluir potencial</b>
+                <b>{t('Evoluir potencial')}</b>
                 <div className="tiny muted">
-                  {ro.stars >= 5 ? 'Potencial máximo atingido.' : `${ro.stars}★ → ${ro.stars + 1}★: +6% em tudo e cresce mais rápido por nível.`}
+                  {ro.stars >= 5 ? t('Potencial máximo atingido.') : t('{a}★ → {b}★: +6% em tudo e cresce mais rápido por nível.', { a: ro.stars, b: ro.stars + 1 })}
                 </div>
               </div>
               {ro.stars < 5 && (
@@ -246,9 +247,9 @@ function RoosterDetail({ id }: { id: string }) {
                     const r = await actions.upgradeStars(ro.id)
                     if (r.ok) {
                       flash('special', 900)
-                      toast(`⭐ ${ro.name} agora tem ${ro.stars + 1} estrelas!`, 'ok')
-                    } else if (r.error.includes('Ovos')) go('/loja/ovos')
-                    else toast(r.error, 'erro')
+                      toast(t('⭐ {nome} agora tem {n} estrelas!', { nome: ro.name, n: ro.stars + 1 }), 'ok')
+                    } else if (tx(r.error) === t('Ovos de ouro insuficientes 🥚')) go('/loja/ovos')
+                    else toast(tx(r.error), 'erro')
                   }}
                 >
                   🥚 {STAR_COST[ro.stars]}
@@ -259,22 +260,22 @@ function RoosterDetail({ id }: { id: string }) {
 
           <div className="actions">
             <button className="btn btn-primary" onClick={() => go(`/rinha?galo=${ro.id}`)}>
-              ⚔️ Lutar
+              {t('⚔️ Lutar')}
             </button>
             <button className="btn" onClick={train}>
-              💪 Treinar <small>(🌽{100 + ro.level * 25} · ⚡15)</small>
+              {t('💪 Treinar')} <small>(🌽{100 + ro.level * 25} · ⚡15)</small>
             </button>
             <button className="btn" onClick={() => setItemsOpen(true)}>
-              🍽️ Usar item
+              {t('🍽️ Usar item')}
             </button>
             <button className="btn" onClick={() => setSkinOpen(true)}>
-              🎨 Skin
+              {t('🎨 Skin')}
             </button>
             <button className="btn" onClick={() => setStyleOpen(true)}>
-              🎭 Estilo
+              {t('🎭 Estilo')}
             </button>
             <button className="btn btn-danger" onClick={() => setSellOpen(true)}>
-              💰 Vender
+              {t('💰 Vender')}
             </button>
           </div>
         </div>
@@ -286,7 +287,7 @@ function RoosterDetail({ id }: { id: string }) {
             {ro.equipped[slot] && (
               <div className="equip-current">
                 <span>
-                  Equipado: <b>{ACC_BY_ID[ro.equipped[slot]!].emoji} {ACC_BY_ID[ro.equipped[slot]!].name}</b>
+                  {t('Equipado:')} <b>{ACC_BY_ID[ro.equipped[slot]!].emoji} {ACC_BY_ID[ro.equipped[slot]!].name}</b>
                 </span>
                 <button
                   className="btn btn-sm"
@@ -295,18 +296,18 @@ function RoosterDetail({ id }: { id: string }) {
                     setSlot(null)
                   }}
                 >
-                  Tirar
+                  {t('Tirar')}
                 </button>
               </div>
             )}
             {ownedFor(slot).length === 0 ? (
               <Empty
                 emoji="🛍️"
-                title="Nada guardado pra esse lugar"
-                text="Compre acessórios na loja ou abra caixas surpresa."
+                title={t('Nada guardado pra esse lugar')}
+                text={t('Compre acessórios na loja ou abra caixas surpresa.')}
                 action={
                   <button className="btn btn-primary" onClick={() => go('/loja/acessorios')}>
-                    Ir para a loja
+                    {t('Ir para a loja')}
                   </button>
                 }
               />
@@ -323,14 +324,14 @@ function RoosterDetail({ id }: { id: string }) {
                       className="btn btn-sm btn-primary"
                       onClick={() => {
                         const r = actions.equip(ro.id, a.id)
-                        if (!r.ok) toast(r.error, 'erro')
+                        if (!r.ok) toast(tx(r.error), 'erro')
                         else {
                           flash('win', 900)
                           setSlot(null)
                         }
                       }}
                     >
-                      Equipar
+                      {t('Equipar')}
                     </button>
                   </div>
                 ))}
@@ -340,7 +341,7 @@ function RoosterDetail({ id }: { id: string }) {
         )}
       </Modal>
 
-      <Modal open={itemsOpen} onClose={() => setItemsOpen(false)} title="🍽️ Usar item">
+      <Modal open={itemsOpen} onClose={() => setItemsOpen(false)} title={t('🍽️ Usar item')}>
         <div className="list">
           {ITEMS.map((it) => (
             <div key={it.id} className="list-row">
@@ -355,20 +356,20 @@ function RoosterDetail({ id }: { id: string }) {
                   onClick={() => {
                     const r = actions.useItem(it.id, ro.id)
                     if (r.ok) {
-                      toast(r.value!, 'ok')
+                      toast(tx(r.value!), 'ok')
                       flash('special', 900)
-                    } else toast(r.error, 'erro')
+                    } else toast(tx(r.error), 'erro')
                   }}
                 >
-                  Usar
+                  {t('Usar')}
                 </button>
               ) : (
                 <button
                   className="btn btn-sm"
                   onClick={async () => {
                     const r = await actions.buyItem(it.id)
-                    if (r.ok) toast(`${it.name} comprado!`, 'ok')
-                    else toast(r.error, 'erro')
+                    if (r.ok) toast(t('{nome} comprado!', { nome: it.name }), 'ok')
+                    else toast(tx(r.error), 'erro')
                   }}
                 >
                   {it.currency === 'milho' ? '🌽' : '🥚'} {fmt(it.price)}
@@ -379,7 +380,7 @@ function RoosterDetail({ id }: { id: string }) {
         </div>
       </Modal>
 
-      <Modal open={skinOpen} onClose={() => setSkinOpen(false)} title="🎨 Escolher skin" wide>
+      <Modal open={skinOpen} onClose={() => setSkinOpen(false)} title={t('🎨 Escolher skin')} wide>
         <div className="apply-grid">
           <button
             className={`apply-item ${!ro.skin ? 'selected' : ''}`}
@@ -389,7 +390,7 @@ function RoosterDetail({ id }: { id: string }) {
             }}
           >
             <RoosterSvg breedId={ro.breedId} equipped={ro.equipped} size={90} anim="none" />
-            <b>Original</b>
+            <b>{t('Original')}</b>
             <span className="tiny">{breed.name}</span>
           </button>
           {s.skins.map((id) => (
@@ -409,14 +410,14 @@ function RoosterDetail({ id }: { id: string }) {
           ))}
           <button className="apply-item more" onClick={() => go('/loja/skins')}>
             <span className="add-plus">＋</span>
-            <b>Mais skins</b>
-            <span className="tiny">{s.skins.length === 0 ? 'Você ainda não tem skins' : 'Ver loja'}</span>
+            <b>{t('Mais skins')}</b>
+            <span className="tiny">{s.skins.length === 0 ? t('Você ainda não tem skins') : t('Ver loja')}</span>
           </button>
         </div>
       </Modal>
 
-      <Modal open={styleOpen} onClose={() => setStyleOpen(false)} title="🎭 Trocar estilo de luta">
-        <p className="muted">Trocar o estilo custa 🌽 800. O estilo muda os atributos e o golpe especial.</p>
+      <Modal open={styleOpen} onClose={() => setStyleOpen(false)} title={t('🎭 Trocar estilo de luta')}>
+        <p className="muted">{t('Trocar o estilo custa 🌽 800. O estilo muda os atributos e o golpe especial.')}</p>
         <div className="list">
           {(Object.keys(STYLES) as Style[]).map((k) => (
             <div key={k} className={`list-row ${ro.style === k ? 'current' : ''}`}>
@@ -424,23 +425,23 @@ function RoosterDetail({ id }: { id: string }) {
               <div className="grow">
                 <b>{STYLES[k].label}</b>
                 <div className="tiny muted">
-                  {STYLES[k].desc} Especial: {STYLES[k].special}.
+                  {STYLES[k].desc} {t('Especial: {x}', { x: STYLES[k].special })}.
                 </div>
               </div>
               {ro.style === k ? (
-                <span className="tiny">Atual</span>
+                <span className="tiny">{t('Atual')}</span>
               ) : (
                 <button
                   className="btn btn-sm"
                   onClick={() => {
                     const r = actions.setStyle(ro.id, k)
                     if (r.ok) {
-                      toast(`${ro.name} agora é ${STYLES[k].label}!`, 'ok')
+                      toast(t('{nome} agora é {estilo}!', { nome: ro.name, estilo: STYLES[k].label }), 'ok')
                       setStyleOpen(false)
-                    } else toast(r.error, 'erro')
+                    } else toast(tx(r.error), 'erro')
                   }}
                 >
-                  Escolher
+                  {t('Escolher')}
                 </button>
               )}
             </div>
@@ -448,26 +449,26 @@ function RoosterDetail({ id }: { id: string }) {
         </div>
       </Modal>
 
-      <Modal open={sellOpen} onClose={() => setSellOpen(false)} title="💰 Vender galo">
+      <Modal open={sellOpen} onClose={() => setSellOpen(false)} title={t('💰 Vender galo')}>
         <p>
-          Vender <b>{ro.name}</b> por <b>🌽 {fmt(sellPrice(ro))}</b>? Os acessórios voltam para o seu inventário.
+          {tn('Vender {nome} por {preco}? Os acessórios voltam para o seu inventário.', { nome: <b>{ro.name}</b>, preco: <b>🌽 {fmt(sellPrice(ro))}</b> })}
         </p>
         <div className="row-end gap">
           <button className="btn" onClick={() => setSellOpen(false)}>
-            Cancelar
+            {t('Cancelar')}
           </button>
           <button
             className="btn btn-danger"
             onClick={() => {
               const r = actions.sell(ro.id)
               if (r.ok) {
-                toast(`Vendido por 🌽 ${fmt(r.value!)}`, 'ok')
+                toast(t('Vendido por 🌽 {n}', { n: fmt(r.value!) }), 'ok')
                 go('/galinheiro')
-              } else toast(r.error, 'erro')
+              } else toast(tx(r.error), 'erro')
               setSellOpen(false)
             }}
           >
-            Vender
+            {t('Vender')}
           </button>
         </div>
       </Modal>
@@ -490,7 +491,7 @@ function Stat({ emoji, label, value, max }: { emoji: string; label: string; valu
 }
 
 export function bonusText(b: Partial<Record<string, number>>) {
-  const names: Record<string, string> = { hp: '❤️ Vida', atk: '🗡️ Ataque', def: '🛡️ Defesa', spd: '💨 Veloc.' }
+  const names: Record<string, string> = { hp: t('❤️ Vida'), atk: t('🗡️ Ataque'), def: t('🛡️ Defesa'), spd: t('💨 Veloc.') }
   return Object.entries(b)
     .map(([k, v]) => `${names[k]} +${v}`)
     .join(' · ')

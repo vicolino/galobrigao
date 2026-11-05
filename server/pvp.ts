@@ -6,6 +6,7 @@ import type { GameState, MissionKind, Rooster } from '../src/game/types'
 import { getDb, type UserRow } from './db'
 import { loadSave, writeSave } from './saves'
 import { betsNotice } from './bets'
+import { t } from '../src/i18n'
 
 export class PvpError extends Error {}
 const fail = (m: string): never => {
@@ -44,7 +45,7 @@ function isOnline(userId: string) {
   return !!r && now() - r.last_seen < ONLINE_WINDOW
 }
 
-const userName = (id: string) => (db().prepare('SELECT name FROM users WHERE id = ?').get(id) as { name: string } | undefined)?.name ?? 'Criador'
+const userName = (id: string) => (db().prepare('SELECT name FROM users WHERE id = ?').get(id) as { name: string } | undefined)?.name ?? t('Criador')
 
 function busyRoosters(): Set<string> {
   const rows = db().prepare("SELECT from_rooster, to_rooster FROM challenges WHERE status = 'pendente'").all() as { from_rooster: string; to_rooster: string }[]
@@ -117,12 +118,12 @@ function applyResult(s: GameState, roosterId: string, won: boolean, ko: boolean,
   n = bump(n, 'lutar')
   if (won) n = bump(n, 'vencer')
   if (won && ko) n = bump(n, 'ko')
-  n = { ...n, history: [{ id: uid(), at: now(), text: `Desafio ${won ? 'vencido' : 'perdido'} contra ${oppName}`, milho: rw.milho, ovo: 0 }, ...n.history].slice(0, 80) }
+  n = { ...n, history: [{ id: uid(), at: now(), text: won ? t('Desafio vencido contra {nome}', { nome: oppName }) : t('Desafio perdido contra {nome}', { nome: oppName }), milho: rw.milho, ovo: 0 }, ...n.history].slice(0, 80) }
   return { state: n, rewards: { ...rw, levels, limited } }
 }
 
 function getChallenge(id: string) {
-  return (db().prepare('SELECT * FROM challenges WHERE id = ?').get(id) as unknown as ChallengeRow | undefined) ?? fail('Desafio não encontrado')
+  return (db().prepare('SELECT * FROM challenges WHERE id = ?').get(id) as unknown as ChallengeRow | undefined) ?? fail(t('Desafio não encontrado'))
 }
 
 export function handlePvp(path: string, method: string, url: URL, body: Record<string, unknown>, u: UserRow): { status?: number; body: unknown } | null {
@@ -150,7 +151,7 @@ export function handlePvp(path: string, method: string, url: URL, body: Record<s
 
   // Galos de jogadores online com nível compatível
   if (path === '/api/pvp/lobby' && method === 'GET') {
-    const mine = findRooster(u.id, url.searchParams.get('roosterId') ?? '') ?? fail('Escolha um dos seus galos')
+    const mine = findRooster(u.id, url.searchParams.get('roosterId') ?? '') ?? fail(t('Escolha um dos seus galos'))
     const busy = busyRoosters()
     const users = db().prepare('SELECT user_id FROM presence WHERE last_seen > ? AND user_id != ?').all(now() - ONLINE_WINDOW, u.id) as { user_id: string }[]
     const out: LobbyEntry[] = []
@@ -168,17 +169,17 @@ export function handlePvp(path: string, method: string, url: URL, body: Record<s
 
   // Enviar desafio
   if (path === '/api/pvp/challenge' && method === 'POST') {
-    const mine = findRooster(u.id, String(body.roosterId)) ?? fail('Galo não encontrado')
+    const mine = findRooster(u.id, String(body.roosterId)) ?? fail(t('Galo não encontrado'))
     const toUser = String(body.toUserId)
-    if (toUser === u.id) fail('Você não pode desafiar a si mesmo')
-    const theirs = findRooster(toUser, String(body.toRoosterId)) ?? fail('Esse galo não está mais disponível')
-    if (!levelsMatch(mine.level, theirs.level)) fail(`Só é possível desafiar galos de nível parecido (diferença máxima de ${maxLevelDiff()}). ${mine.name} é nível ${mine.level}.`)
-    if (!isOnline(toUser)) fail('Esse jogador saiu. Escolha outro adversário.')
-    if (currentEnergy(mine) < PVP_ENERGY) fail(`${mine.name} precisa de ${PVP_ENERGY} de energia.`)
-    if (currentEnergy(theirs) < PVP_ENERGY) fail('O galo adversário está sem energia.')
-    if (db().prepare("SELECT 1 FROM challenges WHERE from_user = ? AND status = 'pendente'").get(u.id)) fail('Você já tem um desafio esperando resposta.')
+    if (toUser === u.id) fail(t('Você não pode desafiar a si mesmo'))
+    const theirs = findRooster(toUser, String(body.toRoosterId)) ?? fail(t('Esse galo não está mais disponível'))
+    if (!levelsMatch(mine.level, theirs.level)) fail(t('Só é possível desafiar galos de nível parecido (diferença máxima de {max}). {galo} é nível {nivel}.', { max: maxLevelDiff(), galo: mine.name, nivel: mine.level }))
+    if (!isOnline(toUser)) fail(t('Esse jogador saiu. Escolha outro adversário.'))
+    if (currentEnergy(mine) < PVP_ENERGY) fail(t('{galo} precisa de {n} de energia.', { galo: mine.name, n: PVP_ENERGY }))
+    if (currentEnergy(theirs) < PVP_ENERGY) fail(t('O galo adversário está sem energia.'))
+    if (db().prepare("SELECT 1 FROM challenges WHERE from_user = ? AND status = 'pendente'").get(u.id)) fail(t('Você já tem um desafio esperando resposta.'))
     const busy = busyRoosters()
-    if (busy.has(mine.id) || busy.has(theirs.id)) fail('Um dos galos já está em outro desafio.')
+    if (busy.has(mine.id) || busy.has(theirs.id)) fail(t('Um dos galos já está em outro desafio.'))
     const id = randomUUID()
     db()
       .prepare('INSERT INTO challenges (id, from_user, to_user, from_rooster, to_rooster, status, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
@@ -189,8 +190,8 @@ export function handlePvp(path: string, method: string, url: URL, body: Record<s
   // Aceitar ou recusar
   if (path === '/api/pvp/respond' && method === 'POST') {
     const c = getChallenge(String(body.id))
-    if (c.to_user !== u.id) fail('Esse desafio não é para você')
-    if (c.status !== 'pendente') fail('Esse desafio não está mais valendo')
+    if (c.to_user !== u.id) fail(t('Esse desafio não é para você'))
+    if (c.status !== 'pendente') fail(t('Esse desafio não está mais valendo'))
     if (body.accept !== true) {
       db().prepare("UPDATE challenges SET status = 'recusado', resolved_at = ?, seen_to = 1 WHERE id = ?").run(now(), c.id)
       return { body: { challenge: view(getChallenge(c.id), u.id) } }
@@ -203,9 +204,9 @@ export function handlePvp(path: string, method: string, url: URL, body: Record<s
       db().prepare("UPDATE challenges SET status = 'cancelado', resolved_at = ?, seen_to = 1, result = ? WHERE id = ?").run(now(), JSON.stringify({ reason }), c.id)
       return fail(reason)
     }
-    if (!fromSave || !toSave || !a || !b) return cancel('Um dos galos não existe mais.')
-    if (!levelsMatch(a.level, b.level)) return cancel('Os galos não têm mais nível parecido.')
-    if (currentEnergy(a) < PVP_ENERGY || currentEnergy(b) < PVP_ENERGY) return cancel('Um dos galos ficou sem energia.')
+    if (!fromSave || !toSave || !a || !b) return cancel(t('Um dos galos não existe mais.'))
+    if (!levelsMatch(a.level, b.level)) return cancel(t('Os galos não têm mais nível parecido.'))
+    if (currentEnergy(a) < PVP_ENERGY || currentEnergy(b) < PVP_ENERGY) return cancel(t('Um dos galos ficou sem energia.'))
 
     const seed = Math.floor(Math.random() * 1e9)
     const res = simulate(a, b, seed)
@@ -232,7 +233,7 @@ export function handlePvp(path: string, method: string, url: URL, body: Record<s
   // Cancelar desafio enviado
   if (path === '/api/pvp/cancel' && method === 'POST') {
     const c = getChallenge(String(body.id))
-    if (c.from_user !== u.id || c.status !== 'pendente') fail('Não dá para cancelar esse desafio')
+    if (c.from_user !== u.id || c.status !== 'pendente') fail(t('Não dá para cancelar esse desafio'))
     db().prepare("UPDATE challenges SET status = 'cancelado', resolved_at = ?, seen_from = 1 WHERE id = ?").run(now(), c.id)
     return { body: { ok: true } }
   }

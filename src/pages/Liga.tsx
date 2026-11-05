@@ -2,23 +2,24 @@ import { PageHead, go } from '../components/ui'
 import { LEAGUE_TIERS } from '../game/data'
 import { fmt } from '../game/rooster'
 import { tierFor, useGame } from '../game/store'
+import { t, tp, tx } from '../i18n'
 
 export function Liga() {
   const { state, actions, toast } = useGame()
   const s = state!
   const rows = [...s.league.rows].sort((a, b) => b.points - a.points)
   const tier = tierFor(s.league.points)
-  const nextTier = LEAGUE_TIERS.find((t) => t.min > s.league.points)
+  const nextTier = LEAGUE_TIERS.find((tr) => tr.min > s.league.points)
   const daysLeft = 7 - (Math.floor((Date.now() - Date.UTC(2024, 0, 1)) / 864e5) % 7)
 
   return (
     <>
       <PageHead
-        title="🏆 Liga do Terreiro"
-        subtitle={`Temporada ${s.league.season - 140} · termina em ${daysLeft} dia(s)`}
+        title={t('🏆 Liga do Terreiro')}
+        subtitle={tp('Temporada {temporada} · termina em {n} dia', 'Temporada {temporada} · termina em {n} dias', daysLeft, { temporada: s.league.season - 140 })}
         right={
           <button className="btn btn-primary" onClick={() => go('/rinha')}>
-            ⚔️ Lutar e pontuar
+            {t('⚔️ Lutar e pontuar')}
           </button>
         }
       />
@@ -26,10 +27,10 @@ export function Liga() {
       <div className="card league-hero">
         <div className="tier-emoji">{tier.emoji}</div>
         <div className="grow">
-          <h2>{tier.name}</h2>
+          <h2>{tx(tier.name)}</h2>
           <p className="muted">
-            {s.league.points} pontos
-            {nextTier ? ` · faltam ${nextTier.min - s.league.points} para ${nextTier.emoji} ${nextTier.name}` : ' · topo da liga!'}
+            {t('{n} pontos', { n: fmt(s.league.points) })}
+            {nextTier ? t(' · faltam {n} para {tier}', { n: fmt(nextTier.min - s.league.points), tier: `${nextTier.emoji} ${tx(nextTier.name)}` }) : t(' · topo da liga!')}
           </p>
           {nextTier && (
             <div className="bar bar-xp">
@@ -38,21 +39,21 @@ export function Liga() {
               </div>
             </div>
           )}
-          <p className="tiny muted">Vitória: +15 (fácil) · +25 (médio) · +40 (difícil). Derrota: −8.</p>
+          <p className="tiny muted">{t('Vitória: +15 (fácil) · +25 (médio) · +40 (difícil). Derrota: −8.')}</p>
         </div>
       </div>
 
       <div className="two-col">
         <div className="card">
-          <h3>Classificação</h3>
+          <h3>{t('Classificação')}</h3>
           <table className="table">
             <tbody>
               {rows.map((r, i) => (
                 <tr key={r.id} className={r.isPlayer ? 'me' : ''}>
-                  <td className="pos-col">{i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}º`}</td>
+                  <td className="pos-col">{i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : t('{n}º', { n: i + 1 })}</td>
                   <td>
-                    {r.name}
-                    {r.isPlayer && ' (você)'}
+                    {tx(r.name)}
+                    {r.isPlayer && t(' (você)')}
                   </td>
                   <td className="tiny">{tierFor(r.points).emoji}</td>
                   <td className="right">
@@ -64,18 +65,18 @@ export function Liga() {
           </table>
         </div>
         <div className="card">
-          <h3>Recompensas da temporada</h3>
+          <h3>{t('Recompensas da temporada')}</h3>
           <div className="list">
-            {LEAGUE_TIERS.map((t) => {
-              const reached = s.league.points >= t.min
-              const claimed = s.league.claimed.includes(t.name)
+            {LEAGUE_TIERS.map((tr) => {
+              const reached = s.league.points >= tr.min
+              const claimed = s.league.claimed.includes(tr.name)
               return (
-                <div key={t.name} className={`list-row ${reached ? '' : 'locked'}`}>
-                  <span className="big-emoji">{t.emoji}</span>
+                <div key={tr.name} className={`list-row ${reached ? '' : 'locked'}`}>
+                  <span className="big-emoji">{tr.emoji}</span>
                   <div className="grow">
-                    <b>{t.name}</b>
+                    <b>{tx(tr.name)}</b>
                     <div className="tiny muted">
-                      {t.min} pts · 🌽 {fmt(t.reward.milho)} + 🥚 {t.reward.ovo}
+                      {t('{n} pts', { n: fmt(tr.min) })} · 🌽 {fmt(tr.reward.milho)} + 🥚 {tr.reward.ovo}
                     </div>
                   </div>
                   {claimed ? (
@@ -84,11 +85,11 @@ export function Liga() {
                     <button
                       className="btn btn-sm btn-primary pulse"
                       onClick={() => {
-                        const r = actions.claimLeague(t.name)
-                        if (r.ok) toast(`Recompensa ${t.name} resgatada!`, 'ok')
+                        const r = actions.claimLeague(tr.name)
+                        if (r.ok) toast(t('Recompensa {tier} resgatada!', { tier: tx(tr.name) }), 'ok')
                       }}
                     >
-                      Resgatar
+                      {t('Resgatar')}
                     </button>
                   ) : (
                     <span className="tiny muted">🔒</span>

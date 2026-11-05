@@ -5,6 +5,7 @@ import { sfx } from '../game/sound'
 import { useGame } from '../game/store'
 import type { Currency, Rarity, Rooster } from '../game/types'
 import { RoosterSvg } from './RoosterSvg'
+import { t, tx } from '../i18n'
 
 export function useHashRoute() {
   const [hash, setHash] = useState(() => window.location.hash.slice(1) || '/galinheiro')
@@ -41,7 +42,7 @@ export function RarityTag({ rarity }: { rarity: Rarity }) {
 
 export function Stars({ n }: { n: number }) {
   return (
-    <span className="stars" title={`Potencial ${n}/5`}>
+    <span className="stars" title={t('Potencial {n}/5', { n })}>
       {'★'.repeat(n)}
       <span className="dim">{'★'.repeat(5 - n)}</span>
     </span>
@@ -74,7 +75,7 @@ export function Modal({ open, onClose, title, children, wide }: { open: boolean;
         {title && (
           <div className="modal-head">
             <h3>{title}</h3>
-            <button className="icon-btn" onClick={onClose} aria-label="Fechar">
+            <button className="icon-btn" onClick={onClose} aria-label={t('Fechar')}>
               ✕
             </button>
           </div>
@@ -89,9 +90,9 @@ export function Toasts() {
   const { toasts } = useGame()
   return (
     <div className="toasts">
-      {toasts.map((t) => (
-        <div key={t.id} className={`toast toast-${t.kind}`}>
-          {t.text}
+      {toasts.map((x) => (
+        <div key={x.id} className={`toast toast-${x.kind}`}>
+          {tx(x.text)}
         </div>
       ))}
     </div>
@@ -123,7 +124,7 @@ export function RoosterCard({ ro, onClick, footer, selected, compact }: { ro: Ro
     >
       <div className="rc-top">
         <RarityTag rarity={breed.rarity} />
-        <span className="rc-level">Nv {ro.level}</span>
+        <span className="rc-level">{t('Nv {n}', { n: ro.level })}</span>
       </div>
       <div className="rc-art">
         <RoosterSvg breedId={ro.breedId} skin={ro.skin} equipped={ro.equipped} size={compact ? 110 : 150} />
@@ -138,10 +139,10 @@ export function RoosterCard({ ro, onClick, footer, selected, compact }: { ro: Ro
       </div>
       {!compact && (
         <div className="rc-stats">
-          <span title="Vida">❤️ {st.hp}</span>
-          <span title="Ataque">🗡️ {st.atk}</span>
-          <span title="Defesa">🛡️ {st.def}</span>
-          <span title="Velocidade">💨 {st.spd}</span>
+          <span title={t('Vida')}>❤️ {st.hp}</span>
+          <span title={t('Ataque')}>🗡️ {st.atk}</span>
+          <span title={t('Defesa')}>🛡️ {st.def}</span>
+          <span title={t('Velocidade')}>💨 {st.spd}</span>
         </div>
       )}
       <Bar value={en} max={100} kind="energy" label={`⚡ ${en}`} />
@@ -176,16 +177,16 @@ export function PageHead({ title, subtitle, right }: { title: ReactNode; subtitl
 export function Tabs<T extends string>({ value, onChange, tabs }: { value: T; onChange: (v: T) => void; tabs: { id: T; label: ReactNode }[] }) {
   return (
     <div className="tabs">
-      {tabs.map((t) => (
+      {tabs.map((tb) => (
         <button
-          key={t.id}
-          className={`tab ${value === t.id ? 'active' : ''}`}
+          key={tb.id}
+          className={`tab ${value === tb.id ? 'active' : ''}`}
           onClick={() => {
             sfx.click()
-            onChange(t.id)
+            onChange(tb.id)
           }}
         >
-          {t.label}
+          {tb.label}
         </button>
       ))}
     </div>

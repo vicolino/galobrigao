@@ -4,6 +4,7 @@ import type { AppConfig, PublicConfig } from './game/config'
 import type { ChallengeView, LobbyEntry, PvpPoll } from './game/pvp'
 import type { BetCredit, BetView, ScheduledFight } from './game/bets'
 import type { BetPick, GameState } from './game/types'
+import { lang, t, tx } from './i18n'
 
 export interface ApiUser {
   id: string
@@ -42,16 +43,26 @@ export class ApiError extends Error {
 }
 
 async function call<T>(path: string, init: { method?: string; body?: unknown } = {}): Promise<T> {
-  const res = await fetch(`/api${path}`, {
-    method: init.method ?? 'GET',
-    headers: init.body !== undefined ? { 'Content-Type': 'application/json' } : undefined,
-    body: init.body !== undefined ? JSON.stringify(init.body) : undefined,
-    credentials: 'same-origin',
-  })
+  const headers: Record<string, string> = { 'X-Lang': lang() }
+  if (init.body !== undefined) headers['Content-Type'] = 'application/json'
+  let res: Response
+  try {
+    res = await fetch(`/api${path}`, {
+      method: init.method ?? 'GET',
+      headers,
+      body: init.body !== undefined ? JSON.stringify(init.body) : undefined,
+      credentials: 'same-origin',
+    })
+  } catch {
+    throw new ApiError(0, t('Erro de conexão'), {})
+  }
   const body = await res.json().catch(() => ({}))
-  if (!res.ok) throw new ApiError(res.status, body.error ?? 'Erro de conexão', body)
+  if (!res.ok) throw new ApiError(res.status, tx(body.error) || t('Erro de conexão'), body)
   return body as T
 }
+
+// Galos das lutas da casa são gerados no servidor com nomes em português: mostra no idioma do jogador
+const localRooster = <R extends { name: string; owner?: string }>(r: R): R => ({ ...r, name: tx(r.name), ...(r.owner ? { owner: tx(r.owner) } : {}) })
 
 export const api = {
   me: () => call<{ user: ApiUser | null; provider: string; paymentsLive?: boolean }>('/me'),
@@ -72,7 +83,11 @@ export const api = {
   simulate: (id: string) => call<{ order: ApiOrder }>(`/orders/${id}/simulate`, { method: 'POST' }),
   orders: () => call<{ orders: ApiOrder[] }>('/orders'),
   shop: (op: ShopOp) => call<{ rev: number; state: GameState; value: unknown }>('/shop', { method: 'POST', body: op }),
-  betsSchedule: () => call<{ now: number; closeMs: number; liveMs: number; fights: ScheduledFight[]; mine: BetView[] }>('/bets/schedule'),
+  betsSchedule: () =>
+    call<{ now: number; closeMs: number; liveMs: number; fights: ScheduledFight[]; mine: BetView[] }>('/bets/schedule').then((r) => ({
+      ...r,
+      fights: r.fights.map((f) => ({ ...f, a: localRooster(f.a), b: localRooster(f.b) })),
+    })),
   betsMine: () => call<{ bets: BetView[] }>('/bets/mine'),
   placeBet: (fightId: string, pick: BetPick, amount: number) => call<{ rev: number; state: GameState; credit: BetCredit | null }>('/bets', { method: 'POST', body: { fightId, pick, amount } }),
   pvpPoll: () => call<PvpPoll>('/pvp/poll'),

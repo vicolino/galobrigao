@@ -6,18 +6,20 @@ import { Modal, go } from './ui'
 import { DAILY_OVOS } from '../game/rewards'
 import { brl } from '../game/catalog'
 import { APP_NAME, ARENA } from '../brand'
+import { t, tp } from '../i18n'
+import { LangSwitch } from './LangSwitch'
 
 const NAV = [
-  { path: '/galinheiro', label: 'Galinheiro', emoji: '🏠' },
-  { path: '/rinha', label: ARENA, emoji: '⚔️' },
-  { path: '/desafios', label: 'Desafios', emoji: '🤝' },
-  { path: '/apostas', label: 'Apostas', emoji: '🎲' },
-  { path: '/missoes', label: 'Missões', emoji: '🎯' },
-  { path: '/liga', label: 'Liga', emoji: '🏆' },
-  { path: '/loja/skins', label: 'Skins', emoji: '🎨' },
-  { path: '/loja/ferramentas', label: 'Ferramentas', emoji: '🧰' },
-  { path: '/loja', label: 'Loja', emoji: '🛒' },
-  { path: '/perfil', label: 'Perfil', emoji: '👤' },
+  { path: '/galinheiro', label: t('Galinheiro'), emoji: '🏠' },
+  { path: '/rinha', label: t(ARENA), emoji: '⚔️' },
+  { path: '/desafios', label: t('Desafios'), emoji: '🤝' },
+  { path: '/apostas', label: t('Apostas'), emoji: '🎲' },
+  { path: '/missoes', label: t('Missões'), emoji: '🎯' },
+  { path: '/liga', label: t('Liga'), emoji: '🏆' },
+  { path: '/loja/skins', label: t('Skins'), emoji: '🎨' },
+  { path: '/loja/ferramentas', label: t('Ferramentas'), emoji: '🧰' },
+  { path: '/loja', label: t('Loja'), emoji: '🛒' },
+  { path: '/perfil', label: t('Perfil'), emoji: '👤' },
 ]
 
 export function Sidebar({ route, open, onClose }: { route: string; open: boolean; onClose: () => void }) {
@@ -68,30 +70,30 @@ export function Sidebar({ route, open, onClose }: { route: string; open: boolean
         {user?.isAdmin && (
           <a href="#/admin" className="nav-item admin-link">
             <span className="nav-emoji">🛠️</span>
-            Backoffice
+            {t('Backoffice')}
           </a>
         )}
 
         <div className="side-bottom">
           <div className="wallet">
             <div className="wallet-row" onClick={() => go('/loja/trocar')}>
-              <span>🌽 Milho</span>
+              <span>🌽 {t('Milho')}</span>
               <b>{fmt(wallet!.milho)}</b>
             </div>
             <div className="wallet-row" onClick={() => go('/loja/ovos')}>
-              <span>🥚 Ovo de ouro</span>
+              <span>🥚 {t('Ovo de ouro')}</span>
               <b>{fmt(wallet!.ovos)}</b>
             </div>
             {pubConfig?.mvp.on && (
-              <div className="wallet-row credit-row" onClick={() => go('/loja/ovos')} title="Crédito de teste do Modo MVP (sem valor real)">
-                <span>🎁 Crédito MVP</span>
+              <div className="wallet-row credit-row" onClick={() => go('/loja/ovos')} title={t('Crédito de teste do Modo MVP (sem valor real)')}>
+                <span>🎁 {t('Crédito MVP')}</span>
                 <b>{brl(user?.mvpCreditCents ?? 0)}</b>
               </div>
             )}
-            <a className="btn btn-sm btn-gold" href="#/loja/ovos">💎 Comprar ovos</a>
-            <p className="tiny muted center">Moeda virtual · sem saque</p>
+            <a className="btn btn-sm btn-gold" href="#/loja/ovos">💎 {t('Comprar ovos')}</a>
+            <p className="tiny muted center">{t('Moeda virtual · sem saque')}</p>
             <button className={`btn btn-daily ${dailyReady ? 'pulse' : ''}`} onClick={claim}>
-              🎁 {dailyReady ? 'Bônus diário' : `Sequência: ${s.daily.streak} dia${s.daily.streak === 1 ? '' : 's'}`}
+              🎁 {dailyReady ? t('Bônus diário') : tp('Sequência: {n} dia', 'Sequência: {n} dias', s.daily.streak)}
             </button>
           </div>
 
@@ -108,7 +110,7 @@ export function Sidebar({ route, open, onClose }: { route: string; open: boolean
             </div>
           </div>
           <div className="volume">
-            <button className="icon-btn" onClick={() => actions.setSettings({ muted: !s.settings.muted })} title="Som">
+            <button className="icon-btn" onClick={() => actions.setSettings({ muted: !s.settings.muted })} title={t('Som')}>
               {s.settings.muted || s.settings.volume === 0 ? '🔇' : '🔊'}
             </button>
             <input
@@ -120,16 +122,19 @@ export function Sidebar({ route, open, onClose }: { route: string; open: boolean
               onChange={(e) => actions.setSettings({ volume: Number(e.target.value), muted: false })}
             />
           </div>
+          <div className="side-lang">
+            <LangSwitch compact />
+          </div>
         </div>
       </aside>
 
-      <Modal open={!!daily} onClose={() => setDaily(null)} title="🎁 Bônus diário">
+      <Modal open={!!daily} onClose={() => setDaily(null)} title={'🎁 ' + t('Bônus diário')}>
         {daily && (
           <div className="center">
             <div className="streak">
               {Array.from({ length: 7 }).map((_, i) => (
                 <div key={i} className={`streak-day ${i < daily.streak ? 'done' : ''} ${i === 6 ? 'big' : ''}`}>
-                  <span>Dia {i + 1}</span>
+                  <span>{t('Dia {n}', { n: i + 1 })}</span>
                   <b>{i === 6 ? `🥚×${DAILY_OVOS(7)}` : `🌽${300 * (i + 1)}`}</b>
                   {i < 6 && <small>🥚 {DAILY_OVOS(i + 1)}</small>}
                 </div>
@@ -138,9 +143,9 @@ export function Sidebar({ route, open, onClose }: { route: string; open: boolean
             <p className="reward-big">
               +🌽 {fmt(daily.milho)} &nbsp; +🥚 {daily.ovo}
             </p>
-            <p className="muted">Volte amanhã para manter a sequência! O 7º dia dá um prêmio especial.</p>
+            <p className="muted">{t('Volte amanhã para manter a sequência! O 7º dia dá um prêmio especial.')}</p>
             <button className="btn btn-primary" onClick={() => setDaily(null)}>
-              Valeu!
+              {t('Valeu!')}
             </button>
           </div>
         )}

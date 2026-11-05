@@ -147,6 +147,7 @@ export function getDb() {
   if (!cols.includes('mvp_credit_cents')) db.exec('ALTER TABLE users ADD COLUMN mvp_credit_cents INTEGER NOT NULL DEFAULT 0')
   if (!cols.includes('mvp_granted_at')) db.exec('ALTER TABLE users ADD COLUMN mvp_granted_at INTEGER')
   if (!cols.includes('role')) db.exec("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'player'")
+  if (!cols.includes('lang')) db.exec("ALTER TABLE users ADD COLUMN lang TEXT NOT NULL DEFAULT 'pt'")
   return db
 }
 
@@ -162,6 +163,8 @@ export interface UserRow {
   pending_limit_at: number | null
   banned_at?: number | null
   role?: string
+  /** Idioma em que o jogador se cadastrou (nomes gerados no jogo novo). */
+  lang?: string
   mvp_credit_cents?: number
   mvp_granted_at?: number | null
   ban_reason?: string | null

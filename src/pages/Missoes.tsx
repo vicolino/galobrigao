@@ -2,6 +2,7 @@ import { Bar, PageHead } from '../components/ui'
 import { fmt } from '../game/rooster'
 import { useGame } from '../game/store'
 import type { MissionKind } from '../game/types'
+import { t, tx } from '../i18n'
 
 const LINKS: Record<MissionKind, string> = {
   vencer: '#/rinha',
@@ -27,14 +28,14 @@ export function Missoes() {
 
   return (
     <>
-      <PageHead title="🎯 Missões diárias" subtitle={`Novas missões em ${hrs}h ${mins}min · ${done}/${s.missions.list.length} resgatadas`} />
+      <PageHead title={t('🎯 Missões diárias')} subtitle={t('Novas missões em {h}h {m}min · {feitas}/{total} resgatadas', { h: hrs, m: mins, feitas: done, total: s.missions.list.length })} />
       <div className="missions">
         {s.missions.list.map((m) => {
           const ready = m.progress >= m.goal && !m.claimed
           return (
             <div key={m.id} className={`card mission ${m.claimed ? 'claimed' : ''} ${ready ? 'ready' : ''}`}>
               <div className="grow">
-                <b>{m.text}</b>
+                <b>{tx(m.text)}</b>
                 <Bar value={m.progress} max={m.goal} kind="xp" label={`${m.progress}/${m.goal}`} />
               </div>
               <div className="mission-reward">
@@ -42,27 +43,27 @@ export function Missoes() {
                 {m.reward.ovo > 0 && <span>🥚 {m.reward.ovo}</span>}
               </div>
               {m.claimed ? (
-                <span className="tiny">✅ Resgatada</span>
+                <span className="tiny">{t('✅ Resgatada')}</span>
               ) : ready ? (
                 <button
                   className="btn btn-primary pulse"
                   onClick={() => {
                     const r = actions.claimMission(m.id)
-                    if (r.ok) toast(`Missão concluída! +🌽 ${fmt(m.reward.milho)}${m.reward.ovo ? ` +🥚 ${m.reward.ovo}` : ''}`, 'ok')
+                    if (r.ok) toast(t('Missão concluída! +🌽 {milho}', { milho: fmt(m.reward.milho) }) + (m.reward.ovo ? ` +🥚 ${m.reward.ovo}` : ''), 'ok') // i18n-ok
                   }}
                 >
-                  Resgatar
+                  {t('Resgatar')}
                 </button>
               ) : (
                 <a className="btn btn-sm" href={LINKS[m.kind]}>
-                  Ir →
+                  {t('Ir →')}
                 </a>
               )}
             </div>
           )
         })}
       </div>
-      <p className="muted tiny center">Conquistas também dão 🥚 5 cada. Veja todas no seu Perfil.</p>
+      <p className="muted tiny center">{t('Conquistas também dão 🥚 5 cada. Veja todas no seu Perfil.')}</p>
     </>
   )
 }

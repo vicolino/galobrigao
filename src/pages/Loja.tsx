@@ -11,6 +11,7 @@ import { useGame } from '../game/store'
 import type { Accessory, Slot } from '../game/types'
 import { bonusText } from './Galinheiro'
 import { FerramentasTab, SkinsTab } from './LojaExtra'
+import { locale, t, tn, tp, tx } from '../i18n'
 
 type Tab = 'galos' | 'skins' | 'acessorios' | 'ferramentas' | 'itens' | 'caixas' | 'ovos' | 'trocar'
 
@@ -18,19 +19,19 @@ export function Loja({ tab: tabParam }: { tab?: string }) {
   const tab = (['galos', 'skins', 'acessorios', 'ferramentas', 'itens', 'caixas', 'ovos', 'trocar'].includes(tabParam ?? '') ? tabParam : 'galos') as Tab
   return (
     <>
-      <PageHead title="🛒 Loja" subtitle="Galos, skins, acessórios, ferramentas de luta e muito mais." />
+      <PageHead title={t('🛒 Loja')} subtitle={t('Galos, skins, acessórios, ferramentas de luta e muito mais.')} />
       <Tabs
         value={tab}
-        onChange={(t) => go(`/loja/${t}`)}
+        onChange={(v) => go(`/loja/${v}`)}
         tabs={[
-          { id: 'galos', label: '🐓 Galos' },
-          { id: 'skins', label: '🎨 Skins' },
-          { id: 'acessorios', label: '🎩 Acessórios' },
-          { id: 'ferramentas', label: '🧰 Ferramentas' },
-          { id: 'itens', label: '🍽️ Itens' },
-          { id: 'caixas', label: '🎁 Caixas' },
-          { id: 'ovos', label: '💎 Comprar (R$)' },
-          { id: 'trocar', label: '🔁 Trocar' },
+          { id: 'galos', label: t('🐓 Galos') },
+          { id: 'skins', label: t('🎨 Skins') },
+          { id: 'acessorios', label: t('🎩 Acessórios') },
+          { id: 'ferramentas', label: t('🧰 Ferramentas') },
+          { id: 'itens', label: t('🍽️ Itens') },
+          { id: 'caixas', label: t('🎁 Caixas') },
+          { id: 'ovos', label: t('💎 Comprar (R$)') },
+          { id: 'trocar', label: t('🔁 Trocar') },
         ]}
       />
       {tab === 'galos' && <Galos />}
@@ -57,8 +58,8 @@ function Galos() {
     <>
       <div className="card election">
         <div className="election-head">
-          <span className="sale-tag">🗳️ EDIÇÃO ELEIÇÕES</span>
-          <span className="tiny muted">Mesmos atributos, mesmo preço. Quem leva a melhor é você que decide na arena.</span>
+          <span className="sale-tag">{t('🗳️ EDIÇÃO ELEIÇÕES')}</span>
+          <span className="tiny muted">{t('Mesmos atributos, mesmo preço. Quem leva a melhor é você que decide na arena.')}</span>
         </div>
         <div className="election-vs">
           {ELECTION_ROOSTERS.map((e, i) => {
@@ -79,30 +80,30 @@ function Galos() {
                   disabled={owned}
                   onClick={async () => {
                     const r = await actions.buyElection(e.breedId)
-                    if (r.ok) toast(`${e.emoji} ${e.name} chegou ao galinheiro!`, 'ok')
-                    else toast(r.error, 'erro')
+                    if (r.ok) toast(t('{nome} chegou ao galinheiro!', { nome: `${e.emoji} ${e.name}` }), 'ok')
+                    else toast(tx(r.error), 'erro')
                   }}
                 >
-                  {owned ? '✅ Já está no seu galinheiro' : <>Comprar · 🥚 {b.price}</>}
+                  {owned ? t('✅ Já está no seu galinheiro') : <>{t('Comprar')} · 🥚 {b.price}</>}
                 </button>
               </div>
             )
           })}
           <div className="election-x">VS</div>
         </div>
-        <p className="tiny muted center">Os dois também se enfrentam no card de Apostas no "Clássico Eleitoral".</p>
+        <p className="tiny muted center">{t('Os dois também se enfrentam no card de Apostas no "Clássico Eleitoral".')}</p>
       </div>
 
       <div className="row-between">
-        <p className="muted">O mercado renova sozinho em {mins} min.</p>
+        <p className="muted">{t('O mercado renova sozinho em {n} min.', { n: mins })}</p>
         <button
           className="btn btn-sm"
           onClick={async () => {
             const r = await actions.refreshMarket()
-            if (!r.ok) toast(r.error, 'erro')
+            if (!r.ok) toast(tx(r.error), 'erro')
           }}
         >
-          🔄 Renovar agora (🥚 5)
+          {t('🔄 Renovar agora (🥚 5)')}
         </button>
       </div>
       <div className="grid-cards">
@@ -118,18 +119,18 @@ function Galos() {
                   disabled={s.milho < price}
                   onClick={() => {
                     const res = actions.buyRooster(r.id)
-                    if (res.ok) toast(`${r.name} chegou ao galinheiro! 🐓`, 'ok')
-                    else toast(res.error, 'erro')
+                    if (res.ok) toast(t('{nome} chegou ao galinheiro! 🐓', { nome: r.name }), 'ok')
+                    else toast(tx(res.error), 'erro')
                   }}
                 >
-                  Comprar · 🌽 {fmt(price)}
+                  {t('Comprar')} · 🌽 {fmt(price)}
                 </button>
               }
             />
           )
         })}
       </div>
-      {s.market.roosters.length === 0 && <p className="muted center">Mercado vazio. Renove para ver novos galos.</p>}
+      {s.market.roosters.length === 0 && <p className="muted center">{t('Mercado vazio. Renove para ver novos galos.')}</p>}
     </>
   )
 }
@@ -146,7 +147,7 @@ function Acessorios() {
     <>
       <div className="chips">
         <button className={`chip clickable ${slot === 'todos' ? 'active' : ''}`} onClick={() => setSlot('todos')}>
-          Todos
+          {t('Todos')}
         </button>
         {(Object.keys(SLOTS) as Slot[]).map((k) => (
           <button key={k} className={`chip clickable ${slot === k ? 'active' : ''}`} onClick={() => setSlot(k)}>
@@ -167,7 +168,7 @@ function Acessorios() {
             </div>
             <div className="row-between">
               <RarityTag rarity={a.rarity} />
-              <span className="tiny muted">Você tem: {s.accessories[a.id] ?? 0}</span>
+              <span className="tiny muted">{t('Você tem: {n}', { n: s.accessories[a.id] ?? 0 })}</span>
             </div>
             <div className="tiny bonus">{bonusText(a.bonus)}</div>
             <button
@@ -175,8 +176,8 @@ function Acessorios() {
               onClick={async (e) => {
                 e.stopPropagation()
                 const r = await actions.buyAccessory(a.id)
-                if (r.ok) toast(`${a.emoji} ${a.name} comprado! Equipe no Galinheiro.`, 'ok')
-                else toast(r.error, 'erro')
+                if (r.ok) toast(t('{nome} comprado! Equipe no Galinheiro.', { nome: `${a.emoji} ${a.name}` }), 'ok')
+                else toast(tx(r.error), 'erro')
               }}
             >
               <Price value={a.price} currency={a.currency} />
@@ -202,12 +203,12 @@ function Acessorios() {
               onClick={async () => {
                 const r = await actions.buyAccessory(preview.id)
                 if (r.ok) {
-                  toast(`${preview.name} comprado!`, 'ok')
+                  toast(t('{nome} comprado!', { nome: preview.name }), 'ok')
                   setPreview(null)
-                } else toast(r.error, 'erro')
+                } else toast(tx(r.error), 'erro')
               }}
             >
-              Comprar · <Price value={preview.price} currency={preview.currency} />
+              {t('Comprar')} · <Price value={preview.price} currency={preview.currency} />
             </button>
           </div>
         )}
@@ -226,25 +227,25 @@ function Itens() {
           <div className="shop-emoji">{it.emoji}</div>
           <b>{it.name}</b>
           <p className="tiny muted">{it.desc}</p>
-          <span className="tiny muted">Você tem: {s.items[it.id] ?? 0}</span>
+          <span className="tiny muted">{t('Você tem: {n}', { n: s.items[it.id] ?? 0 })}</span>
           <div className="row gap">
             <button
               className="btn btn-primary grow"
               onClick={async () => {
                 const r = await actions.buyItem(it.id)
-                if (r.ok) toast(`${it.emoji} ${it.name} comprado!`, 'ok')
-                else toast(r.error, 'erro')
+                if (r.ok) toast(t('{nome} comprado!', { nome: `${it.emoji} ${it.name}` }), 'ok')
+                else toast(tx(r.error), 'erro')
               }}
             >
               <Price value={it.price} currency={it.currency} />
             </button>
             <button
               className="btn btn-sm"
-              title="Comprar 5"
+              title={t('Comprar 5')}
               onClick={async () => {
                 const r = await actions.buyItem(it.id, 5)
-                if (r.ok) toast(`5x ${it.name} comprados!`, 'ok')
-                else toast(r.error, 'erro')
+                if (r.ok) toast(t('5x {nome} comprados!', { nome: it.name }), 'ok')
+                else toast(tx(r.error), 'erro')
               }}
             >
               ×5
@@ -264,7 +265,7 @@ function Caixas() {
   const open = async (id: string) => {
     const r = await actions.openBox(id)
     if (!r.ok) {
-      toast(r.error, 'erro')
+      toast(tx(r.error), 'erro')
       return
     }
     setOpening(id)
@@ -283,7 +284,7 @@ function Caixas() {
           <div key={b.id} className="card box-card">
             <div className={`box-emoji ${opening === b.id ? 'opening' : ''}`}>{b.emoji}</div>
             <h3>{b.name}</h3>
-            <p className="tiny muted">Um acessório aleatório.</p>
+            <p className="tiny muted">{t('Um acessório aleatório.')}</p>
             <div className="odds-table">
               {Object.entries(b.odds).map(([r, p]) => (
                 <div key={r}>
@@ -293,14 +294,14 @@ function Caixas() {
               ))}
             </div>
             <button className="btn btn-primary full btn-lg" onClick={() => open(b.id)} disabled={!!opening}>
-              Abrir · <Price value={b.price} currency={b.currency} />
+              {t('Abrir')} · <Price value={b.price} currency={b.currency} />
             </button>
           </div>
         ))}
       </div>
-      <p className="tiny muted center">As chances de cada raridade estão sempre visíveis. Itens repetidos ficam no inventário.</p>
+      <p className="tiny muted center">{t('As chances de cada raridade estão sempre visíveis. Itens repetidos ficam no inventário.')}</p>
 
-      <Modal open={!!prize} onClose={() => setPrize(null)} title="🎉 Você ganhou!">
+      <Modal open={!!prize} onClose={() => setPrize(null)} title={t('🎉 Você ganhou!')}>
         {prize && (
           <div className={`center prize rar-${prize.rarity}`}>
             <div className="prize-emoji">{prize.emoji}</div>
@@ -309,7 +310,7 @@ function Caixas() {
             <p className="bonus">{bonusText(prize.bonus)}</p>
             <div className="row-center gap">
               <button className="btn" onClick={() => setPrize(null)}>
-                Fechar
+                {t('Fechar')}
               </button>
               <button
                 className="btn btn-primary"
@@ -318,7 +319,7 @@ function Caixas() {
                   go('/galinheiro')
                 }}
               >
-                Equipar no galinheiro
+                {t('Equipar no galinheiro')}
               </button>
             </div>
           </div>
@@ -344,40 +345,40 @@ function Ovos() {
     <>
       {pubConfig?.mvp.on && (
         <div className="mvp-banner">
-          🎁 <b>MODO MVP:</b> seu crédito de teste é <b>{brl(user?.mvpCreditCents ?? 0)}</b>. Use em qualquer compra abaixo — é por nossa conta!
+          🎁 {tn('{modo} seu crédito de teste é {valor}. Use em qualquer compra abaixo — é por nossa conta!', { modo: <b>{t('MODO MVP:')}</b>, valor: <b>{brl(user?.mvpCreditCents ?? 0)}</b> })}
         </div>
       )}
       {vip && (
         <div className="card vip">
           <div className="vip-crown">👑</div>
           <div className="grow">
-            <h2>Passe do Criador</h2>
+            <h2>{t('Passe do Criador')}</h2>
             <ul className="tiny">
-              <li>🥚 100 ovos de ouro na hora</li>
-              <li>🥚 +{VIP.dailyOvos} ovos todo dia no bônus diário</li>
-              <li>🌽 +{Math.round(VIP.milhoBonus * 100)}% de milho nas lutas e no bônus</li>
-              <li>👑 Coroa ao lado do seu nome</li>
+              <li>{t('🥚 100 ovos de ouro na hora')}</li>
+              <li>{t('🥚 +{n} ovos todo dia no bônus diário', { n: VIP.dailyOvos })}</li>
+              <li>{t('🌽 +{n}% de milho nas lutas e no bônus', { n: Math.round(VIP.milhoBonus * 100) })}</li>
+              <li>{t('👑 Coroa ao lado do seu nome')}</li>
             </ul>
-            {isVip && <p className="pos tiny">Ativo · {vipDays} dia(s) restantes</p>}
+            {isVip && <p className="pos tiny">{tp('Ativo · {n} dia restante', 'Ativo · {n} dias restantes', vipDays)}</p>}
           </div>
           <button className="btn btn-gold btn-lg" onClick={() => setBuying(vip)}>
-            {isVip ? 'Renovar' : 'Assinar'} · {brl(vip.priceCents)}
+            {isVip ? t('Renovar') : t('Assinar')} · {brl(vip.priceCents)}
           </button>
         </div>
       )}
 
       {starters.length > 0 && (
         <>
-          <h3 className="section-title">🎁 Ofertas de começo (uma vez por conta)</h3>
+          <h3 className="section-title">{t('🎁 Ofertas de começo (uma vez por conta)')}</h3>
           <div className="grid-shop">
             {starters.map((p) => (
               <div key={p.id} className={`card egg-pack ${p.tag ? 'tagged' : ''}`}>
-                {p.tag && <div className="pack-tag">{p.tag}</div>}
+                {p.tag && <div className="pack-tag">{tx(p.tag)}</div>}
                 <RoosterSvg breedId={p.breedId!} skin={p.skin} size={110} anim="none" />
                 <b>
-                  {p.emoji} {p.name}
+                  {p.emoji} {tx(p.name)}
                 </b>
-                <span className="tiny muted">{p.desc}</span>
+                <span className="tiny muted">{tx(p.desc)}</span>
                 <button className="btn btn-gold full" onClick={() => setBuying(p)}>
                   {brl(p.priceCents)}
                 </button>
@@ -387,15 +388,15 @@ function Ovos() {
         </>
       )}
 
-      <h3 className="section-title">🥚 Ovos de ouro</h3>
+      <h3 className="section-title">{t('🥚 Ovos de ouro')}</h3>
       <div className="grid-shop">
         {packs.map((p, i) => (
           <div key={p.id} className={`card egg-pack ${p.tag ? 'tagged' : ''}`}>
-            {p.tag && <div className="pack-tag">{p.tag}</div>}
+            {p.tag && <div className="pack-tag">{tx(p.tag)}</div>}
             <div className="egg-stack">{'🥚'.repeat(i + 1)}</div>
-            <b className="egg-amount">{(p.ovos! + (p.bonus ?? 0)).toLocaleString('pt-BR')}</b>
-            {p.bonus ? <span className="pos tiny">+{p.bonus} de bônus</span> : <span className="tiny">&nbsp;</span>}
-            <span className="tiny muted">{brl(Math.round(p.priceCents / ((p.ovos! + (p.bonus ?? 0)) / 100)))} por 100</span>
+            <b className="egg-amount">{(p.ovos! + (p.bonus ?? 0)).toLocaleString(locale())}</b>
+            {p.bonus ? <span className="pos tiny">{t('+{n} de bônus', { n: p.bonus.toLocaleString(locale()) })}</span> : <span className="tiny">&nbsp;</span>}
+            <span className="tiny muted">{t('{preco} por 100', { preco: brl(Math.round(p.priceCents / ((p.ovos! + (p.bonus ?? 0)) / 100))) })}</span>
             <button className="btn btn-primary full" onClick={() => setBuying(p)}>
               {brl(p.priceCents)}
             </button>
@@ -404,7 +405,7 @@ function Ovos() {
       </div>
       {user && (
         <p className="tiny muted center">
-          Gasto este mês: {brl(user.limits.spentCents)} de {brl(user.limits.monthlyCents)} (limite ajustável no Perfil). Ovos de ouro são itens virtuais, sem saque.
+          {t('Gasto este mês: {gasto} de {limite} (limite ajustável no Perfil). Ovos de ouro são itens virtuais, sem saque.', { gasto: brl(user.limits.spentCents), limite: brl(user.limits.monthlyCents) })}
         </p>
       )}
       <Checkout
@@ -422,20 +423,20 @@ function Trocar() {
   const { state, actions, toast } = useGame()
   return (
     <>
-      <p className="muted">Troque ovos de ouro por milho para comprar galos, treinar e apostar.</p>
+      <p className="muted">{t('Troque ovos de ouro por milho para comprar galos, treinar e apostar.')}</p>
       <div className="grid-shop">
         {CORN_PACKS.map((p) => (
           <div key={p.id} className="card shop-item center">
             <div className="shop-emoji">🌽</div>
             <b className="egg-amount">{fmt(p.milho)}</b>
-            <span className="tiny muted">de milho</span>
+            <span className="tiny muted">{t('de milho')}</span>
             <button
               className="btn btn-primary full"
               disabled={state!.ovos < p.ovos}
               onClick={async () => {
                 const r = await actions.exchange(p.id)
                 if (r.ok) toast(`+🌽 ${fmt(p.milho)}`, 'ok')
-                else toast(r.error, 'erro')
+                else toast(tx(r.error), 'erro')
               }}
             >
               🥚 {p.ovos}
@@ -445,7 +446,7 @@ function Trocar() {
       </div>
       <div className="center">
         <button className="btn" onClick={() => go('/loja/ovos')}>
-          Precisa de mais ovos? 🥚
+          {t('Precisa de mais ovos? 🥚')}
         </button>
       </div>
     </>

@@ -8,13 +8,14 @@ import { maxLevelDiff, PVP_ENERGY, type ChallengeView, type LobbyEntry } from '.
 import { currentEnergy, power } from '../game/rooster'
 import { sfx } from '../game/sound'
 import { useGame } from '../game/store'
+import { t, tn, tp, tx } from '../i18n'
 
 function useCountdown(until?: number) {
   const [, setT] = useState(0)
   useEffect(() => {
     if (!until) return
-    const t = setInterval(() => setT(Date.now()), 500)
-    return () => clearInterval(t)
+    const iv = setInterval(() => setT(Date.now()), 500)
+    return () => clearInterval(iv)
   }, [until])
   return until ? Math.max(0, Math.ceil((until - Date.now()) / 1000)) : 0
 }
@@ -46,10 +47,10 @@ export function Desafios() {
     }
     setLoading(true)
     void load()
-    const t = setInterval(load, 5000)
+    const iv = setInterval(load, 5000)
     return () => {
       alive = false
-      clearInterval(t)
+      clearInterval(iv)
     }
   }, [mine.id, mine.level])
 
@@ -61,8 +62,8 @@ export function Desafios() {
 
   const challenge = async (p: LobbyEntry) => {
     const r = await actions.pvpChallenge(mine.id, p.userId, p.rooster.id)
-    if (r.ok) toast(`Desafio enviado para ${p.name}! Esperando resposta...`, 'ok')
-    else toast(r.error, 'erro')
+    if (r.ok) toast(t('Desafio enviado para {nome}! Esperando resposta...', { nome: p.name }), 'ok')
+    else toast(tx(r.error), 'erro')
   }
 
   const lowEnergy = currentEnergy(mine) < PVP_ENERGY
@@ -71,9 +72,9 @@ export function Desafios() {
   return (
     <>
       <PageHead
-        title="🤝 Desafios"
-        subtitle={`${pvp?.online ?? 0} jogador(es) online agora · só galos de nível igual ou até ${maxLevelDiff()} de diferença`}
-        right={<span className="pill">🟢 Você está online</span>}
+        title={t('🤝 Desafios')}
+        subtitle={tp('{n} jogador online agora · só galos de nível igual ou até {dif} de diferença', '{n} jogadores online agora · só galos de nível igual ou até {dif} de diferença', pvp?.online ?? 0, { dif: maxLevelDiff() })}
+        right={<span className="pill">{t('🟢 Você está online')}</span>}
       />
 
       {outgoing && (
@@ -85,19 +86,19 @@ export function Desafios() {
           </div>
           <div className="grow">
             <b>
-              Aguardando {outgoing.toName} responder... <span className="spinner" />
+              {t('Aguardando {nome} responder...', { nome: outgoing.toName })} <span className="spinner" />
             </b>
             <div className="tiny muted">
-              {outgoing.a.name} (Nv {outgoing.a.level}) x {outgoing.b.name} (Nv {outgoing.b.level}) · expira em {left}s
+              {t('{a} (Nv {na}) x {b} (Nv {nb}) · expira em {s}s', { a: outgoing.a.name, na: outgoing.a.level, b: outgoing.b.name, nb: outgoing.b.level, s: left })}
             </div>
           </div>
           <button className="btn btn-sm" onClick={() => actions.pvpCancel(outgoing.id)}>
-            Cancelar
+            {t('Cancelar')}
           </button>
         </div>
       )}
 
-      <h2 className="section-title">1. Seu galo</h2>
+      <h2 className="section-title">{t('1. Seu galo')}</h2>
       <div className="scroller">
         {sorted.map((r) => (
           <div key={r.id} className="scroller-item">
@@ -107,25 +108,25 @@ export function Desafios() {
       </div>
       {lowEnergy && (
         <div className="warn">
-          ⚡ {mine.name} precisa de {PVP_ENERGY} de energia para desafiar. <a href={`#/galinheiro/${mine.id}`}>Dar comida ou ração</a>.
+          {tn('⚡ {nome} precisa de {n} de energia para desafiar. {link}.', { nome: mine.name, n: PVP_ENERGY, link: <a href={`#/galinheiro/${mine.id}`}>{t('Dar comida ou ração')}</a> })}
         </div>
       )}
 
       <h2 className="section-title">
-        2. Adversários online <span className="tiny muted">(nível {range})</span>
+        {t('2. Adversários online')} <span className="tiny muted">{t('(nível {range})', { range })}</span>
       </h2>
       {loading && players.length === 0 ? (
         <p className="muted">
-          <span className="spinner" /> Procurando jogadores...
+          <span className="spinner" /> {t('Procurando jogadores...')}
         </p>
       ) : players.length === 0 ? (
         <Empty
           emoji="🦗"
-          title={`Ninguém online com galo de nível ${range} agora`}
-          text="Fique nesta tela: a lista atualiza sozinha. Você também pode treinar outro galo ou lutar na Arena enquanto espera."
+          title={t('Ninguém online com galo de nível {range} agora', { range })}
+          text={t('Fique nesta tela: a lista atualiza sozinha. Você também pode treinar outro galo ou lutar na Arena enquanto espera.')}
           action={
             <button className="btn btn-primary" onClick={() => go('/rinha')}>
-              ⚔️ Ir para a Arena
+              {t('⚔️ Ir para a Arena')}
             </button>
           }
         />
@@ -141,7 +142,7 @@ export function Desafios() {
                   <span className="player-tag">
                     <span className="avatar sm">{p.avatar}</span> {p.name}
                   </span>
-                  <span className={`lvl-diff ${diff === 0 ? 'same' : diff > 0 ? 'up' : 'down'}`}>{diff === 0 ? 'Mesmo nível' : diff > 0 ? `+${diff} nível` : `${diff} nível`}</span>
+                  <span className={`lvl-diff ${diff === 0 ? 'same' : diff > 0 ? 'up' : 'down'}`}>{diff === 0 ? t('Mesmo nível') : tp('{d} nível', '{d} níveis', Math.abs(diff), { d: diff > 0 ? `+${diff}` : `${diff}` })}</span>
                 </div>
                 <div className="opp-vs">
                   <RoosterSvg breedId={mine.breedId} skin={mine.skin} equipped={mine.equipped} size={90} anim="none" />
@@ -150,7 +151,7 @@ export function Desafios() {
                 </div>
                 <div className="rc-name">{p.rooster.name}</div>
                 <div className="rc-sub">
-                  {b.name} · Nv {p.rooster.level} · {p.rooster.wins}V {p.rooster.losses}D
+                  {t('{raca} · Nv {nivel} · {v}V {d}D', { raca: b.name, nivel: p.rooster.level, v: p.rooster.wins, d: p.rooster.losses })}
                 </div>
                 <div className="rc-row">
                   <RarityTag rarity={b.rarity} />
@@ -161,10 +162,10 @@ export function Desafios() {
                   <div className="chance-bar">
                     <div style={{ width: `${Math.round(chance * 100)}%` }} />
                   </div>
-                  <span>Sua chance: ~{Math.round(chance * 100)}%</span>
+                  <span>{t('Sua chance: ~{n}%', { n: Math.round(chance * 100) })}</span>
                 </div>
                 <button className="btn btn-primary full" disabled={!!outgoing || lowEnergy} onClick={() => challenge(p)}>
-                  🤝 Desafiar
+                  {t('🤝 Desafiar')}
                 </button>
               </div>
             )
@@ -174,7 +175,7 @@ export function Desafios() {
 
       {history.length > 0 && (
         <>
-          <h2 className="section-title">📜 Últimos desafios</h2>
+          <h2 className="section-title">{t('📜 Últimos desafios')}</h2>
           <div className="card">
             <table className="table">
               <tbody>
@@ -189,7 +190,7 @@ export function Desafios() {
                       <td>
                         <b>{me.name}</b> x {them.name} <span className="tiny muted">({h.mine === 'from' ? h.toName : h.fromName})</span>
                       </td>
-                      <td className="tiny">{h.result?.method === 'ko' ? 'K.O.' : 'Decisão'}</td>
+                      <td className="tiny">{h.result?.method === 'ko' ? 'K.O.' : t('Decisão')}</td>
                       <td className={`right ${won ? 'pos' : 'neg'}`}>🌽 +{h.result?.rewards.milho ?? 0}</td>
                       <td className="right">
                         <button
@@ -199,7 +200,7 @@ export function Desafios() {
                             go('/luta')
                           }}
                         >
-                          ▶ Rever
+                          {t('▶ Rever')}
                         </button>
                       </td>
                     </tr>
@@ -235,7 +236,7 @@ export function ChallengeAlert() {
     setBusy(true)
     const r = await actions.pvpRespond(c.id, accept)
     setBusy(false)
-    if (!r.ok) toast(r.error, 'erro')
+    if (!r.ok) toast(tx(r.error), 'erro')
     else if (accept) {
       sfx.bell()
       go('/luta')
@@ -243,17 +244,17 @@ export function ChallengeAlert() {
   }
 
   return (
-    <Modal open onClose={() => respond(false)} title="🤝 Você foi desafiado!">
+    <Modal open onClose={() => respond(false)} title={t('🤝 Você foi desafiado!')}>
       <div className="center">
         <p>
-          <b>{c.fromName}</b> quer lutar contra seu galo <b>{c.b.name}</b>.
+          {tn('{nome} quer lutar contra seu galo {galo}.', { nome: <b>{c.fromName}</b>, galo: <b>{c.b.name}</b> })}
         </p>
         <div className="opp-vs alert-vs">
           <div>
             <RoosterSvg breedId={c.a.breedId} skin={c.a.skin} equipped={c.a.equipped} size={120} anim="idle" />
             <b>{c.a.name}</b>
             <div className="tiny muted">
-              Nv {c.a.level} · ⚡ {power(c.a)}
+              {t('Nv {n}', { n: c.a.level })} · ⚡ {power(c.a)}
             </div>
           </div>
           <span className="vs">VS</span>
@@ -261,21 +262,21 @@ export function ChallengeAlert() {
             <RoosterSvg breedId={c.b.breedId} skin={c.b.skin} equipped={c.b.equipped} size={120} flip anim="idle" />
             <b>{c.b.name}</b>
             <div className="tiny muted">
-              Nv {c.b.level} · ⚡ {power(c.b)}
+              {t('Nv {n}', { n: c.b.level })} · ⚡ {power(c.b)}
             </div>
           </div>
         </div>
-        <p className="tiny muted">Gasta {PVP_ENERGY} de energia. Quem vencer leva milho, XP e pontos de liga.</p>
+        <p className="tiny muted">{t('Gasta {n} de energia. Quem vencer leva milho, XP e pontos de liga.', { n: PVP_ENERGY })}</p>
         <div className="timer-bar">
           <div style={{ width: `${Math.min(100, (left / Math.max(1, Math.round((c.expiresAt - c.createdAt) / 1000))) * 100)}%` }} />
         </div>
-        <p className="tiny">{left}s para responder</p>
+        <p className="tiny">{t('{s}s para responder', { s: left })}</p>
         <div className="row-center gap">
           <button className="btn" disabled={busy} onClick={() => respond(false)}>
-            Recusar
+            {t('Recusar')}
           </button>
           <button className="btn btn-primary btn-lg" disabled={busy} onClick={() => respond(true)}>
-            ⚔️ Aceitar desafio
+            {t('⚔️ Aceitar desafio')}
           </button>
         </div>
       </div>

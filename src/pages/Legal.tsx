@@ -1,17 +1,18 @@
 import { APP_NAME, COMPANY, SUPPORT_EMAIL } from '../brand'
+import { lang, locale, t } from '../i18n'
 
 // MODELO: revisar com advogado antes do lançamento e preencher razão social, CNPJ e endereço em src/brand.ts.
-const UPDATED = '04/11/2026'
+const UPDATED = new Date(2026, 10, 4).toLocaleDateString(locale())
 
 export function Legal({ doc }: { doc: 'termos' | 'privacidade' }) {
   return (
     <div className="legal">
       <a className="btn btn-ghost btn-sm" href="#/">
-        ← Voltar
+        {t('← Voltar')}
       </a>
-      {doc === 'termos' ? <Termos /> : <Privacidade />}
+      {lang() === 'en' ? doc === 'termos' ? <TermsEn /> : <PrivacyEn /> : doc === 'termos' ? <Termos /> : <Privacidade />}
       <p className="tiny muted">
-        Última atualização: {UPDATED}. Dúvidas: <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>
+        {t('Última atualização: {data}. Dúvidas:', { data: UPDATED })} <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>
       </p>
     </div>
   )
@@ -84,6 +85,80 @@ function Privacidade() {
       <h3>5. Cookies</h3>
       <p>Usamos apenas um cookie essencial de sessão. Não usamos cookies de publicidade.</p>
       <h3>6. Contato do encarregado (DPO)</h3>
+      <p>{SUPPORT_EMAIL}</p>
+    </>
+  )
+}
+
+// ---------- English version (keep in sync with the Portuguese text above) ----------
+
+function TermsEn() {
+  return (
+    <>
+      <h1>Terms of Use — {APP_NAME}</h1>
+      <p>
+        These terms govern your use of the game {APP_NAME}, provided by {COMPANY}. By creating an account, you agree to them.
+      </p>
+      <h3>1. Who can play</h3>
+      <p>The game is intended for people aged 18 or over. By signing up, you confirm that you are at least 18 years old.</p>
+      <h3>2. The game</h3>
+      <p>
+        {APP_NAME} is an entertainment game featuring cartoon characters. No real animals take part in it or are depicted. All fights are computer simulations.
+      </p>
+      <h3>3. Virtual currencies and items</h3>
+      <ul>
+        <li>Corn and golden eggs are virtual currencies that can only be used inside the game.</li>
+        <li>Virtual currencies and items <b>have no monetary value and cannot be withdrawn, exchanged for money or transferred</b> to other accounts.</li>
+        <li>You receive a license to use virtual items, not ownership of them.</li>
+        <li>The in-game "bets" use corn only and never pay out prizes in money or goods.</li>
+      </ul>
+      <h3>4. Purchases</h3>
+      <ul>
+        <li>Payments are processed by third parties (e.g. Mercado Pago). We do not store card details.</li>
+        <li>Items are delivered as soon as the payment is confirmed.</li>
+        <li>
+          Right of withdrawal (art. 49 of the Brazilian Consumer Protection Code — CDC): you may request a refund within 7 days of purchase if the purchased items have not been used yet. Write to{' '}
+          {SUPPORT_EMAIL}.
+        </li>
+        <li>You can set a monthly spending limit in your Profile. Limit increases take effect after 24 hours.</li>
+      </ul>
+      <h3>5. Conduct</h3>
+      <p>Cheating, automating the game, exploiting bugs, or reselling accounts and items is prohibited. Accounts that do so may be suspended.</p>
+      <h3>6. Availability</h3>
+      <p>We may change, rebalance or discontinue game features. If the game is shut down permanently, we will give at least 30 days' notice.</p>
+      <h3>7. Governing law and jurisdiction</h3>
+      <p>These terms are governed by Brazilian law. The courts of the consumer's place of residence shall have jurisdiction.</p>
+    </>
+  )
+}
+
+function PrivacyEn() {
+  return (
+    <>
+      <h1>Privacy Policy — {APP_NAME}</h1>
+      <p>This policy explains how {COMPANY} handles your data, in accordance with the Brazilian General Data Protection Law (LGPD — Law 13,709/2018).</p>
+      <h3>1. Data we collect</h3>
+      <ul>
+        <li>Sign-up: email, breeder name and password (stored encrypted, never as plain text).</li>
+        <li>Game: your progress, purchases made and currency history.</li>
+        <li>Payments: amount, date and order status. Card or bank account details stay with the payment processor.</li>
+        <li>Technical: IP address and session cookies, to keep you logged in and prevent fraud.</li>
+      </ul>
+      <h3>2. What we use it for</h3>
+      <ul>
+        <li>Performance of the contract: creating your account, saving your progress and delivering purchases.</li>
+        <li>Legal obligation: keeping payment records for the period required by tax law.</li>
+        <li>Legitimate interest: preventing cheating and fraud, and improving the game.</li>
+      </ul>
+      <h3>3. Who we share it with</h3>
+      <p>Only with the payment processor (Mercado Pago), the email service and the hosting provider, to the extent necessary. We do not sell your data.</p>
+      <h3>4. Your rights</h3>
+      <p>
+        You can access, correct and delete your data. Account deletion is available in your Profile, under "Delete my account". Payment records are kept without personal identification for the legally required period.
+      </p>
+      <h3>5. Cookies</h3>
+      <p>We only use one essential session cookie. We do not use advertising cookies.</p>
+      <h3>6. Data Protection Officer (DPO) contact</h3>
       <p>{SUPPORT_EMAIL}</p>
     </>
   )

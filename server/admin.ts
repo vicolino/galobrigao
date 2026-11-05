@@ -6,6 +6,7 @@ import { uid } from '../src/game/rooster'
 import { loadConfig, saveConfig, validateConfig } from './config'
 import { getDb, type OrderRow, type UserRow } from './db'
 import { loadSave, writeSave } from './saves'
+import { t } from '../src/i18n'
 
 export class AdminError extends Error {
   constructor(
@@ -127,10 +128,10 @@ function overview(days: number) {
       banned,
     },
     funnel: [
-      { step: 'Criaram conta', n: users.length },
-      { step: 'Escolheram o primeiro galo', n: withSave },
-      { step: 'Compraram algo', n: payersAll.size },
-      { step: 'Compraram 2+ vezes', n: [...payersAll].filter((id) => paid.filter((o) => o.user_id === id).length >= 2).length },
+      { step: t('Criaram conta'), n: users.length },
+      { step: t('Escolheram o primeiro galo'), n: withSave },
+      { step: t('Compraram algo'), n: payersAll.size },
+      { step: t('Compraram 2+ vezes'), n: [...payersAll].filter((id) => paid.filter((o) => o.user_id === id).length >= 2).length },
     ],
     series,
     bySku: Object.entries(bySku)
@@ -143,7 +144,7 @@ function overview(days: number) {
 // ---------- Rotas ----------
 
 export async function handleAdmin(path: string, method: string, url: URL, body: Record<string, unknown>, admin: UserRow, deps: Deps): Promise<unknown | null> {
-  if (!isAdmin(admin)) throw new AdminError(403, 'Acesso só para administradores')
+  if (!isAdmin(admin)) throw new AdminError(403, t('Acesso só para administradores'))
   loadConfig()
 
   if (path === '/api/admin/overview' && method === 'GET') {
@@ -178,7 +179,7 @@ export async function handleAdmin(path: string, method: string, url: URL, body: 
   if (userMatch) {
     const id = userMatch[1]
     const u = db().prepare('SELECT * FROM users WHERE id = ?').get(id) as unknown as UserRow | undefined
-    if (!u) throw new AdminError(404, 'Jogador não encontrado')
+    if (!u) throw new AdminError(404, t('Jogador não encontrado'))
 
     if (!userMatch[2] && method === 'GET') {
       const save = loadSave(id)
@@ -214,24 +215,24 @@ export async function handleAdmin(path: string, method: string, url: URL, body: 
       const milho = Math.round(Number(body.milho ?? 0))
       const reason = String(body.reason ?? '').trim()
       const creditCents = Math.round(Number(body.creditCents ?? 0))
-      if (!reason) throw new AdminError(400, 'Informe o motivo')
-      if (!Number.isFinite(creditCents) || Math.abs(creditCents) > 1_000_000) throw new AdminError(400, 'Crédito inválido')
+      if (!reason) throw new AdminError(400, t('Informe o motivo'))
+      if (!Number.isFinite(creditCents) || Math.abs(creditCents) > 1_000_000) throw new AdminError(400, t('Crédito inválido'))
       if (creditCents) db().prepare('UPDATE users SET mvp_credit_cents = MAX(0, mvp_credit_cents + ?) WHERE id = ?').run(creditCents, id)
-      if (!Number.isFinite(ovos) || !Number.isFinite(milho) || Math.abs(ovos) > 10000 || Math.abs(milho) > 1_000_000) throw new AdminError(400, 'Valores inválidos')
+      if (!Number.isFinite(ovos) || !Number.isFinite(milho) || Math.abs(ovos) > 10000 || Math.abs(milho) > 1_000_000) throw new AdminError(400, t('Valores inválidos'))
       const save = loadSave(id)
       if (!save) {
         if (creditCents && !ovos && !milho) {
           audit(admin, 'ajuste_saldo', id, { creditCents, reason })
           return { ok: true, ovos: 0, milho: 0 }
         }
-        throw new AdminError(409, 'Jogador ainda não tem galinheiro')
+        throw new AdminError(409, t('Jogador ainda não tem galinheiro'))
       }
       const s = save.state
       const next = {
         ...s,
         ovos: Math.max(0, s.ovos + ovos),
         milho: Math.max(0, s.milho + milho),
-        history: [{ id: uid(), at: Date.now(), text: `Ajuste do suporte: ${reason}`, milho, ovo: ovos }, ...s.history].slice(0, 80),
+        history: [{ id: uid(), at: Date.now(), text: t('Ajuste do suporte: {motivo}', { motivo: reason }), milho, ovo: ovos }, ...s.history].slice(0, 80),
       }
       writeSave(id, next, save.rev + 1)
       audit(admin, 'ajuste_saldo', id, { ovos, milho, creditCents, reason })
@@ -241,8 +242,8 @@ export async function handleAdmin(path: string, method: string, url: URL, body: 
     if (userMatch[2] === '/ban' && method === 'POST') {
       const ban = body.banned === true
       const reason = String(body.reason ?? '').trim().slice(0, 200)
-      if (ban && !reason) throw new AdminError(400, 'Informe o motivo do bloqueio')
-      if (ban && isAdmin(u)) throw new AdminError(400, 'Não é possível bloquear um administrador')
+      if (ban && !reason) throw new AdminError(400, t('Informe o motivo do bloqueio'))
+      if (ban && isAdmin(u)) throw new AdminError(400, t('Não é possível bloquear um administrador'))
       db().prepare('UPDATE users SET banned_at = ?, ban_reason = ? WHERE id = ?').run(ban ? Date.now() : null, ban ? reason : null, id)
       if (ban) db().prepare('DELETE FROM sessions WHERE user_id = ?').run(id)
       audit(admin, ban ? 'bloqueio' : 'desbloqueio', id, { reason })
@@ -256,7 +257,7 @@ export async function handleAdmin(path: string, method: string, url: URL, body: 
     const q = `%${(url.searchParams.get('q') ?? '').trim().toLowerCase()}%`
     const rows = db()
       .prepare(
-        `SELECT o.id, o.sku, o.amount_cents, o.method, o.provider, o.status, o.created_at, o.paid_at, o.user_id, COALESCE(u.email, '(conta excluída)') AS email
+        `SELECT o.id, o.sku, o.amount_cents, o.method, o.provider, o.status, o.created_at, o.paid_at, o.user_id, COALESCE(u.email, '(conta excluída)') AS email -- i18n-ok
          FROM orders o LEFT JOIN users u ON u.id = o.user_id
          WHERE (? = '' OR o.status = ?) AND (lower(COALESCE(u.email, '')) LIKE ? OR o.id LIKE ?)
          ORDER BY o.created_at DESC LIMIT 200`,
@@ -268,7 +269,7 @@ export async function handleAdmin(path: string, method: string, url: URL, body: 
   const orderMatch = path.match(/^\/api\/admin\/orders\/([\w-]+)\/recheck$/)
   if (orderMatch && method === 'POST') {
     const o = db().prepare('SELECT * FROM orders WHERE id = ?').get(orderMatch[1]) as unknown as OrderRow | undefined
-    if (!o) throw new AdminError(404, 'Pedido não encontrado')
+    if (!o) throw new AdminError(404, t('Pedido não encontrado'))
     const after = await deps.recheck(o)
     audit(admin, 'reconsultar_pedido', o.user_id, { order: o.id, antes: o.status, depois: after.status })
     return { status: after.status }

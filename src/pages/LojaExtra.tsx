@@ -6,6 +6,7 @@ import { fmt } from '../game/rooster'
 import { WEEKLY_DISCOUNT, skinPrice, useGame, weeklySkin } from '../game/store'
 import type { Skin } from '../game/types'
 import { ARENA } from '../brand'
+import { t, tn, tp, tx } from '../i18n'
 
 // ---------------- Skins ----------------
 
@@ -22,10 +23,10 @@ export function SkinsTab() {
   const buy = async (sk: Skin) => {
     const r = await actions.buySkin(sk.id)
     if (r.ok) {
-      toast(`${sk.emoji} Skin ${sk.name} desbloqueada!`, 'ok')
+      toast(t('{emoji} Skin {nome} desbloqueada!', { emoji: sk.emoji, nome: sk.name }), 'ok')
       setPreview(null)
       setApplyFor(sk)
-    } else toast(r.error, 'erro')
+    } else toast(tx(r.error), 'erro')
   }
 
   return (
@@ -36,17 +37,17 @@ export function SkinsTab() {
           <RoosterSvg breedId={base.breedId} skin={weekly.id} equipped={base.equipped} size={190} anim="idle" />
         </div>
         <div className="grow">
-          <span className="sale-tag">🔥 SKIN DA SEMANA · −{Math.round(WEEKLY_DISCOUNT * 100)}%</span>
+          <span className="sale-tag">{t('🔥 SKIN DA SEMANA · −{n}%', { n: Math.round(WEEKLY_DISCOUNT * 100) })}</span>
           <h2>
             {weekly.emoji} {weekly.name}
           </h2>
           <p className="muted italic">"{weekly.desc}"</p>
           <p>
-            <RarityTag rarity={weekly.rarity} /> <span className="tiny muted">· acaba em {daysLeft} dia(s)</span>
+            <RarityTag rarity={weekly.rarity} /> <span className="tiny muted">· {tp('acaba em {n} dia', 'acaba em {n} dias', daysLeft)}</span>
           </p>
           {owned(weekly.id) ? (
             <button className="btn" onClick={() => setApplyFor(weekly)}>
-              ✅ Já é sua · Aplicar
+              {t('✅ Já é sua · Aplicar')}
             </button>
           ) : (
             <button className="btn btn-gold btn-lg" onClick={() => buy(weekly)}>
@@ -59,7 +60,7 @@ export function SkinsTab() {
       {/* Coleção */}
       <div className="collection">
         <span>
-          🎨 Coleção: <b>{s.skins.length}</b>/{SKINS.length}
+          {tn('🎨 Coleção: {n}/{total}', { n: <b>{s.skins.length}</b>, total: SKINS.length })}
         </span>
         <div className="bar-track">
           <div className="bar-fill" style={{ width: `${(s.skins.length / SKINS.length) * 100}%`, background: 'linear-gradient(90deg,#b57bff,#ff6ad5)' }} />
@@ -67,7 +68,7 @@ export function SkinsTab() {
       </div>
 
       {/* Pacotes */}
-      <h3 className="section-title">📦 Pacotes com desconto</h3>
+      <h3 className="section-title">{t('📦 Pacotes com desconto')}</h3>
       <div className="bundles">
         {SKIN_BUNDLES.map((b) => {
           const full = b.skins.reduce((a, k) => a + SKIN_BY_ID[k].price, 0)
@@ -83,17 +84,17 @@ export function SkinsTab() {
                 {b.emoji} {b.name}
               </b>
               <span className="tiny muted">{b.desc}</span>
-              <span className="tiny pos">Economize {Math.round((1 - b.price / full) * 100)}%</span>
+              <span className="tiny pos">{t('Economize {n}%', { n: Math.round((1 - b.price / full) * 100) })}</span>
               <button
                 className="btn btn-primary full"
                 disabled={all}
                 onClick={async () => {
                   const r = await actions.buySkinBundle(b.id)
-                  if (r.ok) toast(`${b.name} desbloqueado!`, 'ok')
-                  else toast(r.error, 'erro')
+                  if (r.ok) toast(t('{nome} desbloqueado!', { nome: b.name }), 'ok')
+                  else toast(tx(r.error), 'erro')
                 }}
               >
-                {all ? '✅ Completo' : (
+                {all ? t('✅ Completo') : (
                   <>
                     <s className="old-price">🥚 {full}</s> 🥚 {b.price}
                   </>
@@ -105,7 +106,7 @@ export function SkinsTab() {
       </div>
 
       {/* Todas */}
-      <h3 className="section-title">🎨 Todas as skins</h3>
+      <h3 className="section-title">{t('🎨 Todas as skins')}</h3>
       <div className="grid-shop">
         {SKINS.map((sk) => (
           <div key={sk.id} className={`card shop-item rar-${sk.rarity} ${owned(sk.id) ? 'owned' : ''}`} onClick={() => setPreview(sk)}>
@@ -125,7 +126,7 @@ export function SkinsTab() {
                   setApplyFor(sk)
                 }}
               >
-                ✅ Aplicar
+                {t('✅ Aplicar')}
               </button>
             ) : (
               <button
@@ -141,7 +142,7 @@ export function SkinsTab() {
           </div>
         ))}
       </div>
-      <p className="tiny muted center">Skins são só visuais. Compre uma vez e use em qualquer galo.</p>
+      <p className="tiny muted center">{t('Skins são só visuais. Compre uma vez e use em qualquer galo.')}</p>
 
       <Modal open={!!preview} onClose={() => setPreview(null)} title={preview ? `${preview.emoji} ${preview.name}` : ''} wide>
         {preview && (
@@ -162,11 +163,11 @@ export function SkinsTab() {
                     setPreview(null)
                   }}
                 >
-                  Aplicar em um galo
+                  {t('Aplicar em um galo')}
                 </button>
               ) : (
                 <button className="btn btn-gold btn-lg" onClick={() => buy(preview)}>
-                  Comprar · <Price value={skinPrice(preview.id)} currency={preview.currency} />
+                  {t('Comprar')} · <Price value={skinPrice(preview.id)} currency={preview.currency} />
                 </button>
               )}
             </div>
@@ -174,7 +175,7 @@ export function SkinsTab() {
         )}
       </Modal>
 
-      <Modal open={!!applyFor} onClose={() => setApplyFor(null)} title={applyFor ? `Aplicar ${applyFor.name}` : ''}>
+      <Modal open={!!applyFor} onClose={() => setApplyFor(null)} title={applyFor ? t('Aplicar {nome}', { nome: applyFor.name }) : ''}>
         {applyFor && (
           <div className="apply-grid">
             {s.roosters.map((r) => (
@@ -183,12 +184,12 @@ export function SkinsTab() {
                 className={`apply-item ${r.skin === applyFor.id ? 'selected' : ''}`}
                 onClick={() => {
                   actions.applySkin(r.id, r.skin === applyFor.id ? null : applyFor.id)
-                  toast(r.skin === applyFor.id ? `${r.name} voltou ao visual original.` : `${r.name} agora usa ${applyFor.name}!`, 'ok')
+                  toast(r.skin === applyFor.id ? t('{nome} voltou ao visual original.', { nome: r.name }) : t('{nome} agora usa {skin}!', { nome: r.name, skin: applyFor.name }), 'ok')
                 }}
               >
                 <RoosterSvg breedId={r.breedId} skin={applyFor.id} equipped={r.equipped} size={90} anim="none" />
                 <b>{r.name}</b>
-                <span className="tiny">{r.skin === applyFor.id ? '✅ Usando' : 'Aplicar'}</span>
+                <span className="tiny">{r.skin === applyFor.id ? t('✅ Usando') : t('Aplicar')}</span>
               </button>
             ))}
           </div>
@@ -210,28 +211,28 @@ export function FerramentasTab() {
       <div className="card tools-banner">
         <span className="big-emoji">🧰</span>
         <div className="grow">
-          <b>Leve até {MAX_TOOLS} ferramentas para cada luta na {ARENA}.</b>
-          <p className="tiny muted">Elas são gastas ao lutar e dão vantagem: mais ataque, defesa, cura, esquiva ou até levantar depois de um K.O.</p>
+          <b>{t('Leve até {n} ferramentas para cada luta na {arena}.', { n: MAX_TOOLS, arena: ARENA })}</b>
+          <p className="tiny muted">{t('Elas são gastas ao lutar e dão vantagem: mais ataque, defesa, cura, esquiva ou até levantar depois de um K.O.')}</p>
         </div>
         <div className="center">
           <b className="egg-amount">{totalOwned}</b>
-          <div className="tiny muted">no estoque</div>
+          <div className="tiny muted">{t('no estoque')}</div>
         </div>
         <button className="btn btn-primary" onClick={() => go('/rinha')}>
-          ⚔️ Usar na {ARENA}
+          {t('⚔️ Usar na {arena}', { arena: ARENA })}
         </button>
       </div>
 
-      <h3 className="section-title">💼 Kits</h3>
+      <h3 className="section-title">{t('💼 Kits')}</h3>
       <div className="bundles">
         {TOOL_KITS.map((k) => (
           <div key={k.id} className="card bundle">
             <div className="kit-emoji">{k.emoji}</div>
             <b>{k.name}</b>
             <div className="chips center-chips">
-              {Object.entries(k.tools).map(([t, q]) => (
-                <span key={t} className="chip" title={TOOL_BY_ID[t].name}>
-                  {TOOL_BY_ID[t].emoji} ×{q}
+              {Object.entries(k.tools).map(([tid, q]) => (
+                <span key={tid} className="chip" title={TOOL_BY_ID[tid].name}>
+                  {TOOL_BY_ID[tid].emoji} ×{q}
                 </span>
               ))}
             </div>
@@ -240,8 +241,8 @@ export function FerramentasTab() {
               className="btn btn-primary full"
               onClick={async () => {
                 const r = await actions.buyKit(k.id)
-                if (r.ok) toast(`${k.emoji} ${k.name} comprado!`, 'ok')
-                else toast(r.error, 'erro')
+                if (r.ok) toast(t('{nome} comprado!', { nome: `${k.emoji} ${k.name}` }), 'ok')
+                else toast(tx(r.error), 'erro')
               }}
             >
               <Price value={k.price} currency={k.currency} />
@@ -250,37 +251,37 @@ export function FerramentasTab() {
         ))}
       </div>
 
-      <h3 className="section-title">🛠️ Ferramentas avulsas</h3>
+      <h3 className="section-title">{t('🛠️ Ferramentas avulsas')}</h3>
       <div className="grid-shop">
-        {TOOLS.map((t) => (
-          <div key={t.id} className={`card shop-item rar-${t.rarity}`}>
-            <div className="shop-emoji">{t.emoji}</div>
+        {TOOLS.map((tool) => (
+          <div key={tool.id} className={`card shop-item rar-${tool.rarity}`}>
+            <div className="shop-emoji">{tool.emoji}</div>
             <div className="row-between">
-              <b>{t.name}</b>
+              <b>{tool.name}</b>
             </div>
             <div className="row-between">
-              <RarityTag rarity={t.rarity} />
-              <span className="tiny muted">Você tem: {s.tools[t.id] ?? 0}</span>
+              <RarityTag rarity={tool.rarity} />
+              <span className="tiny muted">{t('Você tem: {n}', { n: s.tools[tool.id] ?? 0 })}</span>
             </div>
-            <p className="tiny tool-desc">{t.desc}</p>
+            <p className="tiny tool-desc">{tool.desc}</p>
             <div className="row gap">
               <button
                 className="btn btn-primary grow"
                 onClick={async () => {
-                  const r = await actions.buyTool(t.id)
-                  if (r.ok) toast(`${t.emoji} ${t.name} comprado!`, 'ok')
-                  else toast(r.error, 'erro')
+                  const r = await actions.buyTool(tool.id)
+                  if (r.ok) toast(t('{nome} comprado!', { nome: `${tool.emoji} ${tool.name}` }), 'ok')
+                  else toast(tx(r.error), 'erro')
                 }}
               >
-                <Price value={t.price} currency={t.currency} />
+                <Price value={tool.price} currency={tool.currency} />
               </button>
               <button
                 className="btn btn-sm"
-                title={`Comprar 5 por ${fmt(t.price * 5)}`}
+                title={t('Comprar 5 por {n}', { n: fmt(tool.price * 5) })}
                 onClick={async () => {
-                  const r = await actions.buyTool(t.id, 5)
-                  if (r.ok) toast(`5x ${t.name} comprados!`, 'ok')
-                  else toast(r.error, 'erro')
+                  const r = await actions.buyTool(tool.id, 5)
+                  if (r.ok) toast(t('5x {nome} comprados!', { nome: tool.name }), 'ok')
+                  else toast(tx(r.error), 'erro')
                 }}
               >
                 ×5

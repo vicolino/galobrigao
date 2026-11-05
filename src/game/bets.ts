@@ -1,4 +1,5 @@
 // Apostas na agenda de lutas da casa (regras compartilhadas entre navegador e servidor).
+import { t } from '../i18n'
 import { live } from './config'
 import type { BetPick, GameState, MissionKind, Rooster } from './types'
 import { uid } from './rooster'
@@ -56,15 +57,16 @@ export interface BetCredit {
 export const phaseOf = (startsAt: number, resolved: boolean, now = Date.now()): FightPhase =>
   now < startsAt - betCloseMs() ? 'aberta' : !resolved || now < startsAt ? 'fechada' : now < startsAt + liveMs() ? 'aovivo' : 'encerrada'
 
-export const pickLabel = (pick: BetPick, a: string, b: string) => (pick === 'a' ? `${a} vence` : pick === 'b' ? `${b} vence` : 'Termina em K.O.')
+// Gerado no servidor e salvo: o navegador traduz com tx() (chaves '{nome} vence' e 'Termina em K.O.').
+export const pickLabel = (pick: BetPick, a: string, b: string) => (pick === 'a' ? t('{nome} vence', { nome: a }) : pick === 'b' ? t('{nome} vence', { nome: b }) : t('Termina em K.O.'))
 
-/** Nome do evento conforme o horário de Brasília. */
-export function eventName(startsAt: number) {
-  const h = Number(new Intl.DateTimeFormat('pt-BR', { hour: 'numeric', hourCycle: 'h23', timeZone: 'America/Sao_Paulo' }).format(new Date(startsAt)))
-  if (h < 6) return { name: '🌙 Madrugada Brava', startHour: 0 }
-  if (h < 12) return { name: '🌅 Copa da Manhã', startHour: 6 }
-  if (h < 18) return { name: '☀️ Torneio da Tarde', startHour: 12 }
-  return { name: '🔥 Noite de Rinha', startHour: 18 }
+/** Nome do evento conforme o horário (padrão: Brasília; na tela, o fuso de quem vê). */
+export function eventName(startsAt: number, timeZone = 'America/Sao_Paulo') {
+  const h = Number(new Intl.DateTimeFormat('en-US', { hour: 'numeric', hourCycle: 'h23', timeZone }).format(new Date(startsAt))) % 24
+  if (h < 6) return { name: t('🌙 Madrugada Brava'), startHour: 0 }
+  if (h < 12) return { name: t('🌅 Copa da Manhã'), startHour: 6 }
+  if (h < 18) return { name: t('☀️ Torneio da Tarde'), startHour: 12 }
+  return { name: t('🔥 Noite de Rinha'), startHour: 18 }
 }
 
 const bump = (s: GameState, kind: MissionKind, n: number): GameState => ({
@@ -100,7 +102,7 @@ export function applyBetPlaced(s: GameState, amount: number, label: string, odds
     ...s,
     milho: s.milho - amount,
     stats: { ...s.stats, betsPlaced: s.stats.betsPlaced + 1 },
-    history: [{ id: uid(), at: Date.now(), text: `Aposta: ${label} @ ${odds.toFixed(2)}`, milho: -amount, ovo: 0 }, ...s.history].slice(0, 80),
+    history: [{ id: uid(), at: Date.now(), text: t('Aposta: {palpite} @ {odd}', { palpite: label, odd: odds.toFixed(2) }), milho: -amount, ovo: 0 }, ...s.history].slice(0, 80),
   }
   n = bump(n, 'apostar', 1)
   return n

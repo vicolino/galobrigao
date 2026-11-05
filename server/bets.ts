@@ -8,6 +8,7 @@ import { electionFight, houseFight } from '../src/game/engine'
 import type { BetPick, GameState, Rooster } from '../src/game/types'
 import { getDb } from './db'
 import { loadSave, writeSave } from './saves'
+import { locale, t } from '../src/i18n'
 
 export class BetError extends Error {}
 const fail = (m: string): never => {
@@ -168,7 +169,7 @@ export function takeCredits(userId: string, now = Date.now()): BetCredit | null 
       c.biggest = Math.max(c.biggest, r.payout)
       if (r.odds >= 3) c.zebra = true
     }
-    c.entries.push({ text: r.status === 'ganhou' ? `Prêmio de aposta: ${r.label} (${fight})` : `Aposta perdida: ${r.label} (${fight})`, milho: r.status === 'ganhou' ? r.payout : -r.amount, won: r.status === 'ganhou' })
+    c.entries.push({ text: r.status === 'ganhou' ? t('Prêmio de aposta: {aposta} ({luta})', { aposta: r.label, luta: fight }) : t('Aposta perdida: {aposta} ({luta})', { aposta: r.label, luta: fight }), milho: r.status === 'ganhou' ? r.payout : -r.amount, won: r.status === 'ganhou' })
   }
   const mark = db().prepare('UPDATE house_bets SET credited = 1 WHERE id = ?')
   for (const r of rows) mark.run(r.id)
@@ -236,18 +237,18 @@ export function handleBets(path: string, method: string, body: Record<string, un
 
   if (path === '/api/bets' && method === 'POST') {
     const f = db().prepare('SELECT * FROM house_fights WHERE id = ?').get(String(body.fightId)) as unknown as FightRow | undefined
-    if (!f) fail('Luta não encontrada')
-    if (f!.status !== 'aberta' || Date.now() >= f!.starts_at - betCloseMs()) fail('As apostas para essa luta já fecharam.')
+    if (!f) fail(t('Luta não encontrada'))
+    if (f!.status !== 'aberta' || Date.now() >= f!.starts_at - betCloseMs()) fail(t('As apostas para essa luta já fecharam.'))
     const pick = String(body.pick) as BetPick
-    if (!['a', 'b', 'ko'].includes(pick)) fail('Escolha inválida')
+    if (!['a', 'b', 'ko'].includes(pick)) fail(t('Escolha inválida'))
     const amount = Math.floor(Number(body.amount))
-    if (!Number.isFinite(amount) || amount < live.bets.minBet) fail(`Aposta mínima: ${live.bets.minBet} de milho.`)
-    if (amount > live.bets.maxBet) fail(`Aposta máxima: ${live.bets.maxBet.toLocaleString('pt-BR')} de milho.`)
-    const save = loadSave(userId) ?? fail('Sem galinheiro')
+    if (!Number.isFinite(amount) || amount < live.bets.minBet) fail(t('Aposta mínima: {n} de milho.', { n: live.bets.minBet }))
+    if (amount > live.bets.maxBet) fail(t('Aposta máxima: {n} de milho.', { n: live.bets.maxBet.toLocaleString(locale()) }))
+    const save = loadSave(userId) ?? fail(t('Sem galinheiro'))
     let state = save!.state
     const c = takeCredits(userId)
     if (c) state = applyBetCredit(state, c)
-    if (state.milho < amount) fail('Milho insuficiente 🌽')
+    if (state.milho < amount) fail(t('Milho insuficiente 🌽'))
     const a = JSON.parse(f!.a) as Rooster
     const b = JSON.parse(f!.b) as Rooster
     const odds = pick === 'a' ? f!.odds_a : pick === 'b' ? f!.odds_b : f!.odds_ko
@@ -295,7 +296,7 @@ export function migrateOldBets() {
       milho: s.milho + refund,
       bets: (s.bets ?? []).filter((b) => b.status !== 'pendente'),
       card: { at: Date.now(), fights: [] },
-      history: refund ? [{ id: randomUUID(), at: Date.now(), text: 'Apostas antigas devolvidas (nova agenda de lutas)', milho: refund, ovo: 0 }, ...s.history].slice(0, 80) : s.history,
+      history: refund ? [{ id: randomUUID(), at: Date.now(), text: t('Apostas antigas devolvidas (nova agenda de lutas)'), milho: refund, ovo: 0 }, ...s.history].slice(0, 80) : s.history,
     }
     writeSave(r.user_id, next, r.rev + 1)
     n++

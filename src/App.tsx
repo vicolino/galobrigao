@@ -16,6 +16,7 @@ import { Admin } from './admin/Admin'
 import { Perfil } from './pages/Perfil'
 import { Rinha } from './pages/Rinha'
 import { APP_NAME } from './brand'
+import { t, tx } from './i18n'
 
 export default function App() {
   const { state, phase, wallet, user, pubConfig, updateReady } = useGame()
@@ -40,9 +41,9 @@ export default function App() {
       <div className="onboarding">
         <div className="ob-card center">
           <div className="prize-emoji">🚧</div>
-          <h2>Em manutenção</h2>
-          <p className="muted">{pubConfig.maintenance.message}</p>
-          <button className="btn" onClick={() => location.reload()}>Tentar de novo</button>
+          <h2>{t('Em manutenção')}</h2>
+          <p className="muted">{tx(pubConfig.maintenance.message) || t('Estamos ajeitando o terreiro. Voltamos já!')}</p>
+          <button className="btn" onClick={() => location.reload()}>{t('Tentar de novo')}</button>
         </div>
       </div>
     )
@@ -65,7 +66,7 @@ export default function App() {
   return (
     <div className="layout">
       <header className="mobile-bar">
-        <button className="icon-btn" onClick={() => setMenu(true)} aria-label="Menu">☰</button>
+        <button className="icon-btn" onClick={() => setMenu(true)} aria-label={t('Menu')}>☰</button>
         <b>🐓 {APP_NAME}</b>
         <span className="tiny">🌽 {fmt(wallet!.milho)} · 🥚 {fmt(wallet!.ovos)}</span>
       </header>
@@ -73,19 +74,19 @@ export default function App() {
       <main className="main">
         {updateReady && (
           <div className="announce announce-promo">
-            <span>🔄 Saiu uma versão nova do jogo.</span>
+            <span>🔄 {t('Saiu uma versão nova do jogo.')}</span>
             <button className="btn btn-sm btn-primary" onClick={() => location.reload()}>
-              Atualizar
+              {t('Atualizar')}
             </button>
           </div>
         )}
-        {pubConfig?.maintenance.on && <div className="announce announce-alerta">🚧 Modo manutenção ligado — só administradores conseguem jogar.</div>}
+        {pubConfig?.maintenance.on && <div className="announce announce-alerta">🚧 {t('Modo manutenção ligado — só administradores conseguem jogar.')}</div>}
         {pubConfig?.announcement.text && hidden !== pubConfig.announcement.text && (
           <div className={`announce announce-${pubConfig.announcement.kind}`}>
-            <span>{pubConfig.announcement.kind === 'promo' ? '🎉' : pubConfig.announcement.kind === 'alerta' ? '⚠️' : '📢'} {pubConfig.announcement.text}</span>
+            <span>{pubConfig.announcement.kind === 'promo' ? '🎉' : pubConfig.announcement.kind === 'alerta' ? '⚠️' : '📢'} {tx(pubConfig.announcement.text)}</span>
             <button
               className="icon-btn"
-              aria-label="Fechar aviso"
+              aria-label={t('Fechar aviso')}
               onClick={() => {
                 setHidden(pubConfig.announcement.text)
                 try {

@@ -1,5 +1,6 @@
 import { STYLES, TOOL_BY_ID } from './data'
 import { finalStats, rng } from './rooster'
+import { t } from '../i18n'
 import type { BattleEvent, BattleResult, Rooster, ToolProc } from './types'
 
 export const MAX_STA = 60
@@ -16,39 +17,39 @@ interface Move {
 
 const MOVES: Record<string, Move> = {
   bicada: {
-    name: 'Bicada',
+    name: t('Bicada'),
     cost: 8,
     mult: 1,
     acc: 1,
-    lines: ['{a} acerta uma bicada certeira em {d}.', '{a} dá uma bicada na crista de {d}!', 'Toc! {a} bica {d} sem dó.'],
+    lines: [t('{a} acerta uma bicada certeira em {d}.'), t('{a} dá uma bicada na crista de {d}!'), t('Toc! {a} bica {d} sem dó.')],
   },
   voadora: {
-    name: 'Voadora',
+    name: t('Voadora'),
     cost: 16,
     mult: 1.55,
     acc: 0.85,
-    lines: ['{a} sai voando e acerta uma VOADORA em {d}!', 'Que voadora! {a} decola e pousa em cima de {d}!', '{a} manda uma voadora digna de filme!'],
+    lines: [t('{a} sai voando e acerta uma VOADORA em {d}!'), t('Que voadora! {a} decola e pousa em cima de {d}!'), t('{a} manda uma voadora digna de filme!')],
   },
   rasteira: {
-    name: 'Rasteira',
+    name: t('Rasteira'),
     cost: 11,
     mult: 1.15,
     acc: 0.95,
-    lines: ['{a} passa uma rasteira e {d} quase cai!', '{a} rasteja e derruba {d} de bico no chão.', 'Rasteira de {a}! {d} perde o equilíbrio.'],
+    lines: [t('{a} passa uma rasteira e {d} quase cai!'), t('{a} rasteja e derruba {d} de bico no chão.'), t('Rasteira de {a}! {d} perde o equilíbrio.')],
   },
   asada: {
-    name: 'Asada',
+    name: t('Asada'),
     cost: 6,
     mult: 0.75,
     acc: 1,
-    lines: ['{a} dá uma asada na cara de {d}.', 'Paf! Asada de {a}!', '{a} abana as asas e acerta {d}.'],
+    lines: [t('{a} dá uma asada na cara de {d}.'), t('Paf! Asada de {a}!'), t('{a} abana as asas e acerta {d}.')],
   },
 }
 
-const MISS_LINES = ['{d} desvia na hora H!', '{d} pula de lado e {a} acerta o vento.', 'Errou! {d} é liso que nem sabão.', '{d} se abaixa e {a} passa direto.']
-const CRIT_LINES = ['💥 GOLPE CRÍTICO! ', '🎯 NA MOSCA! ', '⚡ QUE PANCADA! ']
-const DEFEND_LINES = ['{a} levanta as asas para se defender.', '{a} fica na retranca, estudando o adversário.', '{a} se encolhe e espera o próximo ataque.']
-const REST_LINES = ['{a} está ofegante e recupera o fôlego.', '{a} para pra respirar. Cansou!', '{a} dá uma ciscada pra recuperar as forças.']
+const MISS_LINES = [t('{d} desvia na hora H!'), t('{d} pula de lado e {a} acerta o vento.'), t('Errou! {d} é liso que nem sabão.'), t('{d} se abaixa e {a} passa direto.')]
+const CRIT_LINES = [t('💥 GOLPE CRÍTICO! '), t('🎯 NA MOSCA! '), t('⚡ QUE PANCADA! ')]
+const DEFEND_LINES = [t('{a} levanta as asas para se defender.'), t('{a} fica na retranca, estudando o adversário.'), t('{a} se encolhe e espera o próximo ataque.')]
+const REST_LINES = [t('{a} está ofegante e recupera o fôlego.'), t('{a} para pra respirar. Cansou!'), t('{a} dá uma ciscada pra recuperar as forças.')]
 
 interface Side {
   ro: Rooster
@@ -133,11 +134,11 @@ export function simulate(r0: Rooster, r1: Rooster, seed: number, tools: [string[
   const hp = (): [number, number] => [Math.max(0, Math.round(S[0].hp)), Math.max(0, Math.round(S[1].hp))]
   const sta = (): [number, number] => [Math.round(S[0].sta), Math.round(S[1].sta)]
 
-  events.push({ t: 'intro', text: `🔔 ${r0.name} x ${r1.name}! Lá vem briga!` })
+  events.push({ t: 'intro', text: t('🔔 {a} x {b}! Lá vem briga!', { a: r0.name, b: r1.name }) })
   ;([0, 1] as const).forEach((i) => {
     for (const id of tools[i]) {
-      const t = TOOL_BY_ID[id]
-      if (t) events.push({ t: 'tool', side: i, emoji: t.emoji, hp: hp(), sta: sta(), text: `${t.emoji} ${S[i].ro.name} entra com ${t.name}! ${t.desc}` })
+      const tl = TOOL_BY_ID[id]
+      if (tl) events.push({ t: 'tool', side: i, emoji: tl.emoji, hp: hp(), sta: sta(), text: t('{emoji} {nome} entra com {tool}! {desc}', { emoji: tl.emoji, nome: S[i].ro.name, tool: tl.name, desc: tl.desc }) })
     }
   })
 
@@ -148,10 +149,10 @@ export function simulate(r0: Rooster, r1: Rooster, seed: number, tools: [string[
     roundsPlayed = round
     if (round > 1) {
       for (const s of S) s.sta = Math.min(Math.max(MAX_STA, s.sta), s.sta + 20 * s.staMult)
-      events.push({ t: 'round', round, text: `🔔 Round ${round}! Os galos voltam ao centro.` })
+      events.push({ t: 'round', round, text: t('🔔 Round {round}! Os galos voltam ao centro.', { round }) })
       ;([0, 1] as const).forEach((i) => {
         if (S[i].tools.includes('banda'))
-          events.push({ t: 'tool', side: i, emoji: '🥁', hp: hp(), sta: sta(), text: `🥁 A Banda do Terreiro toca mais alto e a torcida empurra ${S[i].ro.name}!` })
+          events.push({ t: 'tool', side: i, emoji: '🥁', hp: hp(), sta: sta(), text: t('🥁 A Banda do Terreiro toca mais alto e a torcida empurra {nome}!', { nome: S[i].ro.name }) })
       })
     }
     for (let ex = 0; ex < EXCHANGES && ko === null; ex++) {
@@ -171,22 +172,22 @@ export function simulate(r0: Rooster, r1: Rooster, seed: number, tools: [string[
           let text = ''
           if (me.ro.style === 'agressivo') {
             me.fury = me.pimenta ? 3 : 2
-            text = `🔥 ${me.ro.name} usa ${st.special}! Os olhos ficam vermelhos de raiva!`
+            text = t('🔥 {nome} usa {special}! Os olhos ficam vermelhos de raiva!', { nome: me.ro.name, special: st.special })
           } else if (me.ro.style === 'defensivo') {
             me.hp = Math.min(me.maxHp, me.hp + me.maxHp * 0.15)
             me.def *= 1.25
-            text = `🛡️ ${me.ro.name} usa ${st.special}! Recupera vida e fica duro que nem pedra.`
+            text = t('🛡️ {nome} usa {special}! Recupera vida e fica duro que nem pedra.', { nome: me.ro.name, special: st.special })
           } else if (me.ro.style === 'equilibrado') {
             me.hp = Math.min(me.maxHp, me.hp + me.maxHp * 0.1)
             me.atk *= 1.2
-            text = `🎶 ${me.ro.name} solta o ${st.special}! COCORICÓÓÓ! A torcida vai à loucura.`
+            text = t('🎶 {nome} solta o {special}! COCORICÓÓÓ! A torcida vai à loucura.', { nome: me.ro.name, special: st.special })
           } else {
             me.dodgeBuff = 3
-            text = `💨 ${me.ro.name} usa ${st.special}! Fica impossível de acertar.`
+            text = t('💨 {nome} usa {special}! Fica impossível de acertar.', { nome: me.ro.name, special: st.special })
           }
           if (me.pimenta) {
             me.atk *= 1.1
-            text += ' 🌶️ Turbinado pela pimenta!'
+            text += t(' 🌶️ Turbinado pela pimenta!')
           }
           me.sta = Math.min(MAX_STA, me.sta + 10)
           events.push({ t: 'special', side: i, move: st.special, hp: hp(), sta: sta(), text })
@@ -197,7 +198,7 @@ export function simulate(r0: Rooster, r1: Rooster, seed: number, tools: [string[
         if (me.sta < 8) {
           me.sta = Math.min(MAX_STA, me.sta + 22 * me.staMult)
           const ap = procs(i, ['sta'])
-          events.push({ t: 'rest', side: i, boost: ap, hp: hp(), sta: sta(), text: fill(pick(REST_LINES), me.ro.name, foe.ro.name) + (ap.length ? ' 📯 O apito do treinador dá fôlego extra!' : '') })
+          events.push({ t: 'rest', side: i, boost: ap, hp: hp(), sta: sta(), text: fill(pick(REST_LINES), me.ro.name, foe.ro.name) + (ap.length ? t(' 📯 O apito do treinador dá fôlego extra!') : '') })
           continue
         }
 
@@ -237,7 +238,7 @@ export function simulate(r0: Rooster, r1: Rooster, seed: number, tools: [string[
             boost: procs((1 - i) as 0 | 1, ['esquiva']),
             hp: hp(),
             sta: sta(),
-            text: fill(pick(MISS_LINES), me.ro.name, foe.ro.name) + (procs((1 - i) as 0 | 1, ['esquiva']).length ? ' 🪞 O espelho hipnótico confundiu o golpe!' : ''),
+            text: fill(pick(MISS_LINES), me.ro.name, foe.ro.name) + (procs((1 - i) as 0 | 1, ['esquiva']).length ? t(' 🪞 O espelho hipnótico confundiu o golpe!') : ''),
           })
           continue
         }
@@ -254,25 +255,25 @@ export function simulate(r0: Rooster, r1: Rooster, seed: number, tools: [string[
         dmg = Math.max(1, Math.round(dmg))
         foe.hp -= dmg
         let text = (crit ? pick(CRIT_LINES) : '') + fill(pick(mv.lines), me.ro.name, foe.ro.name) + ` (-${dmg})`
-        if (foe.guard) text += ' A defesa segurou metade!'
+        if (foe.guard) text += t(' A defesa segurou metade!')
         const fi = (1 - i) as 0 | 1
         const boost = [...procs(i, crit ? ['atk', 'tudo', 'critico'] : ['atk', 'tudo']), ...procs(fi, ['def', 'tudo'])]
-        if (crit && procs(i, ['critico']).length) text += ' 🧿 O amuleto brilhou!'
+        if (crit && procs(i, ['critico']).length) text += t(' 🧿 O amuleto brilhou!')
         events.push({ t: 'attack', side: i, move: mv.name, dmg, crit, dodged: false, boost, hp: hp(), sta: sta(), text })
 
         if (foe.hp <= 0 && foe.fenix > 0) {
           foe.hp = foe.maxHp * foe.fenix
           foe.fenix = 0
-          events.push({ t: 'tool', side: (1 - i) as 0 | 1, emoji: '🪶', hp: hp(), sta: sta(), text: `🪶 PENA DE FÊNIX! ${foe.ro.name} se levanta do chão! A torcida não acredita!` })
+          events.push({ t: 'tool', side: (1 - i) as 0 | 1, emoji: '🪶', hp: hp(), sta: sta(), text: t('🪶 PENA DE FÊNIX! {nome} se levanta do chão! A torcida não acredita!', { nome: foe.ro.name }) })
         } else if (foe.hp > 0 && foe.cura > 0 && foe.hp < foe.maxHp * 0.3) {
           foe.hp += foe.maxHp * foe.cura
           foe.cura = 0
-          events.push({ t: 'tool', side: (1 - i) as 0 | 1, emoji: '🩹', hp: hp(), sta: sta(), text: `🩹 ${foe.ro.name} usa o Kit Curativo e volta pra briga!` })
+          events.push({ t: 'tool', side: (1 - i) as 0 | 1, emoji: '🩹', hp: hp(), sta: sta(), text: t('🩹 {nome} usa o Kit Curativo e volta pra briga!', { nome: foe.ro.name }) })
         }
 
         if (foe.hp <= 0) {
           ko = i
-          events.push({ t: 'ko', winner: i, text: `🏆 K.O.! ${foe.ro.name} vê estrelinhas. ${me.ro.name} vence!` })
+          events.push({ t: 'ko', winner: i, text: t('🏆 K.O.! {perdedor} vê estrelinhas. {vencedor} vence!', { perdedor: foe.ro.name, vencedor: me.ro.name }) })
         }
       }
     }
@@ -291,7 +292,7 @@ export function simulate(r0: Rooster, r1: Rooster, seed: number, tools: [string[
     events.push({
       t: 'decision',
       winner,
-      text: `⚖️ Fim dos ${ROUNDS} rounds! Os juízes dão a vitória para ${S[winner].ro.name} por pontos.`,
+      text: t('⚖️ Fim dos {n} rounds! Os juízes dão a vitória para {nome} por pontos.', { n: ROUNDS, nome: S[winner].ro.name }),
     })
   }
 

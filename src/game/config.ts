@@ -1,5 +1,6 @@
 // Configuração do jogo editável pelo backoffice (sem precisar publicar de novo).
 // Os valores padrão abaixo valem até alguém salvar algo diferente no backoffice.
+import { t } from '../i18n'
 import { CATALOG, DEFAULT_SPEND_LIMIT, FREE_OVOS_PER_DAY, type Sku } from './catalog'
 
 export interface SkuOverride {
@@ -26,7 +27,7 @@ export const DEFAULT_CONFIG: AppConfig = {
   pvp: { maxLevelDiff: 1, dailyRewards: 20, challengeTtlSec: 60 },
   economy: { freeOvosPerDay: FREE_OVOS_PER_DAY, freeMilhoPerDay: 3_000_000, defaultSpendLimitCents: DEFAULT_SPEND_LIMIT },
   announcement: { text: '', kind: 'info' },
-  maintenance: { on: false, message: 'Estamos ajeitando o terreiro. Voltamos já!' },
+  maintenance: { on: false, message: t('Estamos ajeitando o terreiro. Voltamos já!') },
   // Modo MVP: cada conta ganha crédito de teste (sem valor real) para comprar na loja
   mvp: { on: true, creditCents: 10000 },
   // Agenda de lutas da casa: uma luta a cada `intervalMin`, apostas fecham `closeSec` antes

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { lang, t } from '../i18n'
 
 // Cores validadas (fundo escuro #14281e): âmbar = série principal, azul = segunda série.
 export const C1 = '#c9821f'
@@ -24,7 +25,7 @@ function niceMax(v: number) {
   return step * p
 }
 
-const shortDay = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}`
+const shortDay = (d: string) => (lang() === 'en' ? `${d.slice(5, 7)}/${d.slice(8, 10)}` : `${d.slice(8, 10)}/${d.slice(5, 7)}`)
 
 /** Barra vertical com topo arredondado (4px) apoiada na linha de base. */
 function barPath(x: number, y: number, w: number, h: number) {
@@ -54,10 +55,10 @@ export function DailyBars({ title, data, format, color = C1 }: { title: string; 
       <div className="chart-head">
         <div>
           <h3>{title}</h3>
-          <span className="tiny muted">Total no período: {format(total)}</span>
+          <span className="tiny muted">{t('Total no período: {total}', { total: format(total) })}</span>
         </div>
-        <button className="btn btn-sm btn-ghost" onClick={() => setTable((t) => !t)}>
-          {table ? '📊 Gráfico' : '📋 Tabela'}
+        <button className="btn btn-sm btn-ghost" onClick={() => setTable((v) => !v)}>
+          {table ? t('📊 Gráfico') : t('📋 Tabela')}
         </button>
       </div>
       {table ? (
@@ -65,7 +66,7 @@ export function DailyBars({ title, data, format, color = C1 }: { title: string; 
           <table className="table">
             <thead>
               <tr>
-                <th>Dia</th>
+                <th>{t('Dia')}</th>
                 <th className="right">{title}</th>
               </tr>
             </thead>
@@ -82,13 +83,13 @@ export function DailyBars({ title, data, format, color = C1 }: { title: string; 
       ) : (
         <div ref={ref} className="chart-box" onMouseLeave={() => setHover(null)}>
           <svg width={width} height={H} role="img" aria-label={title}>
-            {ticks.map((t) => {
-              const y = pad.t + plotH - (t / max) * plotH
+            {ticks.map((tk) => {
+              const y = pad.t + plotH - (tk / max) * plotH
               return (
-                <g key={t}>
+                <g key={tk}>
                   <line x1={pad.l} x2={width - pad.r} y1={y} y2={y} className="grid" />
                   <text x={pad.l - 6} y={y + 4} textAnchor="end" className="axis">
-                    {format(t)}
+                    {format(tk)}
                   </text>
                 </g>
               )
@@ -126,7 +127,7 @@ export function DailyBars({ title, data, format, color = C1 }: { title: string; 
 /** Lista de barras horizontais (ranking, funil). */
 export function HBars({ rows, format, color = C1 }: { rows: { label: ReactNode; value: number; extra?: ReactNode }[]; format: (v: number) => string; color?: string }) {
   const max = Math.max(1, ...rows.map((r) => r.value))
-  if (!rows.length) return <p className="muted tiny">Sem dados no período.</p>
+  if (!rows.length) return <p className="muted tiny">{t('Sem dados no período.')}</p>
   return (
     <div className="hbars">
       {rows.map((r, i) => (
@@ -147,7 +148,7 @@ export function HBars({ rows, format, color = C1 }: { rows: { label: ReactNode; 
 /** Barra dividida em partes de um todo (ex.: Pix x Cartão), com legenda e rótulos diretos. */
 export function SplitBar({ parts, format }: { parts: { label: string; value: number; color: string }[]; format: (v: number) => string }) {
   const total = parts.reduce((a, p) => a + p.value, 0)
-  if (!total) return <p className="muted tiny">Sem vendas no período.</p>
+  if (!total) return <p className="muted tiny">{t('Sem vendas no período.')}</p>
   return (
     <div>
       <div className="split">
@@ -172,10 +173,10 @@ export function SplitBar({ parts, format }: { parts: { label: string; value: num
 export function Kpi({ label, value, prev, current, hint }: { label: string; value: string; prev?: number; current?: number; hint?: string }) {
   let delta: ReactNode = null
   if (prev !== undefined && current !== undefined) {
-    if (prev === 0) delta = current > 0 ? <span className="delta up">▲ novo</span> : <span className="delta">—</span>
+    if (prev === 0) delta = current > 0 ? <span className="delta up">{t('▲ novo')}</span> : <span className="delta">—</span>
     else {
       const pct = Math.round(((current - prev) / prev) * 100)
-      delta = <span className={`delta ${pct > 0 ? 'up' : pct < 0 ? 'down' : ''}`}>{pct > 0 ? '▲' : pct < 0 ? '▼' : '='} {Math.abs(pct)}% vs período anterior</span>
+      delta = <span className={`delta ${pct > 0 ? 'up' : pct < 0 ? 'down' : ''}`}>{pct > 0 ? '▲' : pct < 0 ? '▼' : '='} {t('{n}% vs período anterior', { n: Math.abs(pct) })}</span>
     }
   }
   return (

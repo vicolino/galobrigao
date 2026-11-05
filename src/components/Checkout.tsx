@@ -4,6 +4,7 @@ import { brl } from '../game/catalog'
 import { sfx } from '../game/sound'
 import { useGame } from '../game/store'
 import { Modal } from './ui'
+import { t, tn, tx } from '../i18n'
 
 type Step = 'metodo' | 'aguardando' | 'pago' | 'erro'
 
@@ -48,7 +49,7 @@ export function Checkout({ item, onClose, onPaid }: { item: CatalogItem | null; 
         if (r.order.status === 'pago') void paid(r.order)
         else if (r.order.status !== 'pendente') {
           if (poll.current) clearInterval(poll.current)
-          setError(r.order.status === 'expirado' ? 'O Pix expirou. Gere um novo.' : 'Pagamento recusado.')
+          setError(r.order.status === 'expirado' ? t('O Pix expirou. Gere um novo.') : t('Pagamento recusado.'))
           setStep('erro')
         }
       } catch {
@@ -107,14 +108,14 @@ export function Checkout({ item, onClose, onPaid }: { item: CatalogItem | null; 
   }
 
   return (
-    <Modal open={!!item} onClose={close} title="💳 Finalizar compra">
+    <Modal open={!!item} onClose={close} title={'💳 ' + t('Finalizar compra')}>
       {item && (
         <div className="checkout">
           <div className="co-item">
             <span className="big-emoji">{item.emoji}</span>
             <div className="grow">
-              <b>{item.name}</b>
-              <div className="tiny muted">{item.desc}</div>
+              <b>{tx(item.name)}</b>
+              <div className="tiny muted">{tx(item.desc)}</div>
             </div>
             <b className="co-price">{brl(item.priceCents)}</b>
           </div>
@@ -124,10 +125,10 @@ export function Checkout({ item, onClose, onPaid }: { item: CatalogItem | null; 
               {mvp && (
                 <button className="co-method co-credit" disabled={busy || credit < item.priceCents} onClick={payWithCredit}>
                   <span className="big-emoji">🎁</span>
-                  <b>Usar crédito de teste</b>
+                  <b>{t('Usar crédito de teste')}</b>
                   <span className="tiny">
-                    Saldo: <b>{brl(credit)}</b>
-                    {credit >= item.priceCents ? ` → fica ${brl(credit - item.priceCents)}` : ' · saldo insuficiente'}
+                    {tn('Saldo: {v}', { v: <b key="v">{brl(credit)}</b> })}
+                    {credit >= item.priceCents ? t(' → fica {v}', { v: brl(credit - item.priceCents) }) : t(' · saldo insuficiente')}
                   </span>
                 </button>
               )}
@@ -135,15 +136,15 @@ export function Checkout({ item, onClose, onPaid }: { item: CatalogItem | null; 
                 <button className="co-method" disabled={busy || !paymentsLive} onClick={() => start('pix')}>
                   <span className="big-emoji">⚡</span>
                   <b>Pix</b>
-                  <span className="tiny muted">{paymentsLive ? 'Aprovação na hora' : 'Em breve'}</span>
+                  <span className="tiny muted">{paymentsLive ? t('Aprovação na hora') : t('Em breve')}</span>
                 </button>
                 <button className="co-method" disabled={busy || !paymentsLive} onClick={() => start('cartao')}>
                   <span className="big-emoji">💳</span>
-                  <b>Cartão de crédito</b>
-                  <span className="tiny muted">{!paymentsLive ? 'Em breve' : provider === 'mercadopago' ? 'Pagamento seguro no Mercado Pago' : 'Visa, Master, Elo'}</span>
+                  <b>{t('Cartão de crédito')}</b>
+                  <span className="tiny muted">{!paymentsLive ? t('Em breve') : provider === 'mercadopago' ? t('Pagamento seguro no Mercado Pago') : 'Visa, Master, Elo'}</span>
                 </button>
               </div>
-              <p className="tiny muted center">Itens digitais entregues na hora após a confirmação. Sem saque: moedas do jogo não viram dinheiro.</p>
+              <p className="tiny muted center">{t('Itens digitais entregues na hora após a confirmação. Sem saque: moedas do jogo não viram dinheiro.')}</p>
             </>
           )}
 
@@ -152,11 +153,11 @@ export function Checkout({ item, onClose, onPaid }: { item: CatalogItem | null; 
               {order.method === 'pix' ? (
                 <div className="pix">
                   {order.pixQr ? (
-                    <img className="qr-img" src={`data:image/png;base64,${order.pixQr}`} alt="QR Code Pix" />
+                    <img className="qr-img" src={`data:image/png;base64,${order.pixQr}`} alt={t('QR Code Pix')} />
                   ) : (
                     <FakeQr seed={order.id} />
                   )}
-                  <p className="tiny muted">Abra o app do seu banco, escolha Pix e leia o QR Code — ou use o copia e cola:</p>
+                  <p className="tiny muted">{t('Abra o app do seu banco, escolha Pix e leia o QR Code — ou use o copia e cola:')}</p>
                   <div className="copy-row">
                     <input readOnly value={order.pixCode ?? ''} onFocus={(e) => e.currentTarget.select()} />
                     <button
@@ -167,33 +168,33 @@ export function Checkout({ item, onClose, onPaid }: { item: CatalogItem | null; 
                         setTimeout(() => setCopied(false), 1500)
                       }}
                     >
-                      {copied ? '✅ Copiado' : '📋 Copiar'}
+                      {copied ? '✅ ' + t('Copiado') : '📋 ' + t('Copiar')}
                     </button>
                   </div>
-                  <p className="tiny muted">O código vale por 30 minutos.</p>
+                  <p className="tiny muted">{t('O código vale por 30 minutos.')}</p>
                 </div>
               ) : (
                 <div className="center">
                   {order.checkoutUrl ? (
                     <>
-                      <p>Abrimos o pagamento do Mercado Pago em outra aba.</p>
+                      <p>{t('Abrimos o pagamento do Mercado Pago em outra aba.')}</p>
                       <a className="btn btn-primary" href={order.checkoutUrl} target="_blank" rel="noopener noreferrer">
-                        Abrir pagamento de novo
+                        {t('Abrir pagamento de novo')}
                       </a>
                     </>
                   ) : (
-                    <p className="muted">No modo de teste não há tela de cartão. Use o botão abaixo para simular a aprovação.</p>
+                    <p className="muted">{t('No modo de teste não há tela de cartão. Use o botão abaixo para simular a aprovação.')}</p>
                   )}
                 </div>
               )}
               <div className="waiting">
-                <span className="spinner" /> Aguardando confirmação do pagamento...
+                <span className="spinner" /> {t('Aguardando confirmação do pagamento...')}
               </div>
               {order.provider === 'sandbox' && (
                 <div className="sandbox">
-                  <span className="tiny">🧪 Modo de teste — nenhuma cobrança real</span>
+                  <span className="tiny">🧪 {t('Modo de teste — nenhuma cobrança real')}</span>
                   <button className="btn btn-gold full" disabled={busy} onClick={simulate}>
-                    ✅ Simular pagamento aprovado
+                    ✅ {t('Simular pagamento aprovado')}
                   </button>
                 </div>
               )}
@@ -203,11 +204,11 @@ export function Checkout({ item, onClose, onPaid }: { item: CatalogItem | null; 
           {step === 'pago' && (
             <div className="center">
               <div className="prize-emoji">🎉</div>
-              <h2>Pagamento aprovado!</h2>
-              <p className="muted">{item.name} já está na sua conta.</p>
-              {order?.method === 'credito' && <p className="tiny">Crédito de teste restante: <b>{brl(user?.mvpCreditCents ?? 0)}</b></p>}
+              <h2>{t('Pagamento aprovado!')}</h2>
+              <p className="muted">{t('{item} já está na sua conta.', { item: tx(item.name) })}</p>
+              {order?.method === 'credito' && <p className="tiny">{tn('Crédito de teste restante: {v}', { v: <b key="v">{brl(user?.mvpCreditCents ?? 0)}</b> })}</p>}
               <button className="btn btn-primary btn-lg" onClick={close}>
-                Bora jogar
+                {t('Bora jogar')}
               </button>
             </div>
           )}
@@ -216,7 +217,7 @@ export function Checkout({ item, onClose, onPaid }: { item: CatalogItem | null; 
             <div className="center">
               <p className="neg">{error}</p>
               <button className="btn" onClick={() => setStep('metodo')}>
-                Tentar de novo
+                {t('Tentar de novo')}
               </button>
             </div>
           )}
@@ -242,7 +243,7 @@ function FakeQr({ seed }: { seed: string }) {
     return (h >> 16) % 2 === 0
   })
   return (
-    <div className="qr21" title="QR ilustrativo (modo de teste)">
+    <div className="qr21" title={t('QR ilustrativo (modo de teste)')}>
       {cells.map((on, i) => (
         <span key={i} className={on ? 'on' : ''} />
       ))}

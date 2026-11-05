@@ -1,5 +1,6 @@
 // Proteções gerais do servidor: IP real, limite de requisições, cabeçalhos e origem.
 import type { IncomingMessage, ServerResponse } from 'node:http'
+import { t } from '../src/i18n'
 
 export const isProd = () => process.env.NODE_ENV === 'production'
 
@@ -70,7 +71,7 @@ export function badOrigin(req: IncomingMessage) {
 
 export function tooMany(res: ServerResponse) {
   res.writeHead(429, { 'Content-Type': 'application/json; charset=utf-8', 'Retry-After': '60', ...baseHeaders() })
-  res.end(JSON.stringify({ error: 'Muitas requisições. Espere um pouco e tente de novo.' }))
+  res.end(JSON.stringify({ error: t('Muitas requisições. Espere um pouco e tente de novo.') }))
 }
 
 export const escapeHtml = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!)

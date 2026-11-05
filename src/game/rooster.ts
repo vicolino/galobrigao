@@ -1,4 +1,5 @@
-import { ACC_BY_ID, BREEDS, BREED_BY_ID, NPC_OWNERS, ROOSTER_NAMES, STYLES } from './data'
+import { ACC_BY_ID, BREEDS, BREED_BY_ID, STYLES, npcOwners, roosterNames } from './data'
+import { locale } from '../i18n'
 import type { Rarity, Rooster, Stats, Style } from './types'
 
 // RNG determinístico (mulberry32) para lutas reproduzíveis.
@@ -16,7 +17,7 @@ export function rng(seed: number) {
 export const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4)
 export const pick = <T,>(arr: T[], r: () => number = Math.random) => arr[Math.floor(r() * arr.length)]
 export const today = () => new Date().toISOString().slice(0, 10)
-export const fmt = (n: number) => Math.floor(n).toLocaleString('pt-BR')
+export const fmt = (n: number) => Math.floor(n).toLocaleString(locale())
 
 export const ENERGY_MAX = 100
 export const ENERGY_COST = 25
@@ -53,7 +54,7 @@ export function makeRooster(opts: {
   }
   return {
     id: uid(),
-    name: opts.name ?? pick(ROOSTER_NAMES, r),
+    name: opts.name ?? pick(roosterNames(), r),
     breedId: breed.id,
     level: opts.level ?? 1,
     xp: 0,
@@ -66,7 +67,7 @@ export function makeRooster(opts: {
     energy: 100,
     energyAt: Date.now(),
     equipped: {},
-    owner: opts.owner ?? pick(NPC_OWNERS, r),
+    owner: opts.owner ?? pick(npcOwners(), r),
   }
 }
 

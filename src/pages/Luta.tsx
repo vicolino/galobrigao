@@ -7,31 +7,38 @@ import { fmt } from '../game/rooster'
 import { sfx } from '../game/sound'
 import { useGame } from '../game/store'
 import type { BattleEvent, Rooster, Tool, ToolProc } from '../game/types'
+import { t, tn, tp, tx } from '../i18n'
 
 const BASE_MS = 1150
 /** Duração da entrada dos lutadores (acompanha a vinheta de 6 tempos a 128 BPM). */
 const INTRO_MS = 2900
 
+/** A Banda que toca no início de cada round (curta) — as entradas vêm antes do primeiro round. */
+function isRoundBanda(events: BattleEvent[], i: number) {
+  return events[i]?.t === 'tool' && events.slice(0, i).some((e) => e.t === 'round')
+}
+
 /** Quanto cada evento fica na tela (em múltiplos do tempo base). A charanga da Banda dura ~3 s. */
-function holdFor(ev?: BattleEvent) {
+function holdFor(events: BattleEvent[], i: number) {
+  const ev = events[i]
   if (ev?.t !== 'tool') return 1
-  if (ev.emoji === '🥁') return ev.text.includes('toca mais alto') ? 1.6 : 3
+  if (ev.emoji === '🥁') return isRoundBanda(events, i) ? 1.6 : 3
   return 1.5
 }
 
 /** Texto curto do efeito da ferramenta quando ela age. */
-function procLabel(t: Tool) {
-  const pct = Math.round(t.value * 100)
-  switch (t.effect) {
-    case 'atk': return `Ataque +${pct}%`
-    case 'def': return `Dano −${pct}%`
-    case 'tudo': return `Torcida +${pct}%`
-    case 'critico': return 'Crítico!'
-    case 'esquiva': return 'Esquivou!'
-    case 'sta': return 'Fôlego!'
-    case 'cura': return `Cura +${pct}%`
-    case 'fenix': return 'Renasceu!'
-    default: return 'Turbinado!'
+function procLabel(tool: Tool) {
+  const pct = Math.round(tool.value * 100)
+  switch (tool.effect) {
+    case 'atk': return t('Ataque +{pct}%', { pct })
+    case 'def': return t('Dano −{pct}%', { pct })
+    case 'tudo': return t('Torcida +{pct}%', { pct })
+    case 'critico': return t('Crítico!')
+    case 'esquiva': return t('Esquivou!')
+    case 'sta': return t('Fôlego!')
+    case 'cura': return t('Cura +{pct}%', { pct })
+    case 'fenix': return t('Renasceu!')
+    default: return t('Turbinado!')
   }
 }
 
@@ -73,7 +80,7 @@ export function Luta() {
   // Avança a narração
   useEffect(() => {
     if (!result || done || intro) return
-    const t = setTimeout(() => setIdx((i) => i + 1), idx === 0 ? 300 : (BASE_MS * holdFor(events[idx - 1])) / speed)
+    const t = setTimeout(() => setIdx((i) => i + 1), idx === 0 ? 300 : (BASE_MS * holdFor(events, idx - 1)) / speed)
     return () => clearTimeout(t)
   }, [idx, speed, result, done, intro])
 
@@ -86,14 +93,14 @@ export function Luta() {
     const reset = () => setTimeout(() => setAnims((a) => [a[0] === 'ko' ? 'ko' : a[0] === 'win' ? 'win' : 'idle', a[1] === 'ko' ? 'ko' : a[1] === 'win' ? 'win' : 'idle']), dur)
     if (ev.t === 'intro' || ev.t === 'round') {
       sfx.bell()
-      setBubble(ev.t === 'round' ? `ROUND ${ev.round}` : 'LUTEM!')
+      setBubble(ev.t === 'round' ? t('ROUND {n}', { n: ev.round }) : t('LUTEM!'))
       setTimeout(() => setBubble(null), 900 / speed)
     } else if (ev.t === 'attack') {
       const a: [Anim, Anim] = ['idle', 'idle']
       a[ev.side] = 'attack'
       a[1 - ev.side] = ev.dodged ? 'miss' : 'hit'
       setAnims(a)
-      setFx({ key: idx, side: (1 - ev.side) as 0 | 1, text: ev.dodged ? 'Errou!' : `-${ev.dmg}`, crit: ev.crit, miss: ev.dodged })
+      setFx({ key: idx, side: (1 - ev.side) as 0 | 1, text: ev.dodged ? t('Errou!') : `-${ev.dmg}`, crit: ev.crit, miss: ev.dodged })
       if (ev.boost?.length) {
         setProcs({ key: idx, list: ev.boost })
         setTimeout(sfx.proc, 120)
@@ -119,8 +126,8 @@ export function Luta() {
       const id = Object.values(TOOL_BY_ID).find((t) => t.emoji === ev.emoji)?.id ?? ''
       setToolCard({ key: idx, side: ev.side, id, text: ev.text })
       setProcs({ key: idx, list: id ? [{ side: ev.side, tool: id }] : [] })
-      setTimeout(() => setToolCard((c) => (c?.key === idx ? null : c)), (BASE_MS * (holdFor(ev) - 0.1)) / speed)
-      if (ev.emoji === '🥁') sfx.charanga(ev.text.includes('toca mais alto'))
+      setTimeout(() => setToolCard((c) => (c?.key === idx ? null : c)), (BASE_MS * (holdFor(events, idx - 1) - 0.1)) / speed)
+      if (ev.emoji === '🥁') sfx.charanga(isRoundBanda(events, idx - 1))
       else sfx.powerup()
       reset()
     } else if (ev.t === 'defend') {
@@ -136,7 +143,7 @@ export function Luta() {
       a[ev.winner] = 'win'
       a[1 - ev.winner] = ev.t === 'ko' ? 'ko' : 'idle'
       setAnims(a)
-      setBubble(ev.t === 'ko' ? 'K.O.!' : 'DECISÃO!')
+      setBubble(ev.t === 'ko' ? 'K.O.!' : t('DECISÃO!'))
       if (ev.t === 'ko') sfx.ko()
       else sfx.bell()
       setTimeout(() => {
@@ -160,7 +167,7 @@ export function Luta() {
   }, [idx])
 
   if (!match || !result) {
-    return <Empty emoji="🥚" title="Nenhuma luta em andamento" text="Escolha uma luta na Arena ou nas Apostas." action={<button className="btn btn-primary" onClick={() => go('/rinha')}>Ir para a Arena</button>} />
+    return <Empty emoji="🥚" title={t('Nenhuma luta em andamento')} text={t('Escolha uma luta na Arena ou nas Apostas.')} action={<button className="btn btn-primary" onClick={() => go('/rinha')}>{t('Ir para a Arena')}</button>} />
   }
 
   // Estado atual de vida/fôlego
@@ -200,19 +207,19 @@ export function Luta() {
   return (
     <div className="fight-page">
       <button className="btn btn-ghost back" onClick={back}>
-        ← Voltar {isPvp ? 'aos desafios' : isRinha ? 'à arena' : 'às lutas'}
+        {isPvp ? t('← Voltar aos desafios') : isRinha ? t('← Voltar à arena') : t('← Voltar às lutas')}
       </button>
       <div className="center">
-        <span className="pill">{isPvp ? '🤝 Desafio entre jogadores' : isRinha ? '⚔️ Arena' : '🏟️ Luta da casa'}</span>
+        <span className="pill">{isPvp ? t('🤝 Desafio entre jogadores') : isRinha ? t('⚔️ Arena') : t('🏟️ Luta da casa')}</span>
       </div>
 
       <div className="hud">
-        <FighterHud side={0} tools={match.tools?.[0]} pulse={procs?.list.filter((p) => p.side === 0).map((p) => p.tool)} pulseKey={procs?.key} name={match.a.name} sub={`${match.a.owner} · Nv ${match.a.level}`} style={match.a.style} hp={hp[0]} maxHp={result.maxHp[0]} sta={sta[0]} hurt={anims[0] === 'hit'} />
+        <FighterHud side={0} tools={match.tools?.[0]} pulse={procs?.list.filter((p) => p.side === 0).map((p) => p.tool)} pulseKey={procs?.key} name={match.a.name} sub={t('{dono} · Nv {nivel}', { dono: match.a.owner, nivel: match.a.level })} style={match.a.style} hp={hp[0]} maxHp={result.maxHp[0]} sta={sta[0]} hurt={anims[0] === 'hit'} />
         <div className="hud-round">
-          Round {round}/3
-          {bets.length > 0 && <span className="tiny muted">{bets.length} aposta(s)</span>}
+          {t('Round {n}/3', { n: round })}
+          {bets.length > 0 && <span className="tiny muted">{tp('{n} aposta', '{n} apostas', bets.length)}</span>}
         </div>
-        <FighterHud side={1} tools={match.tools?.[1]} pulse={procs?.list.filter((p) => p.side === 1).map((p) => p.tool)} pulseKey={procs?.key} name={match.b.name} sub={`${match.b.owner} · Nv ${match.b.level}`} style={match.b.style} hp={hp[1]} maxHp={result.maxHp[1]} sta={sta[1]} hurt={anims[1] === 'hit'} />
+        <FighterHud side={1} tools={match.tools?.[1]} pulse={procs?.list.filter((p) => p.side === 1).map((p) => p.tool)} pulseKey={procs?.key} name={match.b.name} sub={t('{dono} · Nv {nivel}', { dono: match.b.owner, nivel: match.b.level })} style={match.b.style} hp={hp[1]} maxHp={result.maxHp[1]} sta={sta[1]} hurt={anims[1] === 'hit'} />
       </div>
 
       <div className={`arena ${shake ? 'shake' : ''}`}>
@@ -299,7 +306,7 @@ export function Luta() {
       <div className="speed">
         {intro && (
           <button className="btn btn-sm" onClick={() => setIntro(false)}>
-            ⏩ Pular entrada
+            {t('⏩ Pular entrada')}
           </button>
         )}
         {[1, 2, 3].map((v) => (
@@ -308,7 +315,7 @@ export function Luta() {
           </button>
         ))}
         <button className="btn btn-sm" onClick={skip} disabled={finished}>
-          ⏭ Pular
+          {t('⏭ Pular')}
         </button>
       </div>
 
@@ -316,9 +323,13 @@ export function Luta() {
         <div className={`card result ${isRinha ? (won ? 'win' : 'lose') : betTotal > 0 ? 'win' : bets.length ? 'lose' : ''}`}>
           {isRinha ? (
             <>
-              <h2>{won ? '🏆 VITÓRIA!' : '😵 Derrota...'}</h2>
+              <h2>{won ? t('🏆 VITÓRIA!') : t('😵 Derrota...')}</h2>
               <p className="muted">
-                {won ? `${myRooster.name} venceu ${result.method === 'ko' ? 'por K.O.' : 'por decisão dos juízes'}!` : `${myRooster.name} lutou bravamente, mas ${theirRooster.name} levou essa.`}
+                {won
+                  ? result.method === 'ko'
+                    ? t('{nome} venceu por K.O.!', { nome: myRooster.name })
+                    : t('{nome} venceu por decisão dos juízes!', { nome: myRooster.name })
+                  : t('{nome} lutou bravamente, mas {rival} levou essa.', { nome: myRooster.name, rival: theirRooster.name })}
               </p>
               {match.rewards && (
                 <div className="rewards">
@@ -327,15 +338,15 @@ export function Luta() {
                   <span>✨ +{match.rewards.xp} XP</span>
                   <span>
                     🏆 {match.rewards.points >= 0 ? '+' : ''}
-                    {match.rewards.points} pts
+                    {t('{n} pts', { n: match.rewards.points })}
                   </span>
-                  {match.rewards.levels > 0 && <span className="lvlup">⭐ Subiu de nível!</span>}
+                  {match.rewards.levels > 0 && <span className="lvlup">{t('⭐ Subiu de nível!')}</span>}
                 </div>
               )}
-              {match.limited && <p className="tiny muted">Você já usou os desafios com prêmio de hoje. Este valeu só pelo recorde.</p>}
+              {match.limited && <p className="tiny muted">{t('Você já usou os desafios com prêmio de hoje. Este valeu só pelo recorde.')}</p>}
               <div className="row-center gap">
                 <button className="btn btn-primary" onClick={back}>
-                  ⚔️ {isPvp ? 'Novo desafio' : 'Lutar de novo'}
+                  {isPvp ? t('⚔️ Novo desafio') : t('⚔️ Lutar de novo')}
                 </button>
                 <button
                   className="btn"
@@ -344,34 +355,34 @@ export function Luta() {
                     go(`/galinheiro/${myRooster.id}`)
                   }}
                 >
-                  🏠 Ver galo
+                  {t('🏠 Ver galo')}
                 </button>
               </div>
             </>
           ) : (
             <>
-              <h2>{result.winner === 0 ? match.a.name : match.b.name} venceu {result.method === 'ko' ? 'por K.O.' : 'por decisão'}!</h2>
+              <h2>{result.method === 'ko' ? t('{nome} venceu por K.O.!', { nome: result.winner === 0 ? match.a.name : match.b.name }) : t('{nome} venceu por decisão!', { nome: result.winner === 0 ? match.a.name : match.b.name })}</h2>
               {bets.length === 0 ? (
-                <p className="muted">Você não apostou nessa luta.</p>
+                <p className="muted">{t('Você não apostou nessa luta.')}</p>
               ) : (
                 <div className="list">
                   {bets.map((b) => (
                     <div key={b.id} className={`list-row bet-${b.status}`}>
                       <span>{b.status === 'ganhou' ? '✅' : '❌'}</span>
                       <div className="grow">
-                        {b.label} @ {b.odds.toFixed(2)}
+                        {tx(b.label)} @ {b.odds.toFixed(2)}
                       </div>
                       <b>{b.status === 'ganhou' ? `+🌽 ${fmt(b.payout)}` : `-🌽 ${fmt(b.amount)}`}</b>
                     </div>
                   ))}
                   <p className="center">
-                    Resultado: <b className={betTotal - betStake >= 0 ? 'pos' : 'neg'}>{betTotal - betStake >= 0 ? '+' : ''}🌽 {fmt(betTotal - betStake)}</b>
+                    {tn('Resultado: {valor}', { valor: <b className={betTotal - betStake >= 0 ? 'pos' : 'neg'}>{betTotal - betStake >= 0 ? '+' : ''}🌽 {fmt(betTotal - betStake)}</b> })}
                   </p>
                 </div>
               )}
               <div className="row-center gap">
                 <button className="btn btn-primary" onClick={back}>
-                  🎲 Voltar às apostas
+                  {t('🎲 Voltar às apostas')}
                 </button>
               </div>
             </>
@@ -380,7 +391,7 @@ export function Luta() {
       )}
 
       <div className="card narration">
-        <h3>Narração</h3>
+        <h3>{t('Narração')}</h3>
         <ol ref={logRef}>
           {events.slice(0, idx).map((e, i) => (
             <li key={i} className={`ev-${e.t} ${'crit' in e && e.crit ? 'ev-crit' : ''}`}>
@@ -426,17 +437,17 @@ function FighterHud({ side, name, sub, style, hp, maxHp, sta, hurt, tools, pulse
 function Walkout({ a, b, tools }: { a: Rooster; b: Rooster; tools?: [string[], string[]] }) {
   const card = (r: Rooster, side: 0 | 1) => (
     <div className={`wo-card wo-${side === 0 ? 'left' : 'right'}`}>
-      <span className="wo-corner">{side === 0 ? '🔴 CANTO VERMELHO' : 'CANTO AZUL 🔵'}</span>
+      <span className="wo-corner">{side === 0 ? t('🔴 CANTO VERMELHO') : t('CANTO AZUL 🔵')}</span>
       <b className="wo-name">{r.name}</b>
       <span className="wo-info">
-        {BREED_BY_ID[r.breedId]?.name} · Nv {r.level} · {r.wins}V {r.losses}D
+        {t('{raca} · Nv {nivel} · {v}V {d}D', { raca: BREED_BY_ID[r.breedId]?.name ?? '', nivel: r.level, v: r.wins, d: r.losses })}
       </span>
       <span className="wo-owner">{r.owner}</span>
-      {(tools?.[side]?.length ?? 0) > 0 && <span className="wo-tools">{tools![side].map((t) => TOOL_BY_ID[t]?.emoji).join(' ')} equipado</span>}
+      {(tools?.[side]?.length ?? 0) > 0 && <span className="wo-tools">{t('{itens} equipado', { itens: tools![side].map((id) => TOOL_BY_ID[id]?.emoji).join(' ') })}</span>}
     </div>
   )
   return (
-    <div className="walkout" aria-label={`${a.name} contra ${b.name}`}>
+    <div className="walkout" aria-label={t('{a} contra {b}', { a: a.name, b: b.name })}>
       <div className="wo-dim" />
       <div className="spot spot-l" />
       <div className="spot spot-r" />

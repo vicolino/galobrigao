@@ -861,3 +861,13 @@ tr.muted td { opacity: 0.55; }
   .nf-vs { justify-content: center; }
   .live-banner { flex-wrap: wrap; }
 }
+
+/* Seletor de idioma */
+.lang-switch { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted, #aaa); }
+.lang-switch select { background: transparent; color: inherit; border: 1px solid rgba(255,255,255,.18); border-radius: 8px; padding: 4px 6px; font: inherit; cursor: pointer; }
+.lang-switch select option { color: #111; }
+.lang-switch.compact { font-size: 12px; }
+.side-lang { padding: 0 4px; }
+.side-lang .lang-switch { display: flex; width: 100%; gap: 8px; }
+.side-lang .lang-switch > span { width: 30px; text-align: center; font-size: 16px; }
+.side-lang .lang-switch select { flex: 1; min-width: 0; background: var(--bg2); border-color: var(--line); padding: 6px 8px; }

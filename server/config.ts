@@ -1,5 +1,6 @@
 import { mergeConfig, setLiveConfig, type AppConfig } from '../src/game/config'
 import { getDb } from './db'
+import { t } from '../src/i18n'
 
 /** Lê a configuração do banco e aplica no processo (barato: uma linha). */
 export function loadConfig(): AppConfig {
@@ -18,7 +19,7 @@ export function saveConfig(cfg: AppConfig, by: string) {
 
 const num = (v: unknown, min: number, max: number, name: string) => {
   const n = Number(v)
-  if (!Number.isFinite(n) || n < min || n > max) throw new Error(`${name}: valor entre ${min} e ${max}`)
+  if (!Number.isFinite(n) || n < min || n > max) throw new Error(t('{campo}: valor entre {min} e {max}', { campo: name, min, max }))
   return n
 }
 
@@ -26,31 +27,31 @@ const num = (v: unknown, min: number, max: number, name: string) => {
 export function validateConfig(input: AppConfig): AppConfig {
   const c = mergeConfig(input)
   for (const [id, o] of Object.entries(c.catalog)) {
-    o.priceCents = Math.round(num(o.priceCents, 100, 100000, `Preço de ${id} (centavos)`))
-    if (o.ovos !== undefined) o.ovos = Math.round(num(o.ovos, 0, 100000, `Ovos de ${id}`))
-    if (o.bonus !== undefined) o.bonus = Math.round(num(o.bonus, 0, 100000, `Bônus de ${id}`))
+    o.priceCents = Math.round(num(o.priceCents, 100, 100000, t('Preço de {id} (centavos)', { id })))
+    if (o.ovos !== undefined) o.ovos = Math.round(num(o.ovos, 0, 100000, t('Ovos de {id}', { id })))
+    if (o.bonus !== undefined) o.bonus = Math.round(num(o.bonus, 0, 100000, t('Bônus de {id}', { id })))
     o.active = !!o.active
   }
-  c.rewards.dailyOvos = Math.round(num(c.rewards.dailyOvos, 0, 100, 'Ovos do bônus diário'))
-  c.rewards.day7Ovos = Math.round(num(c.rewards.day7Ovos, 0, 500, 'Ovos do 7º dia'))
-  c.rewards.arenaHardWinOvos = Math.round(num(c.rewards.arenaHardWinOvos, 0, 50, 'Ovos por vitória difícil'))
-  c.rewards.missionOvosMultiplier = num(c.rewards.missionOvosMultiplier, 0, 5, 'Multiplicador das missões')
-  c.pvp.maxLevelDiff = Math.round(num(c.pvp.maxLevelDiff, 0, 10, 'Diferença máxima de nível'))
-  c.pvp.dailyRewards = Math.round(num(c.pvp.dailyRewards, 0, 200, 'Desafios com prêmio por dia'))
-  c.pvp.challengeTtlSec = Math.round(num(c.pvp.challengeTtlSec, 15, 600, 'Tempo para aceitar (s)'))
-  c.economy.freeOvosPerDay = Math.round(num(c.economy.freeOvosPerDay, 0, 5000, 'Ovos grátis por dia (limite)'))
-  c.economy.freeMilhoPerDay = Math.round(num(c.economy.freeMilhoPerDay, 0, 100_000_000, 'Milho ganho por dia (limite)'))
-  c.economy.defaultSpendLimitCents = Math.round(num(c.economy.defaultSpendLimitCents, 1000, 1000000, 'Limite de gasto padrão'))
+  c.rewards.dailyOvos = Math.round(num(c.rewards.dailyOvos, 0, 100, t('Ovos do bônus diário')))
+  c.rewards.day7Ovos = Math.round(num(c.rewards.day7Ovos, 0, 500, t('Ovos do 7º dia')))
+  c.rewards.arenaHardWinOvos = Math.round(num(c.rewards.arenaHardWinOvos, 0, 50, t('Ovos por vitória difícil')))
+  c.rewards.missionOvosMultiplier = num(c.rewards.missionOvosMultiplier, 0, 5, t('Multiplicador das missões'))
+  c.pvp.maxLevelDiff = Math.round(num(c.pvp.maxLevelDiff, 0, 10, t('Diferença máxima de nível')))
+  c.pvp.dailyRewards = Math.round(num(c.pvp.dailyRewards, 0, 200, t('Desafios com prêmio por dia')))
+  c.pvp.challengeTtlSec = Math.round(num(c.pvp.challengeTtlSec, 15, 600, t('Tempo para aceitar (s)')))
+  c.economy.freeOvosPerDay = Math.round(num(c.economy.freeOvosPerDay, 0, 5000, t('Ovos grátis por dia (limite)')))
+  c.economy.freeMilhoPerDay = Math.round(num(c.economy.freeMilhoPerDay, 0, 100_000_000, t('Milho ganho por dia (limite)')))
+  c.economy.defaultSpendLimitCents = Math.round(num(c.economy.defaultSpendLimitCents, 1000, 1000000, t('Limite de gasto padrão')))
   c.announcement.text = String(c.announcement.text ?? '').slice(0, 200)
   if (!['info', 'promo', 'alerta'].includes(c.announcement.kind)) c.announcement.kind = 'info'
   c.mvp.on = !!c.mvp.on
-  c.mvp.creditCents = Math.round(num(c.mvp.creditCents, 0, 1_000_000, 'Crédito MVP (centavos)'))
-  c.bets.intervalMin = Math.round(num(c.bets.intervalMin, 2, 120, 'Intervalo entre lutas (min)'))
-  c.bets.closeSec = Math.round(num(c.bets.closeSec, 0, 600, 'Apostas fecham antes (s)'))
-  c.bets.horizonMin = Math.round(num(c.bets.horizonMin, 30, 24 * 60, 'Agenda à frente (min)'))
-  c.bets.liveSec = Math.round(num(c.bets.liveSec, 20, 600, 'Duração do ao vivo (s)'))
-  c.bets.minBet = Math.round(num(c.bets.minBet, 1, 100000, 'Aposta mínima'))
-  c.bets.maxBet = Math.round(num(c.bets.maxBet, c.bets.minBet, 10_000_000, 'Aposta máxima'))
+  c.mvp.creditCents = Math.round(num(c.mvp.creditCents, 0, 1_000_000, t('Crédito MVP (centavos)')))
+  c.bets.intervalMin = Math.round(num(c.bets.intervalMin, 2, 120, t('Intervalo entre lutas (min)')))
+  c.bets.closeSec = Math.round(num(c.bets.closeSec, 0, 600, t('Apostas fecham antes (s)')))
+  c.bets.horizonMin = Math.round(num(c.bets.horizonMin, 30, 24 * 60, t('Agenda à frente (min)')))
+  c.bets.liveSec = Math.round(num(c.bets.liveSec, 20, 600, t('Duração do ao vivo (s)')))
+  c.bets.minBet = Math.round(num(c.bets.minBet, 1, 100000, t('Aposta mínima')))
+  c.bets.maxBet = Math.round(num(c.bets.maxBet, c.bets.minBet, 10_000_000, t('Aposta máxima')))
   c.maintenance.on = !!c.maintenance.on
   c.maintenance.message = String(c.maintenance.message ?? '').slice(0, 200)
   return c

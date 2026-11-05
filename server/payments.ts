@@ -50,7 +50,7 @@ export async function startPayment(order: OrderRow, sku: Sku, user: UserRow): Pr
       idem: order.id,
       body: JSON.stringify({
         transaction_amount: amount,
-        description: `Galo Brigão - ${sku.name}`,
+        description: `Galo Brigão - ${sku.name}`, // i18n-ok
         payment_method_id: 'pix',
         external_reference: order.id,
         notification_url,
@@ -67,12 +67,12 @@ export async function startPayment(order: OrderRow, sku: Sku, user: UserRow): Pr
     method: 'POST',
     idem: order.id,
     body: JSON.stringify({
-      items: [{ id: sku.id, title: `Galo Brigão - ${sku.name}`, quantity: 1, unit_price: amount, currency_id: 'BRL' }],
+      items: [{ id: sku.id, title: `Galo Brigão - ${sku.name}`, quantity: 1, unit_price: amount, currency_id: 'BRL' }], // i18n-ok
       external_reference: order.id,
       notification_url,
       payer: { email: user.email },
       payment_methods: { excluded_payment_types: [{ id: 'ticket' }], installments: 1 },
-      back_urls: { success: `${publicUrl()}/#/loja/ovos`, failure: `${publicUrl()}/#/loja/ovos`, pending: `${publicUrl()}/#/loja/ovos` },
+      back_urls: { success: `${publicUrl()}/#/loja/ovos`, failure: `${publicUrl()}/#/loja/ovos`, pending: `${publicUrl()}/#/loja/ovos` }, // i18n-ok
       auto_return: 'approved',
     }),
   })
@@ -111,11 +111,11 @@ export async function parseMpWebhook(headers: Record<string, string | string[] |
     const expected = createHmac('sha256', secret).update(manifest).digest('hex')
     const got = Buffer.from(String(parts.v1 ?? ''), 'utf8')
     const exp = Buffer.from(expected, 'utf8')
-    if (got.length !== exp.length || !timingSafeEqual(got, exp)) throw new Error('assinatura inválida')
+    if (got.length !== exp.length || !timingSafeEqual(got, exp)) throw new Error('assinatura inválida') // i18n-ok
     // Rejeita notificações velhas (replay): ts em milissegundos
     const ts = Number(parts.ts)
     const tsMs = ts < 1e12 ? ts * 1000 : ts
-    if (ts && Math.abs(Date.now() - tsMs) > 10 * 60_000) throw new Error('notificação expirada')
+    if (ts && Math.abs(Date.now() - tsMs) > 10 * 60_000) throw new Error('notificação expirada') // i18n-ok
   }
   if (!dataId) return null
   const p = await mp(`/v1/payments/${dataId}`)

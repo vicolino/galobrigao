@@ -31,6 +31,7 @@ import { DAILY_OVOS, arenaOvos } from './rewards'
 import { live, setLiveConfig, type PublicConfig } from './config'
 import type { Difficulty } from './engine'
 import { applyBetCredit, type BetCredit, type BetView, type ScheduledFight } from './bets'
+import { locale, t, tp, tx } from '../i18n'
 
 import {
   checkAchievements,
@@ -111,7 +112,7 @@ function useGameEngine() {
         next = { ...next, achievements: [...next.achievements, ...unlocked], ovos: next.ovos + unlocked.length * 5 }
         unlocked.forEach((id) => {
           const a = ACHIEVEMENTS.find((x) => x.id === id)!
-          setTimeout(() => toast(`${a.emoji} Conquista: ${a.name} (+5 🥚)`, 'conquista'), 400)
+          setTimeout(() => toast(t('{emoji} Conquista: {nome} (+5 🥚)', { emoji: a.emoji, nome: a.name }), 'conquista'), 400)
         })
       }
       // Pontos do jogador na tabela da liga
@@ -151,7 +152,7 @@ function useGameEngine() {
       const next = applyBetCredit(ref.current, c)
       ref.current = next
       setState(next)
-      for (const e of c.entries.slice(0, 4)) toast(e.won ? `🎲 ${e.text}: +🌽 ${e.milho.toLocaleString('pt-BR')}` : `🎲 ${e.text}`, e.won ? 'ok' : 'info')
+      for (const e of c.entries.slice(0, 4)) toast(e.won ? t('🎲 {texto}: +🌽 {n}', { texto: tx(e.text), n: e.milho.toLocaleString(locale()) }) : `🎲 ${tx(e.text)}`, e.won ? 'ok' : 'info')
       if (c.won) sfx.coin()
     },
     [toast],
@@ -219,18 +220,18 @@ function useGameEngine() {
           for (const u of p.updates) {
             if (u.status === 'aceito') {
               if (u === accepted && !watching) {
-                toast(`🤝 ${u.toName} aceitou o desafio! Que comece a briga!`, 'ok')
+                toast(t('🤝 {nome} aceitou o desafio! Que comece a briga!', { nome: u.toName }), 'ok')
                 setMatch(pvpMatch(u))
                 location.hash = '#/luta'
               } else {
                 const won = u.result?.winner === 0
-                toast(`🤝 ${u.toName} aceitou! ${u.a.name} ${won ? 'VENCEU' : 'perdeu'} o desafio. Reveja em Desafios.`, won ? 'ok' : 'info')
+                toast(t(won ? '🤝 {nome} aceitou! {galo} VENCEU o desafio. Reveja em Desafios.' : '🤝 {nome} aceitou! {galo} perdeu o desafio. Reveja em Desafios.', { nome: u.toName, galo: u.a.name }), won ? 'ok' : 'info')
                 sfx.bell()
               }
               setPvpDone((d) => [u, ...d].slice(0, 10))
-            } else if (u.status === 'recusado') toast(`${u.toName} recusou o desafio.`, 'info')
-            else if (u.status === 'expirado') toast(`${u.toName} não respondeu a tempo.`, 'info')
-            else if (u.status === 'cancelado' && u.reason) toast(`Desafio cancelado: ${u.reason}`, 'info')
+            } else if (u.status === 'recusado') toast(t('{nome} recusou o desafio.', { nome: u.toName }), 'info')
+            else if (u.status === 'expirado') toast(t('{nome} não respondeu a tempo.', { nome: u.toName }), 'info')
+            else if (u.status === 'cancelado' && u.reason) toast(t('Desafio cancelado: {motivo}', { motivo: tx(u.reason) }), 'info')
             void api.pvpSeen(u.id)
           }
         }
@@ -337,7 +338,7 @@ function useGameEngine() {
     return s.ovos >= price ? { ...s, ovos: s.ovos - price } : null
   }
 
-  const noMoney = (c: 'milho' | 'ovo'): Result<never> => ({ ok: false, error: c === 'milho' ? 'Milho insuficiente 🌽' : 'Ovos de ouro insuficientes 🥚' })
+  const noMoney = (c: 'milho' | 'ovo'): Result<never> => ({ ok: false, error: c === 'milho' ? t('Milho insuficiente 🌽') : t('Ovos de ouro insuficientes 🥚') })
 
 // ----- Loja: tudo que gasta ovos ou cria item premium roda no servidor -----
 async function shop<T = unknown>(op: ShopOp, sound?: () => void): Promise<Result<T>> {
@@ -423,13 +424,13 @@ async function shop<T = unknown>(op: ShopOp, sound?: () => void): Promise<Result
     claimDaily(): Result<{ milho: number; ovo: number; streak: number }> {
       const s = S()
       const d = today()
-      if (s.daily.last === d) return { ok: false, error: 'Você já pegou o bônus de hoje. Volte amanhã!' }
+      if (s.daily.last === d) return { ok: false, error: t('Você já pegou o bônus de hoje. Volte amanhã!') }
       const yesterday = new Date(Date.now() - 864e5).toISOString().slice(0, 10)
       const streak = s.daily.last === yesterday ? (s.daily.streak % 7) + 1 : 1
       const milho = Math.round(300 * streak * (isVip(s) ? 1 + VIP.milhoBonus : 1))
       const ovo = DAILY_OVOS(streak) + (isVip(s) ? VIP.dailyOvos : 0)
       let n = { ...s, milho: s.milho + milho, ovos: s.ovos + ovo, daily: { last: d, streak } }
-      n = log(n, `Bônus diário (dia ${streak})`, milho, ovo)
+      n = log(n, t('Bônus diário (dia {n})', { n: streak }), milho, ovo)
       commit(n)
       sfx.coin()
       return { ok: true, value: { milho, ovo, streak } }
@@ -438,15 +439,15 @@ async function shop<T = unknown>(op: ShopOp, sound?: () => void): Promise<Result
     buyRooster(id: string): Result {
       const s = S()
       const ro = s.market.roosters.find((r) => r.id === id)
-      if (!ro) return { ok: false, error: 'Esse galo já foi vendido.' }
-      if (s.roosters.length >= 12) return { ok: false, error: 'Galinheiro lotado (máx. 12). Venda algum galo.' }
+      if (!ro) return { ok: false, error: t('Esse galo já foi vendido.') }
+      if (s.roosters.length >= 12) return { ok: false, error: t('Galinheiro lotado (máx. 12). Venda algum galo.') }
       const price = marketPrice(ro)
       let n = pay(s, price, 'milho')
       if (!n) return noMoney('milho')
       const mine: Rooster = { ...ro, owner: s.player.name, energy: 100, energyAt: Date.now() }
       n = { ...n, roosters: [...n.roosters, mine], market: { ...n.market, roosters: n.market.roosters.filter((r) => r.id !== id) } }
       n = bump(n, 'comprar')
-      n = log(n, `Comprou ${mine.name} (${BREED_BY_ID[mine.breedId].name})`, -price, 0)
+      n = log(n, t('Comprou {nome} ({raca})', { nome: mine.name, raca: BREED_BY_ID[mine.breedId].name }), -price, 0)
       n = { ...n, stats: { ...n.stats, purchases: n.stats.purchases + 1 } }
       commit(n)
       sfx.coin()
@@ -455,23 +456,23 @@ async function shop<T = unknown>(op: ShopOp, sound?: () => void): Promise<Result
 
     useItem(itemId: string, roosterId: string): Result<string> {
       const s = S()
-      if (!s.items[itemId]) return { ok: false, error: 'Você não tem esse item.' }
+      if (!s.items[itemId]) return { ok: false, error: t('Você não tem esse item.') }
       const it = ITEM_BY_ID[itemId]
       const ro = s.roosters.find((r) => r.id === roosterId)!
       let msg = ''
       let n = s
       if (it.effect === 'energia' || it.effect === 'energia_total') {
         const cur = currentEnergy(ro)
-        if (cur >= 100) return { ok: false, error: `${ro.name} já está com energia cheia.` }
+        if (cur >= 100) return { ok: false, error: t('{nome} já está com energia cheia.', { nome: ro.name }) }
         n = updRooster(n, roosterId, (r) => withEnergy(r, it.effect === 'energia_total' ? 100 : cur + it.value))
-        msg = `${ro.name} comeu e recuperou energia! 🍽️`
+        msg = t('{nome} comeu e recuperou energia! 🍽️', { nome: ro.name })
       } else if (it.effect === 'xp') {
         const { levels } = addXp(ro, it.value)
         n = updRooster(n, roosterId, (r) => addXp(r, it.value).rooster)
-        msg = levels ? `${ro.name} subiu para o nível ${ro.level + levels}! ⭐` : `${ro.name} ganhou ${it.value} XP.`
+        msg = levels ? t('{nome} subiu para o nível {n}! ⭐', { nome: ro.name, n: ro.level + levels }) : t('{nome} ganhou {xp} XP.', { nome: ro.name, xp: it.value })
       } else if (it.effect === 'sorte') {
         n = updRooster(n, roosterId, (r) => ({ ...r, lucky: (r.lucky ?? 0) + it.value }))
-        msg = `${ro.name} está com sorte nas próximas ${it.value} lutas! 🍀`
+        msg = tp('{nome} está com sorte na próxima luta! 🍀', '{nome} está com sorte nas próximas {n} lutas! 🍀', it.value, { nome: ro.name })
       }
       n = { ...n, items: { ...n.items, [itemId]: n.items[itemId] - 1 } }
       commit(n)
@@ -481,7 +482,7 @@ async function shop<T = unknown>(op: ShopOp, sound?: () => void): Promise<Result
 
     equip(roosterId: string, accId: string): Result {
       const s = S()
-      if (!s.accessories[accId]) return { ok: false, error: 'Você não tem esse acessório livre.' }
+      if (!s.accessories[accId]) return { ok: false, error: t('Você não tem esse acessório livre.') }
       const acc = ACC_BY_ID[accId]
       const ro = s.roosters.find((r) => r.id === roosterId)!
       const prev = ro.equipped[acc.slot]
@@ -525,13 +526,13 @@ async function shop<T = unknown>(op: ShopOp, sound?: () => void): Promise<Result
 
     sell(roosterId: string): Result<number> {
       const s = S()
-      if (s.roosters.length <= 1) return { ok: false, error: 'Você precisa ter pelo menos um galo.' }
+      if (s.roosters.length <= 1) return { ok: false, error: t('Você precisa ter pelo menos um galo.') }
       const ro = s.roosters.find((r) => r.id === roosterId)!
       const price = sellPrice(ro)
       const accs = { ...s.accessories }
       Object.values(ro.equipped).forEach((a) => a && (accs[a] = (accs[a] ?? 0) + 1))
       let n: GameState = { ...s, milho: s.milho + price, accessories: accs, roosters: s.roosters.filter((r) => r.id !== roosterId) }
-      n = log(n, `Vendeu ${ro.name}`, price, 0)
+      n = log(n, t('Vendeu {nome}', { nome: ro.name }), price, 0)
       commit(n)
       sfx.coin()
       return { ok: true, value: price }
@@ -541,7 +542,7 @@ async function shop<T = unknown>(op: ShopOp, sound?: () => void): Promise<Result
       const s = S()
       const ro = s.roosters.find((r) => r.id === roosterId)!
       const e = currentEnergy(ro)
-      if (e < 15) return { ok: false, error: `${ro.name} está cansado demais para treinar.` }
+      if (e < 15) return { ok: false, error: t('{nome} está cansado demais para treinar.', { nome: ro.name }) }
       const cost = 100 + ro.level * 25
       let n = pay(s, cost, 'milho')
       if (!n) return noMoney('milho')
@@ -551,7 +552,7 @@ async function shop<T = unknown>(op: ShopOp, sound?: () => void): Promise<Result
       n = bump(n, 'treinar')
       commit(n)
       sfx.hit()
-      return { ok: true, value: levels ? `🎉 ${ro.name} subiu para o nível ${ro.level + levels}!` : `${ro.name} treinou e ganhou ${xp} XP 💪` }
+      return { ok: true, value: levels ? t('🎉 {nome} subiu para o nível {n}!', { nome: ro.name, n: ro.level + levels }) : t('{nome} treinou e ganhou {xp} XP 💪', { nome: ro.name, xp }) }
     },
 
     /** Inicia uma luta na Rinha. O resultado é aplicado na hora (sem trapaça com F5). */
@@ -559,11 +560,11 @@ async function shop<T = unknown>(op: ShopOp, sound?: () => void): Promise<Result
       const s = S()
       const ro = s.roosters.find((r) => r.id === roosterId)!
       const e = currentEnergy(ro)
-      if (e < ENERGY_COST) return { ok: false, error: `${ro.name} precisa de ${ENERGY_COST} de energia. Dê uma ração!` }
+      if (e < ENERGY_COST) return { ok: false, error: t('{nome} precisa de {n} de energia. Dê uma ração!', { nome: ro.name, n: ENERGY_COST }) }
       myTools = myTools.slice(0, MAX_TOOLS)
-      for (const t of myTools) if (!s.tools[t]) return { ok: false, error: `Você não tem ${TOOL_BY_ID[t]?.name ?? 'essa ferramenta'}.` }
+      for (const tl of myTools) if (!s.tools[tl]) return { ok: false, error: TOOL_BY_ID[tl] ? t('Você não tem {item}.', { item: TOOL_BY_ID[tl].name }) : t('Você não tem essa ferramenta.') }
       const toolsLeft = { ...s.tools }
-      myTools.forEach((t) => (toolsLeft[t] -= 1))
+      myTools.forEach((tl) => (toolsLeft[tl] -= 1))
       const tools: [string[], string[]] = [myTools, oppTools]
       const seed = Math.floor(Math.random() * 1e9)
       const res = simulate(ro, opp, seed, tools)
@@ -602,7 +603,7 @@ async function shop<T = unknown>(op: ShopOp, sound?: () => void): Promise<Result
       n = bump(n, 'lutar')
       if (won) n = bump(n, 'vencer')
       if (won && res.method === 'ko') n = bump(n, 'ko')
-      n = log(n, `${won ? 'Vitória' : 'Derrota'}: ${ro.name} x ${opp.name}`, milho, ovo)
+      n = log(n, t(won ? 'Vitória: {a} x {b}' : 'Derrota: {a} x {b}', { a: ro.name, b: opp.name }), milho, ovo)
       setHeld({ milho: s.milho, ovos: s.ovos })
       commit(n)
       const m: Match = { kind: 'rinha', a: ro, b: opp, seed, difficulty, tools, rewards: { milho, ovo, xp, points, levels } }
@@ -616,7 +617,7 @@ async function shop<T = unknown>(op: ShopOp, sound?: () => void): Promise<Result
         await flush()
         const r = await api.placeBet(fightId, pick, amount)
         adopt({ rev: r.rev, state: r.state })
-        if (r.credit) for (const e of r.credit.entries.slice(0, 4)) toast(e.won ? `🎲 ${e.text}: +🌽 ${e.milho.toLocaleString('pt-BR')}` : `🎲 ${e.text}`, e.won ? 'ok' : 'info')
+        if (r.credit) for (const e of r.credit.entries.slice(0, 4)) toast(e.won ? t('🎲 {texto}: +🌽 {n}', { texto: tx(e.text), n: e.milho.toLocaleString(locale()) }) : `🎲 ${tx(e.text)}`, e.won ? 'ok' : 'info')
         sfx.coin()
         setBetsInfo((b) => (b ? { ...b, open: b.open + 1 } : b))
         return { ok: true }
@@ -637,14 +638,14 @@ async function shop<T = unknown>(op: ShopOp, sound?: () => void): Promise<Result
     claimMission(id: string): Result {
       const s = S()
       const m = s.missions.list.find((x) => x.id === id)
-      if (!m || m.claimed || m.progress < m.goal) return { ok: false, error: 'Missão ainda não concluída.' }
+      if (!m || m.claimed || m.progress < m.goal) return { ok: false, error: t('Missão ainda não concluída.') }
       let n: GameState = {
         ...s,
         milho: s.milho + m.reward.milho,
         ovos: s.ovos + m.reward.ovo,
         missions: { ...s.missions, list: s.missions.list.map((x) => (x.id === id ? { ...x, claimed: true } : x)) },
       }
-      n = log(n, `Missão: ${m.text}`, m.reward.milho, m.reward.ovo)
+      n = log(n, t('Missão: {texto}', { texto: tx(m.text) }), m.reward.milho, m.reward.ovo)
       commit(n)
       sfx.coin()
       return { ok: true }
@@ -653,9 +654,9 @@ async function shop<T = unknown>(op: ShopOp, sound?: () => void): Promise<Result
     claimLeague(tierName: string): Result {
       const s = S()
       const tier = LEAGUE_TIERS.find((t) => t.name === tierName)!
-      if (s.league.points < tier.min || s.league.claimed.includes(tierName)) return { ok: false, error: 'Recompensa indisponível.' }
+      if (s.league.points < tier.min || s.league.claimed.includes(tierName)) return { ok: false, error: t('Recompensa indisponível.') }
       let n: GameState = { ...s, milho: s.milho + tier.reward.milho, ovos: s.ovos + tier.reward.ovo, league: { ...s.league, claimed: [...s.league.claimed, tierName] } }
-      n = log(n, `Liga: recompensa ${tierName}`, tier.reward.milho, tier.reward.ovo)
+      n = log(n, t('Liga: recompensa {tier}', { tier: tx(tierName) }), tier.reward.milho, tier.reward.ovo)
       commit(n)
       sfx.win()
       return { ok: true }
@@ -663,7 +664,7 @@ async function shop<T = unknown>(op: ShopOp, sound?: () => void): Promise<Result
 
     applySkin(roosterId: string, skinId: string | null): Result {
       const s = S()
-      if (skinId && !s.skins.includes(skinId)) return { ok: false, error: 'Compre essa skin primeiro.' }
+      if (skinId && !s.skins.includes(skinId)) return { ok: false, error: t('Compre essa skin primeiro.') }
       commit(updRooster(s, roosterId, (r) => ({ ...r, skin: skinId ?? undefined })))
       sfx.special()
       return { ok: true }
@@ -688,14 +689,14 @@ async function shop<T = unknown>(op: ShopOp, sound?: () => void): Promise<Result
       const ro = s.roosters.find((r) => r.id === roosterId)!
       const ready = !ro.fedAt || Date.now() - ro.fedAt >= FEED_COOLDOWN
       if (!ready) {
-        if (!instant) return { ok: false, error: `${ro.name} ainda está de papo cheio.` }
+        if (!instant) return { ok: false, error: t('{nome} ainda está de papo cheio.', { nome: ro.name }) }
         return shop<string>({ op: 'feedInstant', roosterId }, sfx.coin)
       }
       const xp = 30 + ro.level * 6
       const { levels } = addXp(ro, xp)
       commit(updRooster(s, roosterId, (r) => ({ ...withEnergy(addXp(r, xp).rooster, currentEnergy(r) + 15), fedAt: Date.now() })))
       sfx.coin()
-      return { ok: true, value: levels ? `🎉 ${ro.name} comeu e subiu para o nível ${ro.level + levels}!` : `${ro.name} comeu! +${xp} XP e +15 de energia 🌽` }
+      return { ok: true, value: levels ? t('🎉 {nome} comeu e subiu para o nível {n}!', { nome: ro.name, n: ro.level + levels }) : t('{nome} comeu! +{xp} XP e +15 de energia 🌽', { nome: ro.name, xp }) }
     },
 
     // ----- Desafios entre jogadores -----

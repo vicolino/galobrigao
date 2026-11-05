@@ -1,8 +1,9 @@
 // Lógica pura do jogo (sem React). Usada pelo navegador e pelo servidor.
-import { ACCESSORIES, ACHIEVEMENTS, BREED_BY_ID, ELECTION_ROOSTERS, NPC_OWNERS, SKINS, SKIN_BY_ID } from './data'
+import { ACCESSORIES, ACHIEVEMENTS, BREED_BY_ID, ELECTION_ROOSTERS, SKINS, SKIN_BY_ID, npcOwners } from './data'
 import { estimate, toOdds } from './battle'
 import { makeRooster, pick, rarityRank, rng, today, uid } from './rooster'
 import { missionOvos } from './rewards'
+import { lang, t } from '../i18n'
 import type { GameState, HouseFight, LeagueRow, Mission, MissionKind, Rarity, Rooster, Slot } from './types'
 
 export const VERSION = 1
@@ -20,16 +21,17 @@ export function seasonId(d = new Date()) {
   return Math.floor((d.getTime() - Date.UTC(2024, 0, 1)) / (7 * 864e5))
 }
 
+// Textos das missões ficam SEMPRE em português no save; a tela traduz com tx() (chaves em i18n/en).
 const MISSION_POOL: { kind: MissionKind; text: (n: number) => string; goals: number[]; reward: (n: number) => { milho: number; ovo: number } }[] = [
-  { kind: 'vencer', text: (n) => `Vença ${n} luta${n > 1 ? 's' : ''} na Arena`, goals: [1, 2, 3], reward: (n) => ({ milho: 400 * n, ovo: 2 * n }) },
-  { kind: 'lutar', text: (n) => `Dispute ${n} lutas`, goals: [2, 3, 5], reward: (n) => ({ milho: 200 * n, ovo: 3 }) },
-  { kind: 'apostar', text: (n) => `Faça ${n} apostas`, goals: [2, 3, 4], reward: (n) => ({ milho: 180 * n, ovo: 3 }) },
-  { kind: 'ganhar_aposta', text: (n) => `Ganhe ${n} aposta${n > 1 ? 's' : ''}`, goals: [1, 2], reward: (n) => ({ milho: 500 * n, ovo: 2 * n + 1 }) },
-  { kind: 'treinar', text: (n) => `Treine seus galos ${n} vezes`, goals: [2, 3], reward: (n) => ({ milho: 250 * n, ovo: 3 }) },
-  { kind: 'comprar', text: () => 'Compre qualquer item na Loja', goals: [1], reward: () => ({ milho: 300, ovo: 3 }) },
-  { kind: 'equipar', text: () => 'Equipe um acessório em um galo', goals: [1], reward: () => ({ milho: 300, ovo: 3 }) },
-  { kind: 'assistir', text: (n) => `Assista ${n} lutas da casa`, goals: [1, 2], reward: (n) => ({ milho: 220 * n, ovo: 2 * n }) },
-  { kind: 'ko', text: () => 'Vença uma luta por K.O.', goals: [1], reward: () => ({ milho: 700, ovo: 5 }) },
+  { kind: 'vencer', text: (n) => `Vença ${n} luta${n > 1 ? 's' : ''} na Arena`, goals: [1, 2, 3], reward: (n) => ({ milho: 400 * n, ovo: 2 * n }) }, // i18n-ok (salvo em pt, traduzido com tx)
+  { kind: 'lutar', text: (n) => `Dispute ${n} lutas`, goals: [2, 3, 5], reward: (n) => ({ milho: 200 * n, ovo: 3 }) }, // i18n-ok (salvo em pt, traduzido com tx)
+  { kind: 'apostar', text: (n) => `Faça ${n} apostas`, goals: [2, 3, 4], reward: (n) => ({ milho: 180 * n, ovo: 3 }) }, // i18n-ok (salvo em pt, traduzido com tx)
+  { kind: 'ganhar_aposta', text: (n) => `Ganhe ${n} aposta${n > 1 ? 's' : ''}`, goals: [1, 2], reward: (n) => ({ milho: 500 * n, ovo: 2 * n + 1 }) }, // i18n-ok (salvo em pt, traduzido com tx)
+  { kind: 'treinar', text: (n) => `Treine seus galos ${n} vezes`, goals: [2, 3], reward: (n) => ({ milho: 250 * n, ovo: 3 }) }, // i18n-ok (salvo em pt, traduzido com tx)
+  { kind: 'comprar', text: () => 'Compre qualquer item na Loja', goals: [1], reward: () => ({ milho: 300, ovo: 3 }) }, // i18n-ok (salvo em pt, traduzido com tx)
+  { kind: 'equipar', text: () => 'Equipe um acessório em um galo', goals: [1], reward: () => ({ milho: 300, ovo: 3 }) }, // i18n-ok (salvo em pt, traduzido com tx)
+  { kind: 'assistir', text: (n) => `Assista ${n} lutas da casa`, goals: [1, 2], reward: (n) => ({ milho: 220 * n, ovo: 2 * n }) }, // i18n-ok (salvo em pt, traduzido com tx)
+  { kind: 'ko', text: () => 'Vença uma luta por K.O.', goals: [1], reward: () => ({ milho: 700, ovo: 5 }) }, // i18n-ok (salvo em pt, traduzido com tx)
 ]
 
 export function genMissions(day: string): Mission[] {
@@ -44,7 +46,7 @@ export function genMissions(day: string): Mission[] {
 
 export function genLeagueRows(season: number): LeagueRow[] {
   const r = rng(season * 7777)
-  const names = [...NPC_OWNERS].sort(() => r() - 0.5).slice(0, 9)
+  const names = [...npcOwners()].sort(() => r() - 0.5).slice(0, 9)
   return names.map((n) => ({ id: uid(), name: n, points: Math.floor(r() * 120) }))
 }
 
@@ -64,10 +66,10 @@ export function genMarket(): Rooster[] {
   for (let i = 0; i < 6; i++) {
     const roll = Math.random()
     const rarityMax: Rarity = roll < 0.06 ? 'lendario' : roll < 0.22 ? 'epico' : roll < 0.55 ? 'raro' : 'comum'
-    let ro = makeRooster({ rarityMax, owner: 'Mercado', level: 1 + Math.floor(Math.random() * 4) })
+    let ro = makeRooster({ rarityMax, owner: t('Mercado'), level: 1 + Math.floor(Math.random() * 4) })
     // força pelo menos algumas raridades altas aparecerem
     if (rarityRank(BREED_BY_ID[ro.breedId].rarity) < rarityRank(rarityMax) && Math.random() < 0.5) {
-      ro = makeRooster({ rarityMax, owner: 'Mercado', level: ro.level })
+      ro = makeRooster({ rarityMax, owner: t('Mercado'), level: ro.level })
     }
     list.push(ro)
   }
@@ -78,7 +80,7 @@ export function genMarket(): Rooster[] {
 export function electionFight(): HouseFight {
   const lvl = 8
   const [a, b] = ELECTION_ROOSTERS.map((e) => {
-    const r = makeRooster({ breedId: e.breedId, name: e.name, level: lvl, stars: 3, owner: 'Edição Eleições' })
+    const r = makeRooster({ breedId: e.breedId, name: e.name, level: lvl, stars: 3, owner: t('Edição Eleições') })
     return { ...r, base: { ...BREED_BY_ID[e.breedId].base }, style: 'equilibrado' as const }
   })
   const est = estimate(a, b, 200)
@@ -237,7 +239,7 @@ export function skinPrice(id: string) {
 }
 
 export function newGame(name: string, avatar: string, starterBreed: string, opts: { stars?: number; roosterName?: string } = {}): GameState {
-  const starter = makeRooster({ breedId: starterBreed, owner: name, stars: opts.stars ?? 3, name: opts.roosterName ?? 'Madrugada' })
+  const starter = makeRooster({ breedId: starterBreed, owner: name, stars: opts.stars ?? 3, name: opts.roosterName ?? (lang() === 'en' ? 'Daybreak' : 'Madrugada') /* i18n-ok */ })
   if (BREED_BY_ID[starterBreed]?.special) starter.base = { ...BREED_BY_ID[starterBreed].base }
   const season = seasonId()
   const rows = genLeagueRows(season)
