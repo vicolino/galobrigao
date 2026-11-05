@@ -87,11 +87,13 @@ export function Novidades() {
   return (
     <>
       <PageHead title={t('🆕 Novidades')} subtitle={t('Tudo o que mudou no jogo, da versão mais nova para a mais antiga.')} />
-      {RELEASES().map((r) => (
-        <div key={r.id} className="card">
-          <ReleaseBody r={r} />
-        </div>
-      ))}
+      <div className="news-page">
+        {RELEASES().map((r) => (
+          <div key={r.id} className="card">
+            <ReleaseBody r={r} />
+          </div>
+        ))}
+      </div>
     </>
   )
 }

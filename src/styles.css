@@ -1099,6 +1099,7 @@ tr.muted td { opacity: 0.55; }
 }
 
 /* ---------- Novidades ---------- */
+.news-page { display: flex; flex-direction: column; gap: 16px; }
 .news-modal { display: flex; flex-direction: column; gap: 14px; max-height: 70vh; overflow-y: auto; }
 .news-release { display: flex; flex-direction: column; gap: 8px; }
 .news-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
