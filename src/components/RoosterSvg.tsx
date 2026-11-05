@@ -180,7 +180,7 @@ export function RoosterSvg({ breedId, skin, equipped = {}, flip, anim = 'idle', 
             <circle cx={HEAD.cx} cy={HEAD.cy} r={HEAD.r} fill={outline} />
           </g>
           {/* Crista: lobos arredondados */}
-          <g stroke={outline} strokeWidth="3.5" fill={c.comb}>
+          <g stroke={outline} strokeWidth="3.5" fill={c.comb} opacity={breed.id === 'trump' ? 0 : 1}>
             <circle cx="128" cy="54" r="9" />
             <circle cx="139" cy="46" r="11" />
             <circle cx="152" cy="46" r="10" />
@@ -221,6 +221,7 @@ export function RoosterSvg({ breedId, skin, equipped = {}, flip, anim = 'idle', 
               <path d="M145,61 L166,68" stroke={outline} strokeWidth={anim === 'attack' || anim === 'special' ? 6 : 5} strokeLinecap="round" />
             </g>
           )}
+          {breed.id === 'trump' && !e.cabeca && <Combover outline={outline} />}
           {/* Cicatriz */}
           <path d="M140,80 L150,88" stroke="#000" strokeOpacity="0.3" strokeWidth="2" strokeLinecap="round" />
 
@@ -249,6 +250,25 @@ export function RoosterSvg({ breedId, skin, equipped = {}, flip, anim = 'idle', 
   )
 }
 
+/** Topete loiro penteado para a frente (Edição Especial EUA). */
+function Combover({ outline }: { outline: string }) {
+  return (
+    <g strokeLinejoin="round" strokeLinecap="round">
+      {/* volume de trás até a testa, terminando numa onda sobre o olho */}
+      <path
+        d="M118,70 C112,52 120,36 140,32 C160,28 180,34 186,46 C188,54 182,60 174,58 C170,64 162,62 160,56 C150,58 136,56 126,64 C124,68 121,72 118,70 Z"
+        fill="#f4c542"
+        stroke={outline}
+        strokeWidth="3.5"
+      />
+      {/* fios penteados */}
+      <path d="M124,56 C134,42 156,36 176,44 M128,62 C140,50 158,46 178,52 M132,46 C146,36 164,34 180,40" stroke="#c9961a" strokeWidth="2.2" fill="none" />
+      {/* brilho */}
+      <path d="M138,38 C150,33 164,33 172,37" stroke="#fff3b0" strokeWidth="2.5" fill="none" opacity="0.8" />
+    </g>
+  )
+}
+
 /** Marcas da Edição Eleições (desenhadas por cima do corpo, mesmo com skin). */
 function BodyMark({ breedId, clip, outline }: { breedId: string; clip: string; outline: string }) {
   if (breedId === 'lula') {
@@ -260,6 +280,17 @@ function BodyMark({ breedId, clip, outline }: { breedId: string; clip: string; o
       return `${cx + r * Math.cos(a)},${cy + r * Math.sin(a)}`
     })
     return <polygon points={pts.join(' ')} fill="#fff" stroke={outline} strokeWidth="2.5" strokeLinejoin="round" />
+  }
+  if (breedId === 'trump') {
+    // Colarinho branco + gravata vermelha comprida
+    return (
+      <g stroke={outline} strokeLinejoin="round">
+        <path d="M128,104 L142,118 L156,102 L150,98 L142,108 L134,98 Z" fill="#fff" strokeWidth="2.5" />
+        <path d="M138,112 L146,112 L144,120 L140,120 Z" fill="#c8102e" strokeWidth="2.2" />
+        <path d="M140,120 L144,120 L150,166 L142,176 L134,166 Z" fill="#c8102e" strokeWidth="2.5" />
+        <path d="M141,132 L147,140 M139,148 L148,156" stroke="#8a0a1f" strokeWidth="2" />
+      </g>
+    )
   }
   if (breedId === 'bolsonaro') {
     return (

@@ -376,6 +376,18 @@ input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 .odd:disabled { cursor: default; }
 .odd.won { border-color: var(--green); background: #1f3a22; }
 .fr-foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.odd.active { border-color: var(--accent); background: #2a4a1f; box-shadow: 0 0 0 2px var(--accent) inset; }
+.betbox { display: flex; flex-direction: column; gap: 8px; background: var(--bg2); border: 1px solid var(--accent); border-radius: 12px; padding: 10px 12px; margin: 0 0 10px; animation: betboxIn 0.15s ease-out; }
+@keyframes betboxIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+.betbox-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 14px; }
+.betbox-odd { color: var(--gold); font-weight: 900; }
+.betbox-x { background: none; border: 0; color: var(--muted); font-size: 16px; cursor: pointer; padding: 4px 6px; }
+.betbox-row { display: flex; gap: 10px; align-items: stretch; }
+.betbox-input { flex: 1; display: flex; align-items: center; gap: 6px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 0 10px; }
+.betbox-input:focus-within { border-color: var(--accent); }
+.betbox-input input { flex: 1; min-width: 0; background: none; border: 0; outline: none; color: var(--text); font: inherit; font-size: 20px; font-weight: 900; padding: 8px 0; }
+.betbox-return { display: flex; flex-direction: column; align-items: flex-end; justify-content: center; }
+.betbox-return b { color: var(--green); font-size: 17px; }
 .slip { display: flex; flex-direction: column; gap: 8px; }
 .slip-fight { font-weight: 900; font-size: 17px; }
 .slip-pick { display: flex; justify-content: space-between; align-items: center; background: var(--bg2); border-radius: 10px; padding: 10px 12px; }
@@ -547,6 +559,10 @@ g.fx-lava { animation: lavaPulse 1.4s ease-in-out infinite alternate; }
 @media (max-width: 900px) { .bundles { grid-template-columns: 1fr; } .weekly { flex-direction: column; text-align: center; } }
 .shop-item .rarity, .opp .rarity { align-self: flex-start; }
 
+.special-rooster { display: flex; align-items: center; gap: 18px; margin-bottom: 16px; background: linear-gradient(90deg, rgba(28, 42, 74, 0.55), #14281e 55%, rgba(200, 16, 46, 0.18)); }
+.special-info { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.side-trump h3 { color: #f4c542; }
+@media (max-width: 760px) { .special-rooster { flex-direction: column; text-align: center; } .special-info { align-items: center; } }
 /* ---------- Edição Eleições ---------- */
 .election { margin-bottom: 16px; background: linear-gradient(90deg, rgba(212, 42, 42, 0.22), #14281e 45%, #14281e 55%, rgba(31, 157, 74, 0.22)); }
 .election-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }

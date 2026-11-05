@@ -132,6 +132,19 @@ BREEDS.push(
   },
 )
 
+// Edição Especial EUA: topete loiro, bronzeado laranja, terno azul-marinho e gravata vermelha.
+BREEDS.push({
+  id: 'trump',
+  name: t('Topete Laranja'),
+  desc: t('Topete dourado, gravata vermelha e um bronzeado que ninguém explica.'),
+  rarity: 'lendario',
+  pattern: 'solido',
+  special: true,
+  colors: { body: '#f0904a', wing: '#1c2a4a', tail: '#16213d', tail2: '#c8102e', neck: '#f6a560', comb: '#e23b3b', legs: '#e8b04a' },
+  base: { hp: 118, atk: 20, def: 14, spd: 14 },
+  price: 99,
+})
+
 // Galo Livre: grátis no cadastro, fraco e com potencial baixo (1 estrela).
 BREEDS.push({
   id: 'livre',
@@ -149,6 +162,9 @@ export const ELECTION_ROOSTERS = [
   { breedId: 'lula', name: t('Barbudo Vermelho'), emoji: '⭐' },
   { breedId: 'bolsonaro', name: t('Capitão Verde-Amarelo'), emoji: '🇧🇷' },
 ]
+
+/** Galos de edição especial vendidos fora do confronto eleitoral. */
+export const SPECIAL_ROOSTERS = [{ breedId: 'trump', name: t('Topete Laranja'), emoji: '🇺🇸' }]
 
 export const BREED_BY_ID: Record<string, Breed> = Object.fromEntries(BREEDS.map((b) => [b.id, b]))
 

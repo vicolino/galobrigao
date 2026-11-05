@@ -4,7 +4,7 @@ import { Checkout } from '../components/Checkout'
 import { brl } from '../game/catalog'
 import { RoosterSvg } from '../components/RoosterSvg'
 import { Modal, PageHead, Price, RarityTag, RoosterCard, Tabs, go } from '../components/ui'
-import { ACCESSORIES, BOXES, BREED_BY_ID, CORN_PACKS, ELECTION_ROOSTERS, ITEMS, RARITY, SLOTS, VIP } from '../game/data'
+import { ACCESSORIES, BOXES, BREED_BY_ID, CORN_PACKS, ELECTION_ROOSTERS, ITEMS, SPECIAL_ROOSTERS, RARITY, SLOTS, VIP } from '../game/data'
 import { fmt, marketPrice } from '../game/rooster'
 import { sfx } from '../game/sound'
 import { useGame } from '../game/store'
@@ -93,6 +93,37 @@ function Galos() {
         </div>
         <p className="tiny muted center">{t('Os dois também se enfrentam no card de Apostas no "Clássico Eleitoral".')}</p>
       </div>
+
+      {SPECIAL_ROOSTERS.map((e) => {
+        const b = BREED_BY_ID[e.breedId]
+        const owned = s.roosters.some((r) => r.breedId === e.breedId)
+        return (
+          <div key={e.breedId} className={`card special-rooster side-${e.breedId}`}>
+            <RoosterSvg breedId={e.breedId} size={170} anim="idle" />
+            <div className="special-info">
+              <span className="sale-tag">{t('🇺🇸 EDIÇÃO ESPECIAL EUA')}</span>
+              <h3>
+                {e.emoji} {e.name}
+              </h3>
+              <p className="tiny muted italic">"{b.desc}"</p>
+              <p className="tiny">
+                <RarityTag rarity={b.rarity} /> · ❤️ {b.base.hp} · 🗡️ {b.base.atk} · 🛡️ {b.base.def} · 💨 {b.base.spd}
+              </p>
+              <button
+                className="btn btn-gold"
+                disabled={owned}
+                onClick={async () => {
+                  const r = await actions.buyElection(e.breedId)
+                  if (r.ok) toast(t('{nome} chegou ao galinheiro!', { nome: `${e.emoji} ${e.name}` }), 'ok')
+                  else toast(tx(r.error), 'erro')
+                }}
+              >
+                {owned ? t('✅ Já está no seu galinheiro') : <>{t('Comprar')} · 🥚 {b.price}</>}
+              </button>
+            </div>
+          </div>
+        )
+      })}
 
       <div className="row-between">
         <p className="muted">{t('O mercado renova sozinho em {n} min.', { n: mins })}</p>

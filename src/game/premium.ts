@@ -1,6 +1,6 @@
 // Operações que gastam moeda na loja. Rodam SOMENTE no servidor (fonte da verdade),
 // para que ninguém consiga criar ovos, skins ou itens premium editando o save.
-import { ACCESSORIES, ACC_BY_ID, BOXES, BREED_BY_ID, CORN_PACKS, ELECTION_ROOSTERS, ITEM_BY_ID, RARITY, SKIN_BY_ID, SKIN_BUNDLES, TOOL_BY_ID, TOOL_KITS } from './data'
+import { ACCESSORIES, ACC_BY_ID, BOXES, BREED_BY_ID, CORN_PACKS, ELECTION_ROOSTERS, SPECIAL_ROOSTERS, ITEM_BY_ID, RARITY, SKIN_BY_ID, SKIN_BUNDLES, TOOL_BY_ID, TOOL_KITS } from './data'
 import { genMarket, skinPrice } from './engine'
 import { addXp, currentEnergy, makeRooster, pick, uid, withEnergy, xpToNext } from './rooster'
 import { t } from '../i18n'
@@ -129,7 +129,7 @@ export function runShop(s: GameState, o: ShopOp): { state: GameState; value?: un
       return { state: log(purchase(n), b.name, 0, -b.price) }
     }
     case 'buyElection': {
-      const e = ELECTION_ROOSTERS.find((x) => x.breedId === o.breedId) ?? fail(t('Galo não existe'))
+      const e = [...ELECTION_ROOSTERS, ...SPECIAL_ROOSTERS].find((x) => x.breedId === o.breedId) ?? fail(t('Galo não existe'))
       const breed = BREED_BY_ID[o.breedId]
       if (s.roosters.some((r) => r.breedId === o.breedId)) fail(t('Você já tem o {nome}.', { nome: e.name }))
       if (s.roosters.length >= 12) fail(t('Galinheiro lotado (máx. {n}). Venda algum galo.', { n: 12 }))

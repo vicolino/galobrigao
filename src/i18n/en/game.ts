@@ -27,6 +27,8 @@ const en: Record<string, string> = {
   'Barba grisalha, voz rouca e fôlego de sobra.': 'Grey beard, raspy voice and stamina to spare.',
   'Capitão Verde-Amarelo': 'Captain Green-Yellow',
   'Verde e amarelo da crista ao esporão.': 'Green and yellow from comb to spur.',
+  'Topete Laranja': 'The Orange Coif',
+  'Topete dourado, gravata vermelha e um bronzeado que ninguém explica.': 'Golden combover, long red tie and a tan nobody can explain.',
   'Galo Livre': 'Free Rooster',
   'Veio da rua, magrelo e desconfiado. Com muita ração, quem sabe...': 'Straight off the street, scrawny and suspicious. With enough feed, who knows...',
 

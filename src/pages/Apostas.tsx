@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { api } from '../api'
 import { RoosterSvg } from '../components/RoosterSvg'
 import { Empty, Modal, PageHead, RarityTag, StyleTag, Tabs, go } from '../components/ui'
@@ -136,6 +136,11 @@ export function Apostas() {
   const returned = settledChips.reduce((a, b) => a + b.payout, 0)
   const chips = s.fichas ?? 0
 
+  // A luta fechou para apostas: some com o cupom
+  useEffect(() => {
+    if (slip && phase(slip.fight) !== 'aberta') setSlip(null)
+  })
+
   const odds = slip ? (slip.pick === 'a' ? slip.fight.oddsA : slip.pick === 'b' ? slip.fight.oddsB : slip.fight.oddsKo) : 0
   const maxBet = Math.min(live.bets.maxBet, Math.floor(chips))
 
@@ -161,6 +166,7 @@ export function Apostas() {
   const openSlip = (f: ScheduledFight, pick: BetPick) => {
     if (phase(f) !== 'aberta') return
     sfx.click()
+    if (slip && slip.fight.id === f.id && slip.pick === pick) return setSlip(null)
     setAmount(Math.max(live.bets.minBet, Math.min(amount, maxBet || live.bets.minBet)))
     setSlip({ fight: f, pick })
   }
@@ -271,7 +277,23 @@ export function Apostas() {
               <h2 className="section-title">{g.title}</h2>
               <div className="fight-list">
                 {g.list.map((f) => (
-                  <FightCard key={f.id} f={f} phase={phase(f)} now={now} myBets={betsOn(f.id)} onPick={openSlip} />
+                  <FightCard key={f.id} f={f} phase={phase(f)} now={now} myBets={betsOn(f.id)} onPick={openSlip} selected={slip?.fight.id === f.id ? slip.pick : undefined}>
+                    {slip?.fight.id === f.id && (
+                      <BetBox
+                        fight={slip.fight}
+                        pick={slip.pick}
+                        odds={odds}
+                        amount={amount}
+                        setAmount={setAmount}
+                        maxBet={maxBet}
+                        chips={chips}
+                        busy={busy}
+                        closesIn={slip.fight.startsAt - live.bets.closeSec * 1000 - now}
+                        onPlace={place}
+                        onClose={() => setSlip(null)}
+                      />
+                    )}
+                  </FightCard>
                 ))}
               </div>
             </section>
@@ -330,51 +352,6 @@ export function Apostas() {
           </div>
         ))}
 
-      <Modal open={!!slip} onClose={() => setSlip(null)} title={t('🧾 Cupom de aposta')}>
-        {slip && (
-          <div className="slip">
-            <div className="slip-fight">
-              {slip.fight.a.name} <span className="muted">x</span> {slip.fight.b.name}
-              <div className="tiny muted">
-                {t('{dia} às {hora}', { dia: dayLabel(slip.fight.startsAt), hora: hhmm(slip.fight.startsAt) })} · {evName(slip.fight.startsAt)} · {t('Luta {n}', { n: slip.fight.num })}
-              </div>
-            </div>
-            <div className="slip-pick">
-              <span>
-                {t('Palpite:')} <b>{slip.pick === 'a' ? t('{a} vence', { a: slip.fight.a.name }) : slip.pick === 'b' ? t('{a} vence', { a: slip.fight.b.name }) : t('Termina em K.O.')}</b>
-              </span>
-              <span className="odd-big">{odds.toFixed(2)}</span>
-            </div>
-            <label className="field">
-              <span>{t('Valor (🎟️ fichas)')}</span>
-              <input type="number" min={live.bets.minBet} max={maxBet} value={amount} onChange={(e) => setAmount(Number(e.target.value))} />
-            </label>
-            <div className="chips">
-              {[50, 100, 500, 1000, 5000].map((v) => (
-                <button key={v} className="chip clickable" onClick={() => setAmount(v)}>
-                  {fmt(v)}
-                </button>
-              ))}
-              <button className="chip clickable" onClick={() => setAmount(maxBet)}>
-                {t('Máx')}
-              </button>
-            </div>
-            <div className="slip-return">
-              {tn('Retorno possível: {n}', { n: <b>🎟️ {fmt(amount * odds)}</b> })}
-            </div>
-            <p className="tiny muted center">
-              {t('Apostas fecham em {t}. O resultado sai às {hora} e o prêmio entra sozinho.', { t: countdown(slip.fight.startsAt - live.bets.closeSec * 1000 - now), hora: hhmm(slip.fight.startsAt) })}
-            </p>
-            <button className="btn btn-primary full btn-lg" onClick={place} disabled={busy || amount < live.bets.minBet || amount > chips || phase(slip.fight) !== 'aberta'}>
-              {busy ? <span className="spinner" /> : t('🎲 Confirmar aposta')}
-            </button>
-            <p className="tiny muted center">
-              {t('Suas fichas: {n}', { n: fmt(chips) })} · {t('Fichas são só para apostar: você ganha jogando, não dá para comprar nem trocar.')}
-            </p>
-          </div>
-        )}
-      </Modal>
-
       <Modal open={info} onClose={() => setInfo(false)} title={t('ℹ️ Como funcionam as apostas')}>
         <ul className="info-list">
           <li>
@@ -416,6 +393,8 @@ function FightCard({
   myBets,
   onPick,
   onWatch,
+  selected,
+  children,
 }: {
   f: ScheduledFight
   phase: FightPhase
@@ -423,6 +402,8 @@ function FightCard({
   myBets: BetView[]
   onPick?: (f: ScheduledFight, pick: BetPick) => void
   onWatch?: (f: ScheduledFight) => void
+  selected?: BetPick
+  children?: ReactNode
 }) {
   const closed = phase === 'encerrada'
   const open = phase === 'aberta'
@@ -447,10 +428,11 @@ function FightCard({
         <Side ro={f.b} flip winner={winner === 1} loser={winner === 0} />
       </div>
       <div className="odds">
-        <OddBtn label={f.a.name} odds={f.oddsA} disabled={!open} won={closed && f.winner === 0} onClick={() => onPick?.(f, 'a')} />
-        <OddBtn label="💥 K.O." odds={f.oddsKo} disabled={!open} won={closed && f.method === 'ko'} onClick={() => onPick?.(f, 'ko')} />
-        <OddBtn label={f.b.name} odds={f.oddsB} disabled={!open} won={closed && f.winner === 1} onClick={() => onPick?.(f, 'b')} />
+        <OddBtn label={f.a.name} odds={f.oddsA} active={selected === 'a'} disabled={!open} won={closed && f.winner === 0} onClick={() => onPick?.(f, 'a')} />
+        <OddBtn label="💥 K.O." odds={f.oddsKo} active={selected === 'ko'} disabled={!open} won={closed && f.method === 'ko'} onClick={() => onPick?.(f, 'ko')} />
+        <OddBtn label={f.b.name} odds={f.oddsB} active={selected === 'b'} disabled={!open} won={closed && f.winner === 1} onClick={() => onPick?.(f, 'b')} />
       </div>
+      {children}
       <div className="fr-foot">
         <span className="tiny muted">
           {myBets.length
@@ -491,11 +473,110 @@ function Side({ ro, flip, winner, loser }: { ro: Rooster; flip?: boolean; winner
   )
 }
 
-function OddBtn({ label, odds, onClick, disabled, won }: { label: string; odds: number; onClick: () => void; disabled?: boolean; won?: boolean }) {
+function OddBtn({ label, odds, onClick, disabled, won, active }: { label: string; odds: number; onClick: () => void; disabled?: boolean; won?: boolean; active?: boolean }) {
   return (
-    <button className={`odd ${won ? 'won' : ''}`} onClick={onClick} disabled={disabled}>
+    <button className={`odd ${won ? 'won' : ''} ${active ? 'active' : ''}`} onClick={onClick} disabled={disabled} aria-pressed={active}>
       <span className="tiny">{label}</span>
       <b>{odds.toFixed(2)}</b>
     </button>
+  )
+}
+
+/** Cupom dentro do card: escolheu a odd, digita o valor e confirma (igual às casas de aposta). */
+function BetBox({
+  fight,
+  pick,
+  odds,
+  amount,
+  setAmount,
+  maxBet,
+  chips,
+  busy,
+  closesIn,
+  onPlace,
+  onClose,
+}: {
+  fight: ScheduledFight
+  pick: BetPick
+  odds: number
+  amount: number
+  setAmount: (n: number) => void
+  maxBet: number
+  chips: number
+  busy: boolean
+  closesIn: number
+  onPlace: () => void
+  onClose: () => void
+}) {
+  const min = live.bets.minBet
+  const tooLow = amount < min
+  const tooHigh = amount > chips
+  const overMax = amount > live.bets.maxBet
+  const ok = !busy && !tooLow && !tooHigh && !overMax
+  const add = (v: number) => setAmount(Math.min(maxBet, (amount || 0) + v))
+  const pickLabel = pick === 'a' ? t('{a} vence', { a: fight.a.name }) : pick === 'b' ? t('{a} vence', { a: fight.b.name }) : t('Termina em K.O.')
+  return (
+    <div className="betbox">
+      <div className="betbox-head">
+        <span>
+          {t('Palpite:')} <b>{pickLabel}</b> <span className="betbox-odd">@ {odds.toFixed(2)}</span>
+        </span>
+        <button className="betbox-x" onClick={onClose} aria-label={t('Fechar')}>
+          ✕
+        </button>
+      </div>
+      <div className="betbox-row">
+        <label className="betbox-input">
+          <span>🎟️</span>
+          <input
+            autoFocus
+            type="number"
+            inputMode="numeric"
+            min={min}
+            max={maxBet}
+            placeholder={t('Valor')}
+            value={amount || ''}
+            onFocus={(e) => e.target.select()}
+            onChange={(e) => setAmount(Math.max(0, Math.floor(Number(e.target.value) || 0)))}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && ok) onPlace()
+              if (e.key === 'Escape') onClose()
+            }}
+          />
+        </label>
+        <div className="betbox-return">
+          <span className="tiny muted">{t('Retorno possível')}</span>
+          <b>🎟️ {fmt(Math.floor((amount || 0) * odds))}</b>
+        </div>
+      </div>
+      <div className="chips">
+        {[10, 50, 100, 500].map((v) => (
+          <button key={v} className="chip clickable" onClick={() => add(v)}>
+            +{fmt(v)}
+          </button>
+        ))}
+        <button className="chip clickable" onClick={() => setAmount(maxBet)}>
+          {t('Máx')}
+        </button>
+        <button className="chip clickable" onClick={() => setAmount(0)}>
+          {t('Limpar')}
+        </button>
+      </div>
+      {(tooHigh || overMax || (tooLow && amount > 0)) && (
+        <p className="tiny neg">
+          {tooHigh
+            ? t('Você só tem 🎟️ {n} fichas.', { n: fmt(chips) })
+            : overMax
+              ? t('A aposta máxima é 🎟️ {n}.', { n: fmt(live.bets.maxBet) })
+              : t('A aposta mínima é 🎟️ {n}.', { n: fmt(min) })}
+        </p>
+      )}
+      <button className="btn btn-primary full" onClick={onPlace} disabled={!ok}>
+        {busy ? <span className="spinner" /> : amount ? t('🎲 Apostar 🎟️ {n}', { n: fmt(amount) }) : t('Digite o valor')}
+      </button>
+      <p className="tiny muted center">
+        {t('Fecha em {t}', { t: countdown(closesIn) })} · {t('Suas fichas: {n}', { n: fmt(chips) })}
+      </p>
+    </div>
   )
 }
