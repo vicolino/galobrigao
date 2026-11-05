@@ -279,6 +279,8 @@ const en: Record<string, string> = {
   'Retorno possível: {n}': 'Potential payout: {n}',
   'Retorno possível': 'Potential payout',
   '🇺🇸 EDIÇÃO ESPECIAL EUA': '🇺🇸 USA SPECIAL EDITION',
+  '⚽ EDIÇÃO FUTEBOL': '⚽ FOOTBALL EDITION',
+  'Lendas da bola com a camisa da seleção. Cada um custa 🥚 {n}.': 'Football legends in their national team shirts. Each costs 🥚 {n}.',
   'Limpar': 'Clear',
   'Você só tem 🎟️ {n} fichas.': 'You only have 🎟️ {n} chips.',
   'A aposta máxima é 🎟️ {n}.': 'The maximum bet is 🎟️ {n}.',

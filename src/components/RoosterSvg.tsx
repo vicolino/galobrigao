@@ -28,6 +28,29 @@ const MANE_TIPS = [
 // Acessórios de cabeça/rosto foram desenhados para uma cabeça em (152,56) r19.
 const HEAD_ACC = `translate(${HEAD.cx - 152 * (HEAD.r / 19)},${HEAD.cy - 56 * (HEAD.r / 19)}) scale(${HEAD.r / 19})`
 
+/** Visual dos galos da Edição Futebol. */
+type Look = {
+  hair?: 'careca' | 'raspado' | 'longo' | 'cachos' | 'moicano' | 'curto'
+  hairColor?: string
+  beard?: string
+  teeth?: boolean
+  crown?: boolean
+  band?: string
+  chubby?: boolean
+  num?: string
+  numColor?: string
+  stripes?: string
+}
+const LOOKS: Record<string, Look> = {
+  fenomeno: { hair: 'careca', chubby: true, num: '9', numColor: '#1f9d4a' },
+  bruxo: { hair: 'longo', hairColor: '#1b1410', band: '#ffffff', teeth: true, num: '10', numColor: '#1f9d4a' },
+  baixinho: { hair: 'raspado', hairColor: '#1b1410', num: '11', numColor: '#1f9d4a' },
+  rei: { hair: 'raspado', hairColor: '#1b1410', crown: true, num: '10', numColor: '#1f9d4a' },
+  curva: { hair: 'moicano', hairColor: '#f2cf5b', num: '7', numColor: '#c8102e' },
+  pulga: { hair: 'curto', hairColor: '#5a3a1e', beard: '#5a3a1e', num: '10', numColor: '#1a1a1a', stripes: '#75aadb' },
+  mao: { hair: 'cachos', hairColor: '#1b1410', num: '10', numColor: '#1a1a1a', stripes: '#75aadb' },
+}
+
 const GRADIENT_FX: SkinFx[] = ['fogo', 'arcoiris', 'galaxia', 'ouro', 'robo', 'lava', 'gelo']
 
 export function RoosterSvg({ breedId, skin, equipped = {}, flip, anim = 'idle', size = 200, className = '' }: Props) {
@@ -43,6 +66,11 @@ export function RoosterSvg({ breedId, skin, equipped = {}, flip, anim = 'idle', 
   const bodyFill = fx && GRADIENT_FX.includes(fx) ? `url(#skin-${uid})` : c.body
   const headFill = fx && GRADIENT_FX.includes(fx) ? `url(#skin-${uid})` : c.neck
   const clip = `url(#body-${uid})`
+  const look = LOOKS[breed.id]
+  // Gordinho: barriga e peito maiores
+  const body = look?.chubby ? { cx: 102, cy: 140, rx: 66, ry: 52 } : BODY
+  const chest = look?.chubby ? { cx: 140, cy: 134, rx: 42, ry: 44 } : CHEST
+  const hideComb = breed.id === 'trump' || !!look?.hair
 
   return (
     <svg
@@ -60,8 +88,8 @@ export function RoosterSvg({ breedId, skin, equipped = {}, flip, anim = 'idle', 
     >
       <defs>
         <clipPath id={`body-${uid}`}>
-          <ellipse {...BODY} />
-          <ellipse {...CHEST} />
+          <ellipse {...body} />
+          <ellipse {...chest} />
           <circle cx={MANE.cx} cy={MANE.cy} r={MANE.r} />
           <circle cx={HEAD.cx} cy={HEAD.cy} r={HEAD.r} />
         </clipPath>
@@ -131,15 +159,15 @@ export function RoosterSvg({ breedId, skin, equipped = {}, flip, anim = 'idle', 
 
         {/* Silhueta: contorno grosso por baixo, preenchimento por cima */}
         <g stroke={outline} strokeWidth="7">
-          <ellipse {...BODY} fill={outline} />
-          <ellipse {...CHEST} fill={outline} />
+          <ellipse {...body} fill={outline} />
+          <ellipse {...chest} fill={outline} />
           <circle cx={MANE.cx} cy={MANE.cy} r={MANE.r} fill={outline} />
           {MANE_TIPS.map(([x, y]) => (
             <circle key={x} cx={x} cy={y} r="8" fill={outline} />
           ))}
         </g>
-        <ellipse {...BODY} fill={bodyFill} />
-        <ellipse {...CHEST} fill={bodyFill} />
+        <ellipse {...body} fill={bodyFill} />
+        <ellipse {...chest} fill={bodyFill} />
         <circle cx={MANE.cx} cy={MANE.cy} r={MANE.r} fill={headFill} />
         {MANE_TIPS.map(([x, y]) => (
           <circle key={x} cx={x} cy={y} r="8" fill={headFill} />
@@ -152,6 +180,7 @@ export function RoosterSvg({ breedId, skin, equipped = {}, flip, anim = 'idle', 
           {pattern === 'pintado' && Array.from({ length: 34 }).map((_, i) => <circle key={i} cx={56 + ((i * 37) % 110)} cy={60 + ((i * 53) % 120)} r={2.6 + (i % 3)} fill="#fff" opacity="0.8" />)}
           {pattern === 'dourado' && <rect width="220" height="220" fill={`url(#gold-${uid})`} />}
           <BodyFx fx={fx} />
+          {pattern && look?.stripes && [70, 98, 126, 154].map((x) => <rect key={x} x={x} y="108" width="13" height="100" fill={look.stripes} />)}
           <rect width="220" height="220" fill={`url(#shade-${uid})`} />
           {/* Peitoral marcado */}
           <path d="M120,112 Q136,124 132,150" stroke="#000" strokeOpacity="0.22" strokeWidth="3" fill="none" strokeLinecap="round" />
@@ -172,6 +201,11 @@ export function RoosterSvg({ breedId, skin, equipped = {}, flip, anim = 'idle', 
         </g>
 
         <BodyMark breedId={breed.id} clip={clip} outline={outline} />
+        {look?.num && (
+          <text x={look.chubby ? 150 : 142} y="152" textAnchor="middle" fontFamily="'Lilita One', sans-serif" fontSize="22" fill={look.numColor} stroke="#fff" strokeWidth="3" paintOrder="stroke">
+            {look.num}
+          </text>
+        )}
         <BodyAcc kind={e.corpo} clip={clip} />
 
         {/* Cabeça */}
@@ -180,7 +214,7 @@ export function RoosterSvg({ breedId, skin, equipped = {}, flip, anim = 'idle', 
             <circle cx={HEAD.cx} cy={HEAD.cy} r={HEAD.r} fill={outline} />
           </g>
           {/* Crista: lobos arredondados */}
-          <g stroke={outline} strokeWidth="3.5" fill={c.comb} opacity={breed.id === 'trump' ? 0 : 1}>
+          <g stroke={outline} strokeWidth="3.5" fill={c.comb} opacity={hideComb ? 0 : 1}>
             <circle cx="128" cy="54" r="9" />
             <circle cx="139" cy="46" r="11" />
             <circle cx="152" cy="46" r="10" />
@@ -222,6 +256,7 @@ export function RoosterSvg({ breedId, skin, equipped = {}, flip, anim = 'idle', 
             </g>
           )}
           {breed.id === 'trump' && !e.cabeca && <Combover outline={outline} />}
+          {look && <FootballHead look={look} outline={outline} hat={!!e.cabeca} />}
           {/* Cicatriz */}
           <path d="M140,80 L150,88" stroke="#000" strokeOpacity="0.3" strokeWidth="2" strokeLinecap="round" />
 
@@ -247,6 +282,65 @@ export function RoosterSvg({ breedId, skin, equipped = {}, flip, anim = 'idle', 
         )}
       </g>
     </svg>
+  )
+}
+
+/** Cabelo, barba, dentes e coroa dos galos da Edição Futebol (o chapéu equipado esconde cabelo e coroa). */
+function FootballHead({ look, outline, hat }: { look: Look; outline: string; hat: boolean }) {
+  const hc = look.hairColor ?? '#1b1410'
+  const st = { stroke: outline, strokeWidth: 3, strokeLinejoin: 'round' as const }
+  return (
+    <g>
+      {look.beard && (
+        <g fill={look.beard} {...st} strokeWidth={2.5}>
+          <circle cx="146" cy="90" r="6" />
+          <circle cx="154" cy="95" r="7" />
+          <circle cx="163" cy="94" r="6.5" />
+        </g>
+      )}
+      {look.teeth && (
+        <g fill="#fff" stroke={outline} strokeWidth="1.8">
+          <rect x="169" y="79" width="7" height="9" rx="1.5" />
+          <rect x="176" y="79" width="7" height="8" rx="1.5" />
+        </g>
+      )}
+      {!hat && look.hair === 'careca' && <ellipse cx="140" cy="55" rx="10" ry="4.5" fill="#fff" opacity="0.55" transform="rotate(-15 140 55)" />}
+      {!hat && (look.hair === 'raspado' || look.hair === 'curto') && (
+        <path
+          d={look.hair === 'curto' ? 'M122,72 C118,52 132,42 150,44 C164,46 172,54 170,62 C164,58 160,60 156,56 C150,60 142,56 138,58 C132,60 126,64 122,72 Z' : 'M122,70 C120,52 134,44 148,44 C160,44 169,50 170,58 C158,54 138,54 122,70 Z'}
+          fill={hc}
+          {...st}
+        />
+      )}
+      {!hat && look.hair === 'longo' && (
+        <g fill={hc} {...st}>
+          {[[124, 104, 9], [118, 92, 10], [116, 78, 10], [118, 64, 10], [126, 52, 10], [138, 44, 10], [152, 42, 9], [164, 47, 8]].map(([x, y, r]) => (
+            <circle key={`${x}-${y}`} cx={x} cy={y} r={r} />
+          ))}
+        </g>
+      )}
+      {!hat && look.hair === 'cachos' && (
+        <g fill={hc} {...st}>
+          {[[120, 82, 9], [116, 68, 10], [120, 54, 11], [132, 42, 11], [146, 38, 11], [160, 42, 10], [170, 52, 8], [134, 54, 9], [150, 50, 9]].map(([x, y, r]) => (
+            <circle key={`${x}-${y}`} cx={x} cy={y} r={r} />
+          ))}
+        </g>
+      )}
+      {!hat && look.hair === 'moicano' && (
+        <g>
+          <path d="M122,70 C120,56 128,48 140,46 C152,44 164,48 170,58 C156,54 136,56 122,70 Z" fill="#c9a23a" {...st} />
+          <path d="M126,56 C124,38 142,26 160,30 C172,33 176,44 170,52 C162,46 146,46 132,56 Z" fill={hc} {...st} />
+          <path d="M134,46 C142,36 156,33 166,38" stroke="#fff3b0" strokeWidth="2.5" fill="none" opacity="0.8" strokeLinecap="round" />
+        </g>
+      )}
+      {!hat && look.band && <path d="M122,62 C134,52 154,48 170,54" stroke={look.band} strokeWidth="7" fill="none" strokeLinecap="round" />}
+      {!hat && look.crown && (
+        <g {...st}>
+          <path d="M128,46 L130,26 L140,36 L148,20 L156,36 L166,26 L166,48 C154,44 140,44 128,46 Z" fill="#f5c542" />
+          <circle cx="148" cy="38" r="3.5" fill="#d42a2a" strokeWidth={1.5} />
+        </g>
+      )}
+    </g>
   )
 }
 
