@@ -49,9 +49,10 @@ export function Missoes() {
               ) : ready ? (
                 <button
                   className="btn btn-primary pulse"
-                  onClick={() => {
-                    const r = actions.claimMission(m.id)
+                  onClick={async () => {
+                    const r = await actions.claimMission(m.id)
                     if (r.ok) toast(t('Missão concluída! +🌽 {milho}', { milho: fmt(m.reward.milho) }) + (m.reward.ovo ? ` +🥚 ${m.reward.ovo}` : ''), 'ok') // i18n-ok
+                    else toast(tx(r.error), 'erro')
                   }}
                 >
                   {t('Resgatar')}

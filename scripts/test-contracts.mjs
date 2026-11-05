@@ -90,7 +90,14 @@ try {
   const uri = await read(ITEMS, I, 'tokenURI', [tokenId]);
   check('tokenURI = baseURI + tokenId', uri.endsWith(`/api/nft/${tokenId}`), uri);
   check('não-operador não pode mint NFT', await reverts(eve.acc, ITEMS, I, 'mint', [eve.acc.address, 'skin', 'fogo'], 'AccessControlUnauthorizedAccount'));
-  check('kind inválido rejeitado', await reverts(opAcc, ITEMS, I, 'mint', [alice.acc.address, 'galo', 'x'], 'InvalidKind'));
+  check('kind inválido rejeitado', await reverts(opAcc, ITEMS, I, 'mint', [alice.acc.address, 'pato', 'x'], 'InvalidKind'));
+  // Galo NFT: cunha e queima (ponte de volta)
+  const gsim = await pub.simulateContract({ account: opAcc, address: ITEMS, abi: I, functionName: 'mint', args: [alice.acc.address, 'galo', 'r1'] });
+  await send(op, ITEMS, I, 'mint', [alice.acc.address, 'galo', 'r1']);
+  check('galo vira NFT', getAddress(await read(ITEMS, I, 'ownerOf', [gsim.result])) === alice.acc.address);
+  check('não-operador não pode queimar', await reverts(eve.acc, ITEMS, I, 'burn', [gsim.result], 'AccessControlUnauthorizedAccount'));
+  await send(op, ITEMS, I, 'burn', [gsim.result]);
+  check('operador queima o galo NFT', await reverts(opAcc, ITEMS, I, 'ownerOf', [gsim.result], 'ERC721NonexistentToken'));
   check('não-operador não pode setBaseURI', await reverts(eve.acc, ITEMS, I, 'setBaseURI', ['http://evil/'], 'AccessControlUnauthorizedAccount'));
 
   // ---------- Market ----------

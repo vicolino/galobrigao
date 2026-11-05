@@ -39,10 +39,11 @@ const MISSION_POOL: { kind: MissionKind; text: (n: number) => string; goals: num
 export function genMissions(day: string): Mission[] {
   const r = rng(hashStr(day))
   const pool = [...MISSION_POOL].sort(() => r() - 0.5).slice(0, 5)
-  return pool.map((m) => {
+  return pool.map((m, i) => {
     const goal = pick(m.goals, r)
     const rw = m.reward(goal)
-    return { id: uid(), kind: m.kind, text: m.text(goal), goal, progress: 0, reward: { milho: rw.milho, ovo: missionOvos(rw.ovo) }, claimed: false }
+    // id determinístico: navegador e servidor geram as mesmas missões no mesmo dia
+    return { id: `${day}-${i}`, kind: m.kind, text: m.text(goal), goal, progress: 0, reward: { milho: rw.milho, ovo: missionOvos(rw.ovo) }, claimed: false }
   })
 }
 

@@ -111,6 +111,34 @@ export interface Rooster {
   tint?: { body: string; wing: string; neck: string; tail: string; tail2: string }
   /** Nomes dos pais (cruzamento). */
   parents?: [string, string]
+  /** Quantas vezes já cruzou (máx. 7). Só o servidor mexe. */
+  breedCount?: number
+  /** Galo NFT (carteira custodial). Só o servidor mexe. */
+  nft?: { tokenId: string }
+  /** 🔑 Galo alugado de outro jogador (só o servidor mexe; src/game/aluguel.ts). */
+  rental?: RoosterRental
+}
+
+/** 🔑 Aluguel: dados do contrato no galo que está com quem alugou. */
+export interface RoosterRental {
+  owner: string
+  ownerName: string
+  until: number
+  sharePct: number
+  listingId: string
+}
+
+/** 🔑 Aluguel: galo do dono que está fora (anunciado para alugar ou alugado). */
+export interface LentRooster {
+  listingId: string
+  roosterId: string
+  name: string
+  breedId: string
+  level: number
+  stars: number
+  status: 'anunciado' | 'alugado'
+  borrowerName?: string
+  until?: number
 }
 
 /** Ninho do cruzamento: só o servidor mexe. */
@@ -269,8 +297,12 @@ export interface GameState {
   refills?: { day: string; n: number }
   /** Ninho do cruzamento (servidor). */
   nest?: Nest
+  /** 🔑 Galos emprestados no Aluguel da Feira (servidor). */
+  lent?: LentRooster[]
   /** Passe da Temporada (mês UTC). `premium` e `claimed` só o servidor mexe. */
   pass?: { season: string; xp: number; premium: boolean; claimed: { free: number[]; premium: number[] }; day?: string; dayXp?: number }
+  /** 🏟️ Troféus de torneio (só o servidor dá). */
+  trophies?: { id: string; kind: 'diario' | 'semanal'; place: number; at: number }[]
   achievements: string[]
   history: Transaction[]
   /** newsSeen: id da última nota de Novidades que o jogador já viu. */

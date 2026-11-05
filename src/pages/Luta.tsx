@@ -148,7 +148,7 @@ export function Luta() {
       else sfx.bell()
       setTimeout(() => {
         const mineWon = match?.kind !== 'casa' ? ev.winner === (match?.mySide ?? 0) : (match?.myBets ?? []).some((b) => b.status === 'ganhou')
-        const anyBet = match?.kind !== 'casa' || (match?.myBets?.length ?? 0) > 0
+        const anyBet = match?.kind === 'torneio' ? match.mySide !== undefined : match?.kind !== 'casa' || (match?.myBets?.length ?? 0) > 0
         if (anyBet) (mineWon ? sfx.win : sfx.lose)()
         else sfx.crow()
       }, 700)
@@ -189,13 +189,14 @@ export function Luta() {
     setIdx(events.length)
   }
 
-  const isRinha = match.kind !== 'casa'
+  const isTorneio = match.kind === 'torneio'
+  const isRinha = match.kind !== 'casa' && !isTorneio
   const isPvp = match.kind === 'pvp'
   const mySide = match.mySide ?? 0
   const myRooster = mySide === 0 ? match.a : match.b
   const theirRooster = mySide === 0 ? match.b : match.a
   const back = () => {
-    const to = isPvp ? '/desafios' : isRinha ? '/rinha' : '/apostas'
+    const to = isTorneio ? `/torneios${match.fightId ? `/${match.fightId}` : ''}` : isPvp ? '/desafios' : isRinha ? '/rinha' : '/apostas'
     actions.clearMatch()
     go(to)
   }
@@ -209,10 +210,10 @@ export function Luta() {
   return (
     <div className="fight-page">
       <button className="btn btn-ghost back" onClick={back}>
-        {isPvp ? t('← Voltar aos desafios') : isRinha ? t('← Voltar à arena') : t('← Voltar às lutas')}
+        {isTorneio ? t('← Voltar ao torneio') : isPvp ? t('← Voltar aos desafios') : isRinha ? t('← Voltar à arena') : t('← Voltar às lutas')}
       </button>
       <div className="center">
-        <span className="pill">{isPvp ? t('🤝 Desafio entre jogadores') : isRinha ? t('⚔️ Arena') : t('🏟️ Luta da casa')}</span>
+        <span className="pill">{isTorneio ? t('🏟️ Torneio') : isPvp ? t('🤝 Desafio entre jogadores') : isRinha ? t('⚔️ Arena') : t('🏟️ Luta da casa')}</span>
       </div>
 
       <div className="hud">
@@ -322,8 +323,18 @@ export function Luta() {
       </div>
 
       {finished && (
-        <div className={`card result ${isRinha ? (won ? 'win' : 'lose') : betTotal > 0 ? 'win' : bets.length ? 'lose' : ''}`}>
-          {isRinha ? (
+        <div className={`card result ${isTorneio ? (match.mySide === undefined ? '' : result.winner === mySide ? 'win' : 'lose') : isRinha ? (won ? 'win' : 'lose') : betTotal > 0 ? 'win' : bets.length ? 'lose' : ''}`}>
+          {isTorneio ? (
+            <>
+              <h2>{result.method === 'ko' ? t('{nome} venceu por K.O.!', { nome: result.winner === 0 ? match.a.name : match.b.name }) : t('{nome} venceu por decisão!', { nome: result.winner === 0 ? match.a.name : match.b.name })}</h2>
+              {match.mySide !== undefined && <p className="muted">{result.winner === mySide ? t('{nome} passou de fase! 🏟️', { nome: myRooster.name }) : t('{nome} foi eliminado. Fica para o próximo torneio!', { nome: myRooster.name })}</p>}
+              <div className="row-center gap">
+                <button className="btn btn-primary" onClick={back}>
+                  {t('🏟️ Voltar ao torneio')}
+                </button>
+              </div>
+            </>
+          ) : isRinha ? (
             <>
               <h2>{won ? t('🏆 VITÓRIA!') : t('😵 Derrota...')}</h2>
               <p className="muted">

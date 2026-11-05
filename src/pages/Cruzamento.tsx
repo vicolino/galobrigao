@@ -6,7 +6,9 @@ import { BREED_COOLDOWN, BREED_MIN_LEVEL, INCUBATION, MAX_COOP, MUTATION_CHANCE,
 import { fmt } from '../game/rooster'
 import { useGame } from '../game/store'
 import type { Rooster } from '../game/types'
-import { t, tx } from '../i18n'
+import { locale, t, tx } from '../i18n'
+import { BREED_MULT, MAX_BREEDS, breedsOf } from '../game/galonft'
+import { BreedBadge } from '../components/BreedBadge'
 
 const pct = (x: number) => `${Math.round(x * 100)}%`
 const clock = (ms: number) => {
@@ -44,6 +46,8 @@ export function Cruzamento() {
 
   const why = (ro: Rooster): string | null => {
     if (ro.level < BREED_MIN_LEVEL) return t('Nível {n}+', { n: BREED_MIN_LEVEL })
+    if (breedsOf(ro) >= MAX_BREEDS) return t('🚫 Já cruzou {n}/{n}', { n: MAX_BREEDS })
+    if (ro.rental) return t('🔑 Alugado')
     const cd = cooldownLeft(s, ro.id, now)
     if (cd > 0) return t('😴 Descansa {t}', { t: hours(cd) })
     return null
@@ -131,6 +135,7 @@ export function Cruzamento() {
             {cost ? (
               <>
                 <div className="tiny muted">{t('Raça do pintinho: {r}', { r: chickBreeds(a!, b!).map((id) => BREED_BY_ID[id]?.name ?? id).join(' / ') })}</div>
+                {cost.mult > 1 && <div className="tiny warn">{t('Custo ×{m} (pais já cruzaram antes)', { m: cost.mult.toLocaleString(locale(), { maximumFractionDigits: 2 }) })}</div>}
                 <button className="btn btn-primary" disabled={busy || full} onClick={start}>
                   {t('🥚 Cruzar · 🥚 {o} · 🌽 {m}', { o: cost.ovos, m: fmt(cost.milho) })}
                 </button>
@@ -152,6 +157,8 @@ export function Cruzamento() {
           <li>{t('⭐ Estrelas: {lista}', { lista: STAR_ODDS.map(([n, p]) => `${n}★ ${pct(p)}`).join(' · ') })}</li>
           <li>{t('🌟 Pais com 4★ ou mais: {p} de chance de 4★.', { p: pct(STAR4_CHANCE) })}</li>
           <li>{t('Edições especiais não passam a raça: o filhote puxa o outro pai.')}</li>
+          <li>{t('🧬 Cada galo cruza no máximo {n} vezes. O custo sobe a cada cruzamento: {lista}.', { n: MAX_BREEDS, lista: BREED_MULT.map((m) => `${m}×`).join(' → ') })}</li>
+          <li>{t('💎 Galo virgem (0/{n}) vale mais no galinheiro e na Feira.', { n: MAX_BREEDS })}</li>
           <li>{t('Choca em {a}; cada pai descansa {b} depois de cruzar.', { a: hours(INCUBATION), b: hours(BREED_COOLDOWN) })}</li>
         </ul>
       </div>
@@ -221,6 +228,7 @@ function ParentSlot({ ro, label, onClear }: { ro?: Rooster; label: string; onCle
           <span className="tiny">
             {t('Nv {n}', { n: ro.level })} · <Stars n={ro.stars} />
           </span>
+          <BreedBadge ro={ro} long />
         </>
       ) : (
         <div className="br-q">?</div>

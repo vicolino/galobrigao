@@ -5,6 +5,7 @@ import { sfx } from '../game/sound'
 import { useGame } from '../game/store'
 import type { Currency, Rarity, Rooster } from '../game/types'
 import { RoosterSvg } from './RoosterSvg'
+import { BreedBadge, NftBadge } from './BreedBadge'
 import { t, tx } from '../i18n'
 
 export function useHashRoute() {
@@ -132,6 +133,10 @@ export function RoosterCard({ ro, onClick, footer, selected, compact }: { ro: Ro
       <div className="rc-name">{ro.name}</div>
       <div className="rc-sub">
         {breed.name} · <Stars n={ro.stars} />
+      </div>
+      <div className="gn-badges">
+        <BreedBadge ro={ro} />
+        <NftBadge ro={ro} />
       </div>
       <div className="rc-row">
         <StyleTag style={ro.style} />

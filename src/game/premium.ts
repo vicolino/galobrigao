@@ -1,13 +1,14 @@
 // Operações que gastam moeda na loja. Rodam SOMENTE no servidor (fonte da verdade),
 // para que ninguém consiga criar ovos, skins ou itens premium editando o save.
 import { ACCESSORIES, ACC_BY_ID, BOXES, BREED_BY_ID, CORN_PACKS, ELECTION_ROOSTERS, FOOTBALL_ROOSTERS, SPECIAL_ROOSTERS, ITEM_BY_ID, RARITY, SKIN_BY_ID, SKIN_BUNDLES, TOOL_BY_ID, TOOL_KITS } from './data'
-import { genMarket, skinPrice } from './engine'
+import { genMarket, skinPrice, tick } from './engine'
 import { addXp, currentEnergy, feedInstantCost, makeRooster, pick, uid, withEnergy, xpToNext } from './rooster'
 import { t } from '../i18n'
 import { runBreed, type BreedOp } from './criacao'
 import type { Accessory, Currency, GameState, MissionKind, Rarity, Rooster } from './types'
 import { passViolation, runPass, type PassOp } from './pass'
 import { runOferta, type OfertaOp } from './ofertas'
+import { runEcon, type EconOp } from './economia'
 
 export const FEED_COOLDOWN = 4 * 3600_000
 export const STAR_COST = [0, 40, 80, 150, 250] // ovos para subir de N para N+1 estrelas
@@ -29,6 +30,7 @@ export type ShopOp =
   | { op: 'feedInstant'; roosterId: string }
   | PassOp
   | OfertaOp
+  | EconOp
   | BreedOp
 
 export class ShopError extends Error {}
@@ -191,6 +193,16 @@ export function runShop(s: GameState, o: ShopOp): { state: GameState; value?: un
     case 'buyOffer':
     case 'refillEnergy':
       return runOferta(s, o, { pay, log, purchase, fail })
+    // 🌽 Economia no servidor: bônus, missões, liga, treino, comida, venda, mercado, itens (src/game/economia.ts)
+    case 'claimDaily':
+    case 'claimMission':
+    case 'claimLeague':
+    case 'sellRooster':
+    case 'train':
+    case 'feed':
+    case 'buyRooster':
+    case 'useItem':
+      return runEcon(tick(s), o, { pay, log, purchase, fail })
   }
   return fail(t('Operação desconhecida'))
 }

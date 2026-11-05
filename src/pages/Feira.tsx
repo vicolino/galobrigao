@@ -10,9 +10,11 @@ import { useGame } from '../game/store'
 import type { Currency, GameState, Rooster } from '../game/types'
 import { OVO_EM_MILHO } from '../game/worth'
 import { locale, t, tn, tp, tx } from '../i18n'
+import { Aluguel } from './FeiraAluguel'
+import { roosterLock } from '../game/galonft'
 
-type Tab = 'comprar' | 'vender' | 'meus' | 'presentes'
-const TABS: Tab[] = ['comprar', 'vender', 'meus', 'presentes']
+type Tab = 'comprar' | 'vender' | 'meus' | 'presentes' | 'aluguel'
+const TABS: Tab[] = ['comprar', 'vender', 'meus', 'presentes', 'aluguel']
 
 const coin = (c: Currency) => (c === 'milho' ? '🌽' : '🥚')
 const money = (v: number, c: Currency) => `${coin(c)} ${fmt(v)}`
@@ -74,6 +76,7 @@ export function Feira({ tab: tabParam }: { tab?: string }) {
           { id: 'vender', label: t('💰 Vender') },
           { id: 'meus', label: active ? t('📋 Meus anúncios ({n})', { n: active }) : t('📋 Meus anúncios') },
           { id: 'presentes', label: t('🎁 Presentes') },
+          { id: 'aluguel', label: t('🔑 Aluguel') },
         ]}
       />
       {err && <div className="warn">{err}</div>}
@@ -82,6 +85,7 @@ export function Feira({ tab: tabParam }: { tab?: string }) {
       {data && tab === 'vender' && <Vender data={data} reload={load} />}
       {data && tab === 'meus' && <Meus data={data} reload={load} />}
       {data && tab === 'presentes' && <Presentes data={data} reload={load} />}
+      {tab === 'aluguel' && <Aluguel />}
     </>
   )
 }
@@ -258,9 +262,13 @@ function ItemPicker({ s, value, onPick }: { s: GameState; value: Pick | null; on
           <p className="muted">{t('Você precisa ter pelo menos um galo. Arrume outro antes de vender este.')}</p>
         ) : (
           <div className="grid-cards">
-            {s.roosters.map((r) => (
-              <RoosterCard key={r.id} ro={r} compact selected={value?.id === r.id} onClick={() => onPick({ kind: 'galo', id: r.id, rooster: r })} />
-            ))}
+            {s.roosters.map((r) => {
+              // Ninho, NFT ou aluguel: não dá para vender aqui
+              const lockWhy = roosterLock(s, r)
+              return (
+                <RoosterCard key={r.id} ro={r} compact selected={value?.id === r.id} onClick={lockWhy ? undefined : () => onPick({ kind: 'galo', id: r.id, rooster: r })} footer={lockWhy ? <div className="tiny muted">🔒 {lockWhy}</div> : undefined} />
+              )
+            })}
           </div>
         ))}
       {kind === 'acessorio' &&

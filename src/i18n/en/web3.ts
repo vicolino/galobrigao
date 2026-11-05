@@ -44,7 +44,7 @@ const en: Record<string, string> = {
   'Seu endereço': 'Your address',
   'Ver no explorador': 'View on explorer',
   'Na carteira (on-chain)': 'In your Wallet (on-chain)',
-  'ETH para taxa de rede': 'ETH for network fees',
+  'POL para taxa de rede': 'POL for network fees',
   'No jogo': 'In game',
   'Ovos de ouro': 'Golden Eggs',
   'Use a ponte abaixo para mover entre o jogo e a carteira.': 'Use the bridge below to move funds between the game and your Wallet.',
@@ -52,7 +52,7 @@ const en: Record<string, string> = {
   'Para receber tokens ou USDC, envie para o seu endereço:': 'To receive tokens or USDC, send them to your address:',
   'Somente rede de teste ({rede}). Não envie fundos reais: eles serão perdidos.': 'Test network only ({rede}). Do not send real funds: they will be lost.',
   'Precisa de moedas de teste? Pegue de graça nas torneiras:': 'Need test coins? Grab them for free from these faucets:',
-  'ETH de teste (Base Sepolia)': 'Test ETH (Base Sepolia)',
+  'POL de teste (Polygon Amoy)': 'Test POL (Polygon Amoy)',
   'USDC de teste (Circle)': 'Test USDC (Circle)',
   'Endereço copiado!': 'Address copied!',
   'Não deu para copiar. Selecione e copie manualmente.': "Couldn't copy. Select it and copy manually.",
@@ -69,8 +69,8 @@ const en: Record<string, string> = {
   'Os itens saem do jogo e viram tokens na sua carteira.': 'They leave your game balance and become tokens in your Wallet.',
   'Os tokens são queimados e voltam como saldo no jogo.': 'The tokens are burned and come back as in-game balance.',
   'Confirmar ponte': 'Confirm bridge',
-  '{n} sairão do seu saldo no jogo e virarão {n} {sym}, um token na rede de teste Base Sepolia, na sua carteira. Dá para trazer de volta quando quiser.':
-    '{n} will leave your in-game balance and become {n} {sym}, a token on the Base Sepolia test network, in your Wallet. You can bring them back any time.',
+  '{n} sairão do seu saldo no jogo e virarão {n} {sym}, um token na rede de teste Polygon Amoy, na sua carteira. Dá para trazer de volta quando quiser.':
+    '{n} will leave your in-game balance and become {n} {sym}, a token on the Polygon Amoy test network, in your Wallet. You can bring them back any time.',
   '{n} {sym} serão retirados da sua carteira (queimados) e voltarão como saldo no jogo.': '{n} {sym} will be taken from your Wallet (burned) and come back as in-game balance.',
   'Ponte concluída!': 'Bridge complete!',
   'Confirmar': 'Confirm',
@@ -100,8 +100,8 @@ const en: Record<string, string> = {
   'Venda cancelada.': 'Listing cancelled.',
   'Cancelar venda': 'Cancel listing',
   'Vender': 'List for sale',
-  'O item vira um NFT na sua carteira (rede de teste Base Sepolia). Ele continua no seu jogo e você pode vendê-lo no Mercado por USDC.':
-    'The item becomes an NFT in your Wallet (Base Sepolia test network). It stays in your game and you can sell it on the Marketplace for USDC.',
+  'O item vira um NFT na sua carteira (rede de teste Polygon Amoy). Ele continua no seu jogo e você pode vendê-lo no Mercado por USDC.':
+    'The item becomes an NFT in your Wallet (Polygon Amoy test network). It stays in your game and you can sell it on the Marketplace for USDC.',
   'NFT #{id} criado!': 'NFT #{id} minted!',
   'Vender no Mercado': 'List for sale on the Marketplace',
   'Preço (USDC)': 'Price (USDC)',

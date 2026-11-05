@@ -1106,3 +1106,71 @@ tr.muted td { opacity: 0.55; }
 .news-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
 .news-list li { display: flex; align-items: center; gap: 10px; background: var(--bg2); border-radius: 10px; padding: 8px 10px; }
 .news-emoji { font-size: 26px; width: 34px; text-align: center; }
+
+/* ===== 🐓 Galo NFT + limite de cruzamentos ===== */
+.gn-badges { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0; }
+.gn-breed { display: inline-flex; align-items: center; gap: 2px; font-size: 11px; padding: 1px 7px; border-radius: 999px; background: var(--bg2); border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+.gn-breed.virgem { color: var(--green); border-color: var(--green); }
+.gn-breed.esgotado { color: var(--accent); border-color: var(--accent); }
+.gn-nft { font-size: 11px; padding: 1px 7px; border-radius: 999px; background: rgba(192, 112, 255, 0.15); border: 1px solid #c070ff; color: #d9a8ff; white-space: nowrap; }
+.gn-art { display: flex; justify-content: center; align-items: center; min-height: 96px; font-size: 56px; }
+
+/* ===== 🏟️ Torneios (Agent G) ===== */
+.tz-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; margin-bottom: 18px; }
+.tz-card h3 { margin: 0; }
+.tz-card.tz-semanal { border-color: var(--gold); box-shadow: 0 0 0 1px rgba(255, 207, 74, 0.25), var(--shadow); }
+.tz-status { font-size: 12px; font-weight: 800; padding: 3px 10px; border-radius: 999px; background: var(--bg2); border: 1px solid var(--line); white-space: nowrap; }
+.tz-st-inscricoes { color: var(--green); border-color: var(--green); }
+.tz-st-aovivo { color: var(--red); border-color: var(--red); animation: tz-pulse 1.4s ease-in-out infinite; }
+.tz-st-cancelado { color: var(--muted); }
+@keyframes tz-pulse { 50% { opacity: 0.55; } }
+.tz-count { display: flex; flex-direction: column; align-items: flex-start; margin: 8px 0; }
+.tz-count b { font-size: 26px; color: var(--gold); font-variant-numeric: tabular-nums; }
+.tz-mine { display: flex; align-items: center; gap: 8px; background: var(--bg2); border: 1px solid var(--line); border-radius: 10px; padding: 4px 10px; margin: 8px 0; font-size: 13px; }
+.tz-actions { flex-wrap: wrap; justify-content: flex-start; margin-top: 10px; }
+.tz-prizes .list-row b { min-width: 56px; color: var(--gold); }
+.tz-skin { color: var(--gold); font-weight: 700; }
+.tz-legal { margin-top: 12px; }
+.tz-place { color: var(--gold); white-space: nowrap; }
+.tz-pick { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+.tz-result h2 { margin: 0 0 4px; }
+.tz-champ { display: flex; align-items: center; gap: 14px; margin: 12px 0; border-color: var(--gold); }
+.tz-champ h2 { margin: 2px 0; color: var(--gold); }
+.tz-title { color: var(--gold); font-weight: 800; }
+.tz-entrants { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+.tz-entrant { display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; padding: 10px; }
+.tz-entrant.mine { border-color: var(--accent); }
+/* Chave: rola na horizontal dentro do próprio quadro, sem estourar a página */
+.tz-bracket { display: flex; gap: 14px; overflow-x: auto; max-width: 100%; padding: 4px 2px 12px; -webkit-overflow-scrolling: touch; }
+.tz-col { flex: 0 0 200px; display: flex; flex-direction: column; }
+.tz-col-head { font-weight: 800; font-size: 13px; color: var(--muted); text-align: center; margin-bottom: 8px; position: sticky; top: 0; }
+.tz-col-body { flex: 1; display: flex; flex-direction: column; justify-content: space-around; gap: 8px; }
+.tz-match { position: relative; display: flex; flex-direction: column; gap: 2px; width: 100%; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 4px; color: var(--text); font-family: inherit; text-align: left; }
+.tz-match.done { cursor: pointer; }
+.tz-match.done:hover { border-color: var(--accent); }
+.tz-match:disabled { cursor: default; }
+.tz-tbd { align-items: center; justify-content: center; min-height: 64px; color: var(--muted); }
+.tz-slot { display: flex; align-items: center; gap: 6px; padding: 2px 4px; border-radius: 6px; min-width: 0; }
+.tz-slot.win { background: rgba(70, 196, 122, 0.16); }
+.tz-slot.win b { color: var(--green); }
+.tz-slot.lose { opacity: 0.55; }
+.tz-slot.mine { outline: 1px solid var(--accent); }
+.tz-name { display: flex; flex-direction: column; min-width: 0; flex: 1; line-height: 1.15; }
+.tz-name b, .tz-name small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+.tz-name small { color: var(--muted); font-size: 11px; }
+.tz-flag { font-size: 10px; font-weight: 900; color: var(--green); }
+.tz-play { position: absolute; right: 6px; bottom: 4px; font-size: 10px; color: var(--accent); }
+.tz-tokens { margin: 16px 0; border-color: var(--gold); }
+.tz-admin-scroll { overflow-x: auto; }
+@media (max-width: 600px) {
+  .tz-col { flex-basis: 168px; }
+  .tz-champ { flex-direction: column; text-align: center; }
+}
+
+/* ===== 🔑 Aluguel de galos (Feira) ===== */
+.alu-badge { font-size: 12px; font-weight: 700; color: var(--gold); background: color-mix(in srgb, var(--gold) 14%, transparent); border: 1px solid color-mix(in srgb, var(--gold) 40%, transparent); border-radius: 999px; padding: 2px 8px; margin: 4px 0; text-align: center; }
+.alu-lent { opacity: 0.75; border-style: dashed; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.alu-lent .rc-art { filter: grayscale(0.6); }
+.alu-terms { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0; }
+.alu-terms .chip { font-size: 11px; padding: 2px 8px; }
+.alu-detail { flex-basis: 100%; padding: 8px 10px; border: 1px dashed var(--gold); border-radius: 10px; color: var(--muted); }

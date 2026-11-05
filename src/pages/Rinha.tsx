@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { RoosterSvg } from '../components/RoosterSvg'
 import { PageHead, RarityTag, RoosterCard, Stars, StyleTag, go } from '../components/ui'
 import { estimate } from '../game/battle'
@@ -9,6 +9,10 @@ import { makeOpponent, opponentTools, tierFor, useGame } from '../game/store'
 import type { Rooster } from '../game/types'
 import { t, tn, tx } from '../i18n'
 import { RefillButton, tryOffer } from '../components/Ofertas'
+import { api } from '../api'
+import { serverEconomy } from '../game/economia'
+
+type Opp = { d: 0 | 1 | 2 | 3; o: Rooster; tools: string[] }
 
 const DIFFS = [
   { label: t('Fácil'), emoji: '🐣', cls: 'easy', reward: t('Pouco milho') },
@@ -32,14 +36,41 @@ export function Rinha() {
     setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : p.length >= MAX_TOOLS ? [...p.slice(1), id] : [...p, id]))
   }
 
-  const opponents = useMemo(() => {
+  // 🌽 Economia no servidor: os adversários vêm do servidor (ele guarda e usa na luta); senão, gera aqui (modo antigo)
+  const server = serverEconomy()
+  const [srvOpps, setSrvOpps] = useState<Opp[] | null>(null)
+  const [reload, setReload] = useState(0)
+  const [busy, setBusy] = useState(false)
+  const fresh = useRef(false)
+  const localOpps = useMemo((): Opp[] => {
+    if (server) return []
     return ([0, 1, 2, 3] as const).map((d) => {
       const o = makeOpponent(mine, d)
       o.owner = pick(npcOwners())
       return { d, o, tools: opponentTools(d) }
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mine.id, nonce])
+  }, [mine.id, nonce, server])
+  useEffect(() => {
+    if (!server) return
+    let alive = true
+    const want = fresh.current
+    fresh.current = false
+    setSrvOpps(null)
+    api
+      .arenaOpponents(mine.id, want)
+      .then((r) => alive && setSrvOpps(r.opponents))
+      .catch((e: Error) => {
+        if (!alive) return
+        toast(tx(e.message), 'erro')
+        setSrvOpps([])
+      })
+    return () => {
+      alive = false
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mine.id, nonce, reload, server])
+  const opponents = server ? (srvOpps ?? []) : localOpps
 
   const chances = useMemo(
     () => opponents.map(({ o, tools }) => estimate(mine, o, 120, [myTools, tools]).pA),
@@ -47,10 +78,15 @@ export function Rinha() {
     [opponents, mine.level, mine.style, JSON.stringify(mine.equipped), myTools.join()],
   )
 
-  const fight = (o: Rooster, d: 0 | 1 | 2 | 3, oppTools: string[]) => {
-    const r = actions.startRinha(mine.id, o, d, myTools, oppTools)
+  const fight = async (o: Rooster, d: 0 | 1 | 2 | 3, oppTools: string[]) => {
+    if (busy) return
+    setBusy(true)
+    const r = await actions.startRinha(mine.id, o, d, myTools, oppTools)
+    setBusy(false)
     if (!r.ok) {
       toast(tx(r.error), 'erro')
+      // Adversários vencidos/trocados no servidor: busca de novo
+      if (server) setReload((n) => n + 1)
       // Sem energia: oferta relâmpago de Banquete
       if (currentEnergy(mine) < ENERGY_COST) tryOffer(s, actions.shop, 'energia')
       return
@@ -109,7 +145,14 @@ export function Rinha() {
 
       <div className="row-between">
         <h2 className="section-title">{t('3. Escolha o adversário')}</h2>
-        <button className="btn btn-sm" onClick={() => setNonce((n) => n + 1)}>
+        <button
+          className="btn btn-sm"
+          disabled={server && srvOpps === null}
+          onClick={() => {
+            fresh.current = true
+            setNonce((n) => n + 1)
+          }}
+        >
           {t('🔄 Outros adversários')}
         </button>
       </div>
@@ -126,6 +169,14 @@ export function Rinha() {
         </div>
       )}
 
+      {server && srvOpps === null && <p className="muted center">{t('🐓 Procurando adversários…')}</p>}
+      {server && srvOpps?.length === 0 && (
+        <p className="center">
+          <button className="btn" onClick={() => setReload((n) => n + 1)}>
+            {t('🔄 Tentar de novo')}
+          </button>
+        </p>
+      )}
       <div className="opponents arena-opps">
         {opponents.map(({ d, o, tools }, idx) => {
           const chance = chances[idx] ?? 0.5
@@ -166,7 +217,7 @@ export function Rinha() {
                 </div>
                 <span>{t('Chance de vitória: ~{n}%', { n: Math.round(chance * 100) })}</span>
               </div>
-              <button className="btn btn-primary full" onClick={() => fight(o, d, tools)} disabled={currentEnergy(mine) < ENERGY_COST}>
+              <button className="btn btn-primary full" onClick={() => void fight(o, d, tools)} disabled={busy || currentEnergy(mine) < ENERGY_COST}>
                 {t('⚔️ Lutar (⚡{n})', { n: ENERGY_COST })}
               </button>
             </div>

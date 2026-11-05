@@ -99,4 +99,6 @@ export interface FeiraAdmin {
   volumeMilho: number
   volumeOvos: number
   trades: FeiraTrade[]
+  /** 🔑 Aluguel de galos (src/game/aluguel.ts). */
+  rentals?: import('./aluguel').AluguelAdmin
 }

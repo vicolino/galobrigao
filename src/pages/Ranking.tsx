@@ -58,6 +58,7 @@ export function Ranking() {
                 <div className="rk-medal">{MEDAL[i]}</div>
                 <b className="rk-name">
                   {p.avatar} {p.name}
+                  {(p.champ ?? 0) > 0 && <span title={t('🏆 Campeão do Terreiro')}> 🏆</span>}
                 </b>
                 <span className="rk-val">🌽 {fmt(p.total)}</span>
                 <div className="rk-block">{i + 1}</div>
@@ -86,7 +87,7 @@ function Row({ p, pos, mine, onClick }: { p: RankRow; pos: number; mine: boolean
       <span className="rk-pos">#{pos}</span>
       <span className="rk-ava">{p.avatar}</span>
       <div className="grow">
-        <b>{p.name}</b>
+        <b>{p.name}{(p.champ ?? 0) > 0 && <span title={t('🏆 Campeão do Terreiro')}> 🏆</span>}</b>
         <div className="tiny muted">{tp('{n} galo · melhor: {galo}', '{n} galos · melhor: {galo}', p.roosters, { galo: p.best ? `${p.best.name} (${t('Nv {n}', { n: p.best.level })})` : '—' })}</div>
       </div>
       {p.best && (
@@ -142,6 +143,7 @@ export function ShowcaseModal({ id, onClose }: { id: string | null; onClose: () 
               <span>{t('Galos')}</span>
             </div>
           </div>
+          {(data.champ ?? 0) > 0 && <p className="center tz-title">{t('🏆 Campeão do Terreiro')} ×{data.champ}</p>}
           {data.since && <p className="tiny muted center">{t('criador desde {data}', { data: new Date(data.since).toLocaleDateString(locale()) })}</p>}
           <div className="sc-grid">
             {data.roosters.map((ro) => (

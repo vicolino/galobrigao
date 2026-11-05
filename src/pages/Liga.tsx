@@ -84,9 +84,10 @@ export function Liga() {
                   ) : reached ? (
                     <button
                       className="btn btn-sm btn-primary pulse"
-                      onClick={() => {
-                        const r = actions.claimLeague(tr.name)
+                      onClick={async () => {
+                        const r = await actions.claimLeague(tr.name)
                         if (r.ok) toast(t('Recompensa {tier} resgatada!', { tier: tx(tr.name) }), 'ok')
+                        else toast(tx(r.error), 'erro')
                       }}
                     >
                       {t('Resgatar')}

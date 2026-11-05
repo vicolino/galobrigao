@@ -1,6 +1,7 @@
 // Cruzamento: dois galos do jogador geram um pintinho. Roda SOMENTE no servidor (via runShop).
 import { BREED_BY_ID } from './data'
 import { makeRooster, pick, rarityRank, uid } from './rooster'
+import { MAX_BREEDS, breedsOf, pairMult } from './galonft'
 import { t } from '../i18n'
 import type { Currency, GameState, Nest, Rarity, Rooster, Stats } from './types'
 
@@ -27,10 +28,11 @@ type Parent = Pick<Rooster, 'id' | 'name' | 'breedId' | 'base' | 'stars'>
 const rarityOf = (ro: Pick<Rooster, 'breedId'>): Rarity => BREED_BY_ID[ro.breedId]?.rarity ?? 'comum'
 const topRarity = (a: Pick<Rooster, 'breedId'>, b: Pick<Rooster, 'breedId'>): Rarity => (rarityRank(rarityOf(a)) >= rarityRank(rarityOf(b)) ? rarityOf(a) : rarityOf(b))
 
-/** Custo do cruzamento: pela raridade do pai mais raro. */
-export function breedCost(a: Pick<Rooster, 'breedId'>, b: Pick<Rooster, 'breedId'>) {
+/** Custo do cruzamento: pela raridade do pai mais raro × média dos multiplicadores dos pais (1×…8× por cruzamentos já feitos). */
+export function breedCost(a: Pick<Rooster, 'breedId' | 'breedCount'>, b: Pick<Rooster, 'breedId' | 'breedCount'>) {
   const r = topRarity(a, b)
-  return { ovos: BREED_OVOS[r], milho: BREED_MILHO[r], rarity: r }
+  const mult = pairMult(a, b)
+  return { ovos: Math.round(BREED_OVOS[r] * mult), milho: Math.round(BREED_MILHO[r] * mult), rarity: r, mult }
 }
 
 /** Ovos para chocar já: 5 por hora (ou fração) que falta. */
@@ -52,9 +54,11 @@ export function cooldownLeft(s: GameState, id: string, now = Date.now()) {
 export function breedBlock(s: GameState, a?: Rooster, b?: Rooster, now = Date.now()): string | null {
   if (!a || !b) return t('Galo não encontrado')
   if (a.id === b.id) return t('Escolha dois galos diferentes.')
+  for (const r of [a, b]) if (r.rental) return t('{nome} é alugado: não pode cruzar.', { nome: r.name })
   if (s.nest?.egg) return t('Já tem um ovo chocando no ninho.')
   if (s.roosters.length >= MAX_COOP) return t('Galinheiro lotado (máx. {n}). Venda algum galo.', { n: MAX_COOP })
   if (a.level < BREED_MIN_LEVEL || b.level < BREED_MIN_LEVEL) return t('Os dois galos precisam ter nível {n} ou mais.', { n: BREED_MIN_LEVEL })
+  for (const r of [a, b]) if (breedsOf(r) >= MAX_BREEDS) return t('{nome} já cruzou {n} vezes (limite).', { nome: r.name, n: MAX_BREEDS })
   for (const r of [a, b]) if (cooldownLeft(s, r.id, now) > 0) return t('{nome} está descansando do último cruzamento.', { nome: r.name })
   return null
 }
@@ -144,6 +148,8 @@ export function runBreed(s: GameState, o: BreedOp, h: Helpers): { state: GameSta
       // Limpa descansos vencidos e marca os pais
       const cooldowns = Object.fromEntries(Object.entries(s.nest?.cooldowns ?? {}).filter(([, until]) => until > now))
       cooldowns[a!.id] = cooldowns[b!.id] = now + BREED_COOLDOWN
+      // Conta o cruzamento em cada pai (limite de 7 na vida)
+      n = { ...n, roosters: n.roosters.map((r) => (r.id === a!.id || r.id === b!.id ? { ...r, breedCount: breedsOf(r) + 1 } : r)) }
       n = { ...n, nest: { cooldowns, egg: { id: uid(), parents: [snap(a!), snap(b!)], startedAt: now, readyAt: now + INCUBATION } } }
       return { state: h.log(n, t('🥚 Cruzamento: {a} × {b}', { a: a!.name, b: b!.name }), -cost.milho, -cost.ovos) }
     }

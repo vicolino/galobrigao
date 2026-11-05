@@ -18,6 +18,18 @@ export interface Release {
 
 export const RELEASES = (): Release[] => [
   {
+    id: '2026-11-05-2',
+    date: '2026-11-05',
+    title: t('Torneios, aluguel e galos NFT'),
+    items: [
+      { emoji: '🏟️', title: t('Torneios'), text: t('Torneio Diário às 21h e Copa do Terreiro aos domingos. Inscrição grátis, prêmios da casa e replay de todas as lutas.'), link: '/torneios' },
+      { emoji: '🔑', title: t('Aluguel de galos'), text: t('Alugue seus galos para outros criadores e ganhe parte do milho que eles fizerem na Arena.'), link: '/feira/aluguel' },
+      { emoji: '💎', title: t('Galo NFT'), text: t('Transforme seu galo em NFT e venda no Mercado. Por enquanto na rede de teste da Polygon, sem valor real.'), link: '/carteira' },
+      { emoji: '🧬', title: t('Limite de cruzamentos'), text: t('Cada galo cruza no máximo 7 vezes. Galo virgem vale mais!'), link: '/cruzamento' },
+      { emoji: '⚖️', title: t('Arena mais justa'), text: t('As lutas agora são decididas no servidor: ninguém consegue trapacear.'), link: '/rinha' },
+    ],
+  },
+  {
     id: '2026-11-05',
     date: '2026-11-05',
     title: t('A maior atualização do terreiro!'),

@@ -6,12 +6,14 @@ import { randomUUID } from 'node:crypto'
 import { isAddress, getAddress, zeroAddress, type Address } from 'viem'
 import { ACC_BY_ID, SKIN_BY_ID } from '../src/game/data'
 import { uid } from '../src/game/rooster'
-import type { GameState } from '../src/game/types'
+import type { GameState, Rooster } from '../src/game/types'
 import { t } from '../src/i18n'
-import { balances, burnToken, buyNft, cancelListing, chainy, feeBps, listingOf, listNft, mintNft, mintToken, newWallet, ownerOf, tokenBalance, transferToken, userAccount, type TokenKey } from './chain'
+import { balances, burnNft, burnToken, buyNft, cancelListing, chainy, feeBps, isMainnet, listingOf, listNft, mintNft, mintToken, newWallet, ownerOf, tokenBalance, transferToken, userAccount, type TokenKey } from './chain'
 import { getDb, type UserRow } from './db'
 import { loadSave, writeSave } from './saves'
 import { limited } from './security'
+import { galoLook, galoMetadata, galoReceiveBlock, galoSvg, giveGalo, liveGalo, markGaloBurned, saveGaloSnapshot, takeGalo } from './galonft'
+import { nftIneligible, roosterLock } from '../src/game/galonft'
 
 export class Web3Error extends Error {
   constructor(
@@ -119,7 +121,7 @@ function mutate(userId: string, fn: (s: GameState) => GameState) {
 
 interface NftRow {
   token_id: number
-  kind: 'acc' | 'skin'
+  kind: 'acc' | 'skin' | 'galo'
   item_id: string
   owner_user_id: string
   status: string
@@ -204,12 +206,17 @@ export async function handleWeb3(path: string, method: string, body: Record<stri
   const nftMatch = path.match(/^\/api\/nft\/(\d{1,12})(\/image\.svg)?$/)
   if (nftMatch && method === 'GET') {
     const row = db().prepare('SELECT * FROM nfts WHERE token_id = ?').get(Number(nftMatch[1])) as unknown as NftRow | undefined
+    const base = (process.env.PUBLIC_URL ?? 'http://localhost:5173').replace(/\/$/, '')
+    // Galo NFT: ficha do galo + desenho dele
+    if (row?.kind === 'galo') {
+      const ro = liveGalo(row.token_id, row.owner_user_id, row.item_id) ?? fail(404, t('NFT não encontrado'))
+      return nftMatch[2] ? { svg: galoSvg(row.token_id, ro) } : { body: galoMetadata(row.token_id, ro, base) }
+    }
     const item = row && itemOf(row.kind, row.item_id)
     if (!row || !item) fail(404, t('NFT não encontrado'))
     const name = t(item!.name, undefined, 'en')
     const type = row!.kind === 'acc' ? 'Accessory' : 'Skin'
     if (nftMatch[2]) return { svg: nftSvg(item!.emoji, name, type) }
-    const base = (process.env.PUBLIC_URL ?? 'http://localhost:5173').replace(/\/$/, '')
     return {
       body: {
         name: `${name} #${row!.token_id}`,
@@ -251,7 +258,10 @@ export async function handleWeb3(path: string, method: string, body: Record<stri
         wallet: { address: w.address, eth: bal?.eth ?? null, egg: bal?.egg ?? null, corn: bal?.corn ?? null, usdc: bal ? usd(bal.usdcUnits) : null },
         kyc: user.kyc_status ?? 'none',
         mintable,
-        nfts: nfts.map((n) => ({ tokenId: n.token_id, kind: n.kind, itemId: n.item_id, status: pubStatus(n.status), price: usd(n.price_units) })),
+        nfts: nfts.map((n) => {
+          const ro = n.kind === 'galo' ? liveGalo(n.token_id, user.id, n.item_id) : null
+          return { tokenId: n.token_id, kind: n.kind, itemId: n.item_id, status: pubStatus(n.status), price: usd(n.price_units), ...(ro ? { rooster: galoLook(ro) } : {}) }
+        }),
         feeBps: await feeBps().catch(() => null),
         caps: {
           send: cp.send,
@@ -277,6 +287,8 @@ export async function handleWeb3(path: string, method: string, body: Record<stri
     needSave(user.id)
 
     if (dir === 'out') {
+      // Mainnet: tokens com valor real só saem para conta verificada (KYC/AML) — server/chain.ts
+      if (isMainnet() && user.kyc_status !== 'verified') fail(403, t('Envios para fora exigem verificação de identidade (KYC).'))
       if (usedToday(user.id, 'bridge-out', token) + amount > cap) fail(429, t('Limite diário da ponte atingido ({n} por dia).', { n: cap }))
       // 1) debita o save
       const debited = mutate(user.id, (s) => {
@@ -372,6 +384,65 @@ export async function handleWeb3(path: string, method: string, body: Record<stri
     }
   }
 
+  // ----- 🐓 Galo NFT: transformar um galo em NFT -----
+  if (path === '/api/web3/mint-galo' && method === 'POST') {
+    const roosterId = typeof body.roosterId === 'string' && /^[\w-]{1,64}$/.test(body.roosterId) ? body.roosterId : fail(400, t('Galo não encontrado'))
+    const w = walletOf(user.id)
+    // 1) marca o galo como NFT pendente no save (trava Feira/presente/aluguel)
+    const marked = mutate(user.id, (s) => {
+      const ro = s.roosters.find((r) => r.id === roosterId) ?? fail(404, t('Galo não encontrado'))
+      if (ro.nft) fail(409, t('{nome} já é um Galo NFT.', { nome: ro.name }))
+      const why = roosterLock(s, ro) ?? nftIneligible(s, ro)
+      if (why) fail(400, why)
+      return { ...s, roosters: s.roosters.map((r) => (r.id === roosterId ? { ...r, nft: { tokenId: 'pendente' } } : r)) }
+    })
+    const ro = marked.state.roosters.find((r) => r.id === roosterId)!
+    const id = logTx(user.id, 'mint', `galo:${roosterId}`, 1, w.address) // i18n-ok (chave interna)
+    try {
+      const r = await mintNft(w.address, 'galo', roosterId)
+      db().prepare("INSERT INTO nfts (token_id, kind, item_id, owner_user_id, status, price_units, minted_at, tx) VALUES (?, 'galo', ?, ?, 'held', NULL, ?, ?)").run(r.tokenId, roosterId, user.id, Date.now(), r.hash) // i18n-ok (chave interna)
+      setTx(id, 'ok', r.hash)
+      const out = mutate(user.id, (s) => history({ ...s, roosters: s.roosters.map((x) => (x.id === roosterId ? { ...x, nft: { tokenId: String(r.tokenId) } } : x)) }, t('🐓 Galo NFT criado: {nome}', { nome: ro.name })))
+      saveGaloSnapshot(r.tokenId, { ...ro, nft: { tokenId: String(r.tokenId) } }, user.id)
+      return { body: { tokenId: r.tokenId, tx: publicTx(id), ...out } }
+    } catch (e) {
+      setTx(id, 'failed')
+      const back = mutate(user.id, (s) => ({ ...s, roosters: s.roosters.map((x) => (x.id === roosterId && x.nft?.tokenId === 'pendente' ? { ...x, nft: undefined } : x)) }))
+      console.error('[web3] mint de galo falhou, desfeito', e instanceof Error ? e.message.split('\n')[0] : e)
+      return fail(502, t('A rede não confirmou a operação. Tente de novo em instantes.'), back)
+    }
+  }
+
+  // ----- 🐓 Galo NFT: trazer de volta para o jogo (queima o token) -----
+  if (path === '/api/web3/unmint-galo' && method === 'POST') {
+    const tokenId = tokenIdOf(body.tokenId)
+    const nft = db().prepare("SELECT * FROM nfts WHERE token_id = ? AND owner_user_id = ? AND kind = 'galo'").get(tokenId, user.id) as unknown as NftRow | undefined // i18n-ok (chave interna)
+    if (!nft) fail(404, t('NFT não encontrado'))
+    if (nft!.status !== 'held') fail(409, t('Tire o galo do Mercado antes.'))
+    const w = walletOf(user.id)
+    const owner = await ownerOf(tokenId).catch(chainFail)
+    if (getAddress(owner) !== getAddress(w.address)) fail(409, t('Esse NFT não está na sua carteira.'))
+    lock(tokenId, 'held', 'burning', user.id)
+    const id = logTx(user.id, 'unmint', `galo:${nft!.item_id}`, 1, w.address) // i18n-ok (chave interna)
+    let hash: string
+    try {
+      hash = await burnNft(tokenId)
+    } catch (e) {
+      db().prepare("UPDATE nfts SET status = 'held' WHERE token_id = ?").run(tokenId)
+      setTx(id, 'failed')
+      return chainFail(e)
+    }
+    db().prepare('DELETE FROM nfts WHERE token_id = ?').run(tokenId)
+    markGaloBurned(tokenId)
+    setTx(id, 'ok', hash)
+    const out = mutate(user.id, (s) => {
+      const ro = s.roosters.find((x) => x.id === nft!.item_id)
+      const n = { ...s, roosters: s.roosters.map((x) => (x.id === nft!.item_id ? { ...x, nft: undefined } : x)) }
+      return ro ? history(n, t('🐓 {nome} voltou a ser um galo comum do jogo', { nome: ro.name })) : n
+    })
+    return { body: { ok: true, tx: publicTx(id), ...out } }
+  }
+
   // ----- Pedido de verificação de identidade -----
   if (path === '/api/web3/kyc' && method === 'POST') {
     const st = user.kyc_status ?? 'none'
@@ -386,7 +457,10 @@ export async function handleWeb3(path: string, method: string, body: Record<stri
       .all() as { token_id: number; kind: string; item_id: string; price_units: number; owner_user_id: string; name: string }[]
     return {
       body: {
-        listings: rows.map((r) => ({ tokenId: r.token_id, kind: r.kind, itemId: r.item_id, price: usd(r.price_units), seller: r.name, mine: r.owner_user_id === user.id })),
+        listings: rows.map((r) => {
+          const ro = r.kind === 'galo' ? liveGalo(r.token_id, r.owner_user_id, r.item_id) : null
+          return { tokenId: r.token_id, kind: r.kind, itemId: r.item_id, price: usd(r.price_units), seller: r.name, mine: r.owner_user_id === user.id, ...(ro ? { rooster: galoLook(ro) } : {}) }
+        }),
         feeBps: await feeBps().catch(() => null),
       },
     }
@@ -399,7 +473,12 @@ export async function handleWeb3(path: string, method: string, body: Record<stri
     if (!nft) fail(404, t('NFT não encontrado'))
     if (nft!.status !== 'held') fail(409, t('Esse NFT já está à venda.'))
     const save = needSave(user.id)
-    if (units(save.state, nft!.kind, nft!.item_id) < heldTokens(user.id, nft!.kind, nft!.item_id)) fail(409, t('Você não tem mais esse item no jogo.'))
+    if (nft!.kind === 'galo') {
+      const ro = save.state.roosters.find((r) => r.id === nft!.item_id && r.nft?.tokenId === String(tokenId)) ?? fail(409, t('Você não tem mais esse item no jogo.'))
+      const why = roosterLock(save.state, ro, { allowNft: true })
+      if (why) fail(409, why)
+      saveGaloSnapshot(tokenId, ro)
+    } else if (units(save.state, nft!.kind, nft!.item_id) < heldTokens(user.id, nft!.kind, nft!.item_id)) fail(409, t('Você não tem mais esse item no jogo.'))
     const w = walletOf(user.id)
     const owner = await ownerOf(tokenId).catch(chainFail)
     if (getAddress(owner) !== getAddress(w.address)) fail(409, t('Esse NFT não está na sua carteira.'))
@@ -441,6 +520,11 @@ export async function handleWeb3(path: string, method: string, body: Record<stri
     if (nft!.owner_user_id === user.id) fail(400, t('Você não pode comprar o seu próprio item.'))
     const buyerSave = needSave(user.id)
     if (nft!.kind === 'skin' && buyerSave.state.skins.includes(nft!.item_id)) fail(409, t('Você já tem essa skin.'))
+    if (nft!.kind === 'galo') {
+      const ro = liveGalo(tokenId, nft!.owner_user_id, nft!.item_id) ?? fail(409, t('O anúncio mudou. Atualize o mercado.'))
+      const why = galoReceiveBlock(buyerSave.state, ro)
+      if (why) fail(409, why)
+    }
     const price = BigInt(nft!.price_units!)
     const w = walletOf(user.id)
     const seller = walletOf(nft!.owner_user_id)
@@ -459,8 +543,9 @@ export async function handleWeb3(path: string, method: string, body: Record<stri
       return chainFail(e)
     }
     // Pago na chain: move o item entre os saves
-    const item = itemOf(nft!.kind, nft!.item_id)!
     const priceTxt = (Number(price) / 1e6).toString()
+    if (nft!.kind === 'galo') return moveGalo(nft!, user, tokenId, priceTxt, id, r, w.address)
+    const item = itemOf(nft!.kind, nft!.item_id)!
     const d = db()
     d.exec('BEGIN')
     try {
@@ -484,6 +569,34 @@ export async function handleWeb3(path: string, method: string, body: Record<stri
   return null
 }
 
+// ---------- Galo NFT vendido: move o galo entre os saves ----------
+
+function moveGalo(nft: NftRow, user: UserRow, tokenId: number, priceTxt: string, id: string, r: { hash: string; price: bigint; fee: bigint }, buyerAddr: string): Web3Out {
+  const d = db()
+  d.exec('BEGIN')
+  try {
+    const sellerSave = loadSave(nft.owner_user_id)
+    const taken = sellerSave ? takeGalo(sellerSave.state, nft.item_id) : { state: null, rooster: null }
+    // Galo some do save do vendedor? Usa a ficha guardada do token
+    const ro = taken.rooster ?? liveGalo(tokenId, null, nft.item_id)!
+    if (sellerSave && taken.state) writeSave(nft.owner_user_id, history(taken.state, t('Venda no mercado: {item} por {preco} USDC', { item: ro.name, preco: priceTxt })), sellerSave.rev + 1)
+    const bs = loadSave(user.id)!
+    const moved: Rooster = { ...ro, nft: { tokenId: String(tokenId) } }
+    const next = history(giveGalo(bs.state, moved, bs.state.player.name), t('Compra no mercado: {item} por {preco} USDC', { item: ro.name, preco: priceTxt }))
+    writeSave(user.id, next, bs.rev + 1)
+    d.prepare("UPDATE nfts SET owner_user_id = ?, status = 'held', price_units = NULL WHERE token_id = ?").run(user.id, tokenId)
+    saveGaloSnapshot(tokenId, moved)
+    logTx(nft.owner_user_id, 'sell', `nft:${tokenId}`, ((Number(r.price) - Number(r.fee)) / 1e6).toString(), buyerAddr, 'ok', r.hash)
+    setTx(id, 'ok', r.hash)
+    d.exec('COMMIT')
+    return { body: { rev: bs.rev + 1, state: next, tx: publicTx(id), fee: usd(r.fee) } }
+  } catch (e) {
+    d.exec('ROLLBACK')
+    setTx(id, 'paid-unmoved', r.hash)
+    throw e
+  }
+}
+
 // ---------- Imagem do NFT ----------
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]!)
@@ -503,6 +616,8 @@ function nftSvg(emoji: string, name: string, type: string) {
 const KYC = ['none', 'pending', 'verified', 'rejected']
 export function setKyc(userId: string, status: unknown) {
   const st = typeof status === 'string' && KYC.includes(status) ? status : fail(400, t('Status de KYC inválido'))
+  // Mainnet: aprovação só pelo provedor de KYC, nunca à mão no backoffice
+  if (st === 'verified' && isMainnet()) fail(403, t('Na mainnet a verificação vem só do provedor de KYC.'))
   db().prepare('UPDATE users SET kyc_status = ? WHERE id = ?').run(st, userId)
   return st
 }

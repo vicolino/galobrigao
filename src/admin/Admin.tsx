@@ -10,8 +10,9 @@ import { SKIN_BY_ID } from '../game/data'
 import { locale, t, tp, tx } from '../i18n'
 import { C1, C2, DailyBars, HBars, Kpi, SplitBar } from './Charts'
 import type { FeiraAdmin } from '../game/feira'
+import { TorneiosAdmin } from './TorneiosAdmin'
 
-type Tab = 'geral' | 'jogadores' | 'pedidos' | 'config' | 'auditoria' | 'cripto' | 'feira'
+type Tab = 'geral' | 'jogadores' | 'pedidos' | 'config' | 'auditoria' | 'cripto' | 'feira' | 'torneios'
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'geral', label: t('📈 Visão geral') },
@@ -21,6 +22,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'auditoria', label: t('🧾 Auditoria') },
   { id: 'cripto', label: t('⛓️ Cripto') },
   { id: 'feira', label: t('🏪 Feira') },
+  { id: 'torneios', label: t('🏟️ Torneios') },
 ]
 
 const n = (v: number) => v.toLocaleString(locale())
@@ -74,6 +76,7 @@ export function Admin({ tab: tabParam }: { tab?: string }) {
         {tab === 'auditoria' && <Audit />}
         {tab === 'cripto' && <Web3Admin />}
         {tab === 'feira' && <FeiraAdminTab />}
+        {tab === 'torneios' && <TorneiosAdmin />}
       </main>
     </div>
   )
@@ -657,6 +660,21 @@ function FeiraAdminTab() {
           <Kpi label={t('🥚 Volume vendido')} value={n(d.volumeOvos)} />
         </div>
       )}
+      {d?.rentals && (
+        <>
+          <h3>{t('🔑 Aluguel de galos')}</h3>
+          <div className="kpi-grid small">
+            <Kpi label={t('📢 Para alugar agora')} value={n(d.rentals.active)} />
+            <Kpi label={t('🔑 Alugados agora')} value={n(d.rentals.rented)} />
+            <Kpi label={t('🤝 Aluguéis fechados')} value={n(d.rentals.total)} />
+            <Kpi label={t('🌽 Taxas de aluguel')} value={n(d.rentals.feesMilho)} />
+            <Kpi label={t('🥚 Taxas de aluguel')} value={n(d.rentals.feesOvos)} />
+            <Kpi label={t('🌽 Volume de aluguel')} value={n(d.rentals.volumeMilho)} />
+            <Kpi label={t('🥚 Volume de aluguel')} value={n(d.rentals.volumeOvos)} />
+            <Kpi label={t('🌽 Parte da Arena (donos)')} value={n(d.rentals.shareMilho)} />
+          </div>
+        </>
+      )}
       <div className="card">
         <h3>{t('Últimas trocas')}</h3>
         <table className="table admin-table">
@@ -947,6 +965,9 @@ function Config() {
             <NumField label={t('Milho ganho por dia (limite)')} step={100000} value={cfg.economy.freeMilhoPerDay} onChange={(v) => set('economy', { freeMilhoPerDay: v })} hint={t('Acima disso o servidor recusa o progresso')} />
             <NumField label={t('Limite de gasto padrão (R$)')} step={10} value={cfg.economy.defaultSpendLimitCents / 100} onChange={(v) => set('economy', { defaultSpendLimitCents: Math.round(v * 100) })} hint={t('Vale para contas novas')} />
           </div>
+          <label className="check">
+            <input type="checkbox" checked={cfg.economy.serverAuthoritative !== false} onChange={(e) => set('economy', { serverAuthoritative: e.target.checked })} /> {t('🌽 Economia no servidor — Arena, bônus, missões, liga, treino e comida rodam no servidor e o save do navegador não pode aumentar milho, ovos ou XP (desligue só se algo quebrar)')}
+          </label>
         </div>
       </div>
       <div className="center">

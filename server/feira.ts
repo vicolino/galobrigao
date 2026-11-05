@@ -9,6 +9,10 @@ import { getDb, type UserRow } from './db'
 import { loadSave, writeSave } from './saves'
 import { fmt } from '../src/game/rooster'
 import { t } from '../src/i18n'
+import { aluguelAdmin, expireRentals } from './aluguel'
+// Arena do servidor (server/economia.ts) procura a parte do aluguel aqui
+export { rentalShare } from './aluguel'
+import { roosterLock } from '../src/game/galonft'
 
 export class FeiraError extends Error {
   constructor(
@@ -143,7 +147,11 @@ function takeAsset(s: GameState, userId: string, kind: FeiraKind, id: string): {
   if (kind === 'galo') {
     const ro = s.roosters.find((r) => r.id === id) ?? fail(t('Galo não encontrado'))
     if (s.roosters.length <= 1) fail(t('Você precisa ter pelo menos um galo.'))
+    if (ro.rental) fail(t('Galo alugado não pode ser vendido nem dado.'))
     if (roosterBusy(id)) fail(t('{nome} está num desafio pendente.', { nome: ro.name }))
+    // Ninho, NFT ou aluguel: não sai daqui (evita gasto duplo)
+    const lockWhy = roosterLock(s, ro)
+    if (lockWhy) fail(lockWhy)
     const accs = { ...s.accessories }
     Object.values(ro.equipped).forEach((a) => a && (accs[a] = (accs[a] ?? 0) + 1))
     const clean: Rooster = { ...ro, equipped: {}, skin: undefined }
@@ -256,6 +264,7 @@ export function expireListings(sellerId?: string) {
 export function feiraNotices(userId: string): FeiraNotice[] {
   schema()
   expireListings(userId)
+  expireRentals(userId)
   const rows = db().prepare('SELECT id, text, at FROM feira_notices WHERE user_id = ? AND seen = 0 ORDER BY id LIMIT 10').all(userId) as unknown as FeiraNotice[]
   if (rows.length) db().prepare('UPDATE feira_notices SET seen = 1 WHERE user_id = ? AND id <= ?').run(userId, rows[rows.length - 1].id)
   return rows
@@ -486,5 +495,6 @@ export function feiraAdmin() {
     volumeMilho: sum('milho', 'venda').reduce((a, f) => a + f.volume, 0),
     volumeOvos: sum('ovo', 'venda').reduce((a, f) => a + f.volume, 0),
     trades,
+    rentals: aluguelAdmin(),
   }
 }

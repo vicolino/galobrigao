@@ -16,6 +16,7 @@ const NAV = [
   { path: '/cruzamento', label: t('Cruzamento'), emoji: '🥚' },
   { path: '/rinha', label: t(ARENA), emoji: '⚔️' },
   { path: '/desafios', label: t('Desafios'), emoji: '🤝' },
+  { path: '/torneios', label: t('Torneios'), emoji: '🏟️' },
   { path: '/apostas', label: t('Apostas'), emoji: '🎲' },
   { path: '/missoes', label: t('Missões'), emoji: '🎯' },
   { path: '/passe', label: t('Passe'), emoji: '🎫' },
@@ -40,8 +41,8 @@ export function Sidebar({ route, open, onClose }: { route: string; open: boolean
   const missionsReady = s.missions.list.filter((m) => !m.claimed && m.progress >= m.goal).length
   const openBets = betsInfo?.open ?? 0
 
-  const claim = () => {
-    const r = actions.claimDaily()
+  const claim = async () => {
+    const r = await actions.claimDaily()
     if (r.ok) setDaily(r.value!)
     else toast(r.error, 'info')
   }

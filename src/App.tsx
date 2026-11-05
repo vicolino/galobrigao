@@ -23,6 +23,7 @@ import { Mercado } from './pages/Mercado'
 import { Feira } from './pages/Feira'
 import { Cruzamento } from './pages/Cruzamento'
 import { Ranking } from './pages/Ranking'
+import { TorneioAlert, Torneios } from './pages/Torneios'
 import { APP_NAME } from './brand'
 import { t, tx } from './i18n'
 
@@ -74,6 +75,7 @@ export default function App() {
     case 'feira': page = <Feira tab={param} />; break
     case 'cruzamento': page = <Cruzamento />; break
     case 'ranking': page = <Ranking />; break
+    case 'torneios': page = <Torneios id={param} />; break
     case 'novidades': page = <Novidades />; break
     default: page = <Galinheiro selectedId={param} />
   }
@@ -118,6 +120,7 @@ export default function App() {
         <div className="container" key={section}>{page}</div>
       </main>
       <ChallengeAlert />
+      <TorneioAlert />
       <OfferCenter />
       <NewsCenter />
       <Toasts />

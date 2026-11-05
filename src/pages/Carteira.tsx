@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
-import { api, ApiError, type KycStatus, type Web3Asset, type Web3Info, type Web3Nft, type Web3Tx } from '../api'
+import { api, ApiError, type GaloLook, type KycStatus, type Web3Asset, type Web3Info, type Web3Nft, type Web3Tx } from '../api'
 import { Empty, Modal, PageHead, RarityTag, Tabs } from '../components/ui'
-import { ACC_BY_ID, SKIN_BY_ID } from '../game/data'
+import { ACC_BY_ID, BREED_BY_ID, SKIN_BY_ID } from '../game/data'
+import { GaloNftPanel, NftArt } from './GaloNft'
+import { TokenPrizes } from './Torneios'
 import { fmt } from '../game/rooster'
 import { useGame } from '../game/store'
 import type { Rarity } from '../game/types'
@@ -10,7 +12,8 @@ import { locale, t, tn, tx } from '../i18n'
 // ---------- Utilitários compartilhados com o Mercado ----------
 
 /** Nome/emoji/raridade do item de um NFT a partir das tabelas do jogo. */
-export function nftItem(kind: 'acc' | 'skin', itemId: string): { emoji: string; name: string; rarity: Rarity; kindLabel: string } {
+export function nftItem(kind: 'acc' | 'skin' | 'galo', itemId: string, ro?: GaloLook): { emoji: string; name: string; rarity: Rarity; kindLabel: string } {
+  if (kind === 'galo') return { emoji: '🐓', name: ro?.name ?? t('Galo'), rarity: BREED_BY_ID[ro?.breedId ?? '']?.rarity ?? 'comum', kindLabel: t('Galo NFT') }
   const it = kind === 'acc' ? ACC_BY_ID[itemId] : SKIN_BY_ID[itemId]
   return {
     emoji: it?.emoji ?? '❔',
@@ -63,13 +66,14 @@ const TX_KIND: Record<string, string> = {
   'bridge-in': t('🌉 Carteira → Jogo'),
   send: t('📤 Envio'),
   mint: t('✨ NFT criado'),
+  unmint: t('🐓 Galo NFT de volta ao jogo'),
   list: t('🏷️ Posto à venda'),
   cancel: t('↩️ Venda cancelada'),
   buy: t('🛒 Compra no Mercado'),
 }
 const TX_STATUS: Record<string, string> = { ok: t('concluída'), pending: t('pendente'), failed: t('falhou'), 'burned-uncredited': t('em análise pelo suporte'), 'paid-unmoved': t('em análise pelo suporte') }
 const ASSET_LABEL: Record<Web3Asset, string> = { egg: t('🥚 Ovos de ouro (EGG)'), corn: t('🌽 Milho (CORN)'), usdc: t('💵 USDC') }
-const FAUCET_ETH = 'https://www.alchemy.com/faucets/base-sepolia'
+const FAUCET_ETH = 'https://faucet.polygon.technology/'
 const FAUCET_USDC = 'https://faucet.circle.com'
 
 // ---------- Página ----------
@@ -149,7 +153,7 @@ export function Carteira() {
     <>
       <PageHead
         title={t('👛 Carteira')}
-        subtitle={tn('Sua carteira na rede {rede}. Os tokens são de teste e não têm valor real.', { rede: <b>{info.chain?.name ?? 'Base Sepolia'}</b> })}
+        subtitle={tn('Sua carteira na rede {rede}. Os tokens são de teste e não têm valor real.', { rede: <b>{info.chain?.name ?? 'Polygon Amoy'}</b> })}
         right={<TestnetBadge />}
       />
 
@@ -174,7 +178,7 @@ export function Carteira() {
             <div><span>🥚 EGG</span><b>{fmt(num(w.egg))}</b></div>
             <div><span>🌽 CORN</span><b>{fmt(num(w.corn))}</b></div>
             <div><span>💵 USDC</span><b>{usdc(w.usdc)}</b></div>
-            <div className="tiny muted"><span>⛽ {t('ETH para taxa de rede')}</span><span>{eth(w.eth)}</span></div>
+            <div className="tiny muted"><span>⛽ {t('POL para taxa de rede')}</span><span>{eth(w.eth)}</span></div>
           </div>
         </div>
         <div className="card">
@@ -186,6 +190,7 @@ export function Carteira() {
           <p className="tiny muted">{t('Use a ponte abaixo para mover entre o jogo e a carteira.')}</p>
         </div>
       </div>
+      <TokenPrizes />
 
       <div className="two-col web3-panels">
         <Bridge info={info} busy={busy} run={run} okTx={okTx} />
@@ -201,14 +206,16 @@ export function Carteira() {
           <CopyBtn text={w.address} />
         </div>
         <div className="warn tiny">
-          ⚠️ {t('Somente rede de teste ({rede}). Não envie fundos reais: eles serão perdidos.', { rede: info.chain?.name ?? 'Base Sepolia' })}
+          ⚠️ {t('Somente rede de teste ({rede}). Não envie fundos reais: eles serão perdidos.', { rede: info.chain?.name ?? 'Polygon Amoy' })}
         </div>
         <p className="tiny muted">{t('Precisa de moedas de teste? Pegue de graça nas torneiras:')}</p>
         <div className="row gap wrap">
-          <a className="btn btn-sm" href={FAUCET_ETH} target="_blank" rel="noreferrer">⛽ {t('ETH de teste (Base Sepolia)')} ↗</a>
+          <a className="btn btn-sm" href={FAUCET_ETH} target="_blank" rel="noreferrer">⛽ {t('POL de teste (Polygon Amoy)')} ↗</a>
           <a className="btn btn-sm" href={FAUCET_USDC} target="_blank" rel="noreferrer">💵 {t('USDC de teste (Circle)')} ↗</a>
         </div>
       </div>
+
+      <GaloNftPanel info={info} busy={busy} run={run} okTx={okTx} />
 
       <MyItems info={info} busy={busy} run={run} okTx={okTx} feeBps={feeBps} />
 
@@ -237,7 +244,7 @@ export function Carteira() {
 }
 
 type Run = <R>(fn: () => Promise<R>, ok: (r: R) => void, touchesSave: boolean) => Promise<boolean>
-type PanelProps = { info: Web3Info; busy: boolean; run: Run; okTx: (msg: string, tx?: Web3Tx) => void }
+export type PanelProps = { info: Web3Info; busy: boolean; run: Run; okTx: (msg: string, tx?: Web3Tx) => void }
 
 function CopyBtn({ text }: { text: string }) {
   const { toast } = useGame()
@@ -321,7 +328,7 @@ function Bridge({ info, busy, run, okTx }: PanelProps) {
           </p>
           <p className="muted">
             {dir === 'out'
-              ? t('{n} sairão do seu saldo no jogo e virarão {n} {sym}, um token na rede de teste Base Sepolia, na sua carteira. Dá para trazer de volta quando quiser.', { n: fmt(n), sym })
+              ? t('{n} sairão do seu saldo no jogo e virarão {n} {sym}, um token na rede de teste Polygon Amoy, na sua carteira. Dá para trazer de volta quando quiser.', { n: fmt(n), sym })
               : t('{n} {sym} serão retirados da sua carteira (queimados) e voltarão como saldo no jogo.', { n: fmt(n), sym })}
           </p>
           <p className="tiny muted"><TestnetBadge /> {t('Rede de teste: os tokens não têm valor real.')}</p>
@@ -460,11 +467,11 @@ function MyItems({ info, busy, run, okTx, feeBps }: PanelProps & { feeBps: numbe
   const fee = priceOk ? (p * feeBps) / 10000 : 0
   const feePct = (feeBps / 100).toLocaleString(locale(), { maximumFractionDigits: 2 })
 
-  const card = (kind: 'acc' | 'skin', itemId: string, extra: ReactNode, key: string) => {
-    const it = nftItem(kind, itemId)
+  const card = (kind: 'acc' | 'skin' | 'galo', itemId: string, extra: ReactNode, key: string, ro?: GaloLook) => {
+    const it = nftItem(kind, itemId, ro)
     return (
       <div key={key} className={`card shop-item web3-item rar-${it.rarity}`}>
-        <div className="shop-emoji">{it.emoji}</div>
+        <NftArt kind={kind} itemId={itemId} rooster={ro} />
         <b>{it.name}</b>
         <div className="row gap wrap">
           <RarityTag rarity={it.rarity} />
@@ -514,8 +521,14 @@ function MyItems({ info, busy, run, okTx, feeBps }: PanelProps & { feeBps: numbe
                     🏷️ {t('Vender')}
                   </button>
                 )}
+                {nf.kind === 'galo' && nf.status !== 'listed' && (
+                  <button className="btn btn-sm full" disabled={busy} onClick={() => run(() => api.unmintGalo(nf.tokenId), (r) => okTx(t('🐓 Galo de volta ao jogo (NFT queimado).'), r.tx), true)}>
+                    ↩️ {t('Trazer de volta para o jogo')}
+                  </button>
+                )}
               </>,
               'n-' + nf.tokenId,
+              nf.rooster,
             ),
           )}
         </div>
@@ -526,7 +539,7 @@ function MyItems({ info, busy, run, okTx, feeBps }: PanelProps & { feeBps: numbe
           <div className="center">
             <div className="shop-emoji">{nftItem(mintItem.kind, mintItem.itemId).emoji}</div>
             <h3>{nftItem(mintItem.kind, mintItem.itemId).name}</h3>
-            <p className="muted">{t('O item vira um NFT na sua carteira (rede de teste Base Sepolia). Ele continua no seu jogo e você pode vendê-lo no Mercado por USDC.')}</p>
+            <p className="muted">{t('O item vira um NFT na sua carteira (rede de teste Polygon Amoy). Ele continua no seu jogo e você pode vendê-lo no Mercado por USDC.')}</p>
             <p className="tiny muted"><TestnetBadge /></p>
             <div className="row-center gap" style={{ marginTop: 12 }}>
               <button className="btn" onClick={() => setMintKey(null)}>{t('Cancelar')}</button>
@@ -549,9 +562,9 @@ function MyItems({ info, busy, run, okTx, feeBps }: PanelProps & { feeBps: numbe
         {sell && (
           <div>
             <p className="center">
-              <span className="shop-emoji">{nftItem(sell.kind, sell.itemId).emoji}</span>
+              <NftArt kind={sell.kind} itemId={sell.itemId} rooster={sell.rooster} />
               <br />
-              <b>{nftItem(sell.kind, sell.itemId).name}</b> <span className="mono tiny muted">#{sell.tokenId}</span>
+              <b>{nftItem(sell.kind, sell.itemId, sell.rooster).name}</b> <span className="mono tiny muted">#{sell.tokenId}</span>
             </p>
             <label className="field">
               <span>{t('Preço (USDC)')}</span>

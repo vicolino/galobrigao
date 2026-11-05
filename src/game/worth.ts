@@ -1,6 +1,7 @@
 // Valor do galinheiro: quanto vale tudo o que o jogador tem, em milho.
 // Coisas compradas com ovos entram pela taxa da loja de trocas (1 🥚 ≈ 🌽 200).
 import { ACC_BY_ID, BREED_BY_ID, ITEM_BY_ID, SKIN_BY_ID, TOOL_BY_ID } from './data'
+import { virginBonus } from './galonft'
 import type { Currency, GameState, Rooster } from './types'
 
 export const OVO_EM_MILHO = 200
@@ -15,8 +16,8 @@ export function roosterValue(ro: Rooster): number {
     const acc = id ? ACC_BY_ID[id] : undefined
     return a + (acc ? corn(acc.price, acc.currency) : 0)
   }, 0)
-  // Pelagem rara (cruzamento) vale 50% a mais na raça
-  return Math.round(breed * (0.8 + ro.stars * 0.12) * (ro.tint ? 1.5 : 1) + ro.level * 260 + ro.wins * 20 + gear)
+  // Pelagem rara (cruzamento) vale 50% a mais na raça; virgem (0/7 cruzamentos) vale até 15% a mais
+  return Math.round((breed * (0.8 + ro.stars * 0.12) * (ro.tint ? 1.5 : 1) + ro.level * 260 + ro.wins * 20) * (1 + virginBonus(ro)) + gear)
 }
 
 export function coopWorth(s: GameState) {

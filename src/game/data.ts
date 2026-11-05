@@ -330,6 +330,7 @@ export const ACHIEVEMENTS = [
   { id: 'caixas', name: t('Caçador de Tesouro'), desc: t('Abra {n} caixas.', { n: 10 }), emoji: '🎁' },
   { id: 'estiloso', name: t('Estiloso'), desc: t('Tenha {n} skins.', { n: 3 }), emoji: '🎨' },
   { id: 'estrategista', name: t('Estrategista'), desc: t('Vença uma luta usando {n} ferramentas.', { n: 2 }), emoji: '🧠' },
+  { id: 'campeao-terreiro', name: t('Campeão do Terreiro'), desc: t('Vença um torneio.'), emoji: '🏆' },
   { id: 'rico', name: t('Barão do Milho'), desc: t('Junte {n} de milho.', { n: (50000).toLocaleString(locale()) }), emoji: '🌽' },
 ]
 
@@ -367,7 +368,11 @@ export const SEASON_SKINS: Skin[] = [
   { id: 'tp-aurora', name: t('Aurora da Temporada'), emoji: '🌠', rarity: 'epico', price: 120, currency: 'ovo', fx: 'neon', exclusive: true, colors: C('#1a1236', '#2a1a52', '#3dffb0', '#b57bff', '#221846', '#3dffb0', '#b57bff'), desc: t('Brilho de fim de temporada. Só no Passe.') },
   { id: 'tp-campeao', name: t('Campeão da Temporada'), emoji: '🏆', rarity: 'lendario', price: 300, currency: 'ovo', fx: 'galaxia', exclusive: true, colors: C('#3a1a78', '#2a1260', '#ffd23f', '#ff4fd8', '#4a2a90', '#ffd23f', '#ffd23f'), desc: t('Para quem chegou no nível 30. Só no Passe.') },
 ]
-export const SKIN_BY_ID: Record<string, Skin> = Object.fromEntries([...SKINS, ...SEASON_SKINS].map((s) => [s.id, s]))
+/** 🏟️ Skins de torneio (exclusivas: só o campeão ganha). */
+export const TORNEIO_SKINS: Skin[] = [
+  { id: 'copa-terreiro', name: t('Taça do Terreiro'), emoji: '🏆', rarity: 'lendario', price: 400, currency: 'ovo', fx: 'ouro', exclusive: true, colors: C('#c9971c', '#a87912', '#fff1a8', '#ffd23f', '#e0b22e', '#d62828', '#ffd23f'), desc: t('Só para quem venceu a Copa do Terreiro.') },
+]
+export const SKIN_BY_ID: Record<string, Skin> = Object.fromEntries([...SKINS, ...SEASON_SKINS, ...TORNEIO_SKINS].map((s) => [s.id, s]))
 
 export const SKIN_BUNDLES = [
   { id: 'elementos', name: t('Pacote Elementos'), emoji: '⚡', skins: ['fogo', 'gelo', 'lava'], price: 380, desc: t('Fogo, gelo e magma juntos.') },

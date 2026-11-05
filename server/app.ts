@@ -17,6 +17,7 @@ import { sendMail } from './mail'
 import { loadSave, writeSave } from './saves'
 import { handlePvp, PvpError } from './pvp'
 import { FeiraError, feiraDeleteUser, handleFeira } from './feira'
+import { AluguelError, aluguelDeleteUser, guardRentals, handleAluguel } from './aluguel'
 import { BetError, creditSave, handleBets, migrateOldBets, plausibleChips, takeCredits, tickBets } from './bets'
 import { applyBetCredit } from '../src/game/bets'
 import { fetchRemoteStatus, parseMpWebhook, providerName, startPayment } from './payments'
@@ -27,6 +28,11 @@ import { grantPassPremium, hasPassPremium, mergeClientPass, PASS_DAILY_XP } from
 import { handleWeb3, Web3Error, web3Enabled } from './web3'
 import { afterShop, deleteOfferData, firstPurchaseSku, handleOfertas, isFirstPurchase, OfertasError, withStock } from './ofertas'
 import { CriacaoError, handleCriacao } from './criacao'
+import { arenaDeleteUser, EconomiaError, handleEconomia } from './economia'
+import { economyViolation, serverEconomy } from '../src/game/economia'
+import { currentPass } from '../src/game/pass'
+import { handleTorneios, torneioDeleteUser, TorneioError } from './torneios'
+import { galoNftViolation, keepRoosterServerFields } from '../src/game/galonft'
 
 try {
   process.loadEnvFile?.('.env')
@@ -195,6 +201,8 @@ function grant(state: GameState | null, sku: Sku, user: UserRow): GameState {
       const ro = makeRooster({ breedId: sku.breedId!, stars: sku.stars, name: sku.roosterName && tx(sku.roosterName, user.lang === 'en' ? 'en' : 'pt'), owner: user.name })
       s = { ...s, roosters: [...s.roosters, ro] }
     }
+    // Galo de kit pago com dinheiro pode virar NFT
+    s = addMintable(s, `galo:${s.roosters[s.roosters.length - 1].id}`) // i18n-ok (chave interna)
     if (sku.skin) {
       // Skin lendária paga com dinheiro pode virar NFT
       if (!s.skins.includes(sku.skin)) s = SKIN_BY_ID[sku.skin]?.rarity === 'lendario' ? addMintable({ ...s, skins: [...s.skins, sku.skin] }, `skin:${sku.skin}`) : { ...s, skins: [...s.skins, sku.skin] }
@@ -412,8 +420,11 @@ export async function handle(req: Req, res: Res) {
       db.prepare('DELETE FROM ovos_guard WHERE user_id = ?').run(u.id)
       db.prepare('DELETE FROM house_bets WHERE user_id = ?').run(u.id)
       feiraDeleteUser(u.id)
+      torneioDeleteUser(u.id)
+      aluguelDeleteUser(u.id)
       db.prepare('DELETE FROM password_resets WHERE user_id = ?').run(u.id)
       deleteOfferData(u.id)
+      arenaDeleteUser(u.id)
       // Pedidos pagos são mantidos anonimizados por obrigação fiscal; os dados pessoais saem.
       // Web3: carteira, NFTs e web3_tx ficam (ativos na chain + auditoria; só têm o id, sem dados pessoais).
       // Anúncios do jogador somem do mercado porque a listagem exige a conta existir.
@@ -453,8 +464,10 @@ export async function handle(req: Req, res: Res) {
       const gained = incoming.ovos - cur.state.ovos
       if (incoming.ovos < 0 || !guardFreeOvos(u.id, gained)) throw new HttpError(422, t('Ovos de ouro fora do esperado. Recarregando do servidor.'), cur)
       const milhoGain = incoming.milho - cur.state.milho
-      if (!guardDaily(u.id, 'm', milhoGain, live.economy.freeMilhoPerDay)) throw new HttpError(422, t('Milho fora do esperado. Recarregando do servidor.'), cur)
-      const violation = premiumViolation(cur.state, incoming) ?? softViolation(cur.state, incoming)
+      // 🌽 Economia no servidor: o navegador não pode aumentar milho, ovos, XP, prêmios… (src/game/economia.ts)
+      const locked = serverEconomy()
+      if (!locked && !guardDaily(u.id, 'm', milhoGain, live.economy.freeMilhoPerDay)) throw new HttpError(422, t('Milho fora do esperado. Recarregando do servidor.'), cur)
+      const violation = premiumViolation(cur.state, incoming) ?? softViolation(cur.state, incoming) ?? galoNftViolation(cur.state, incoming) ?? guardRentals(cur.state, incoming) ?? (locked ? economyViolation(cur.state, incoming) : null)
       if (violation) {
         console.warn(`[save] recusado (${violation}) para ${u.email}`)
         throw new HttpError(422, t('Algo no seu progresso não bate com o servidor. Recarregando.'), cur)
@@ -467,14 +480,18 @@ export async function handle(req: Req, res: Res) {
       // Créditos de NFT são do servidor
       incoming.mintable = cur.state.mintable
       // Passe da Temporada: premium e resgates são do servidor; XP limitado por dia
-      incoming.pass = mergeClientPass(cur.state, incoming, (gain) => guardDaily(u.id, 'px', gain, PASS_DAILY_XP))
+      incoming.pass = locked ? currentPass(cur.state) : mergeClientPass(cur.state, incoming, (gain) => guardDaily(u.id, 'px', gain, PASS_DAILY_XP))
       // Ofertas relâmpago e recargas de energia são do servidor
       incoming.offers = cur.state.offers
       incoming.refills = cur.state.refills
       // Ninho do cruzamento é do servidor
       incoming.nest = cur.state.nest
+      // 🏟️ Troféus de torneio são do servidor
+      incoming.trophies = cur.state.trophies
+      // Galo NFT e nº de cruzamentos de cada galo são do servidor
+      keepRoosterServerFields(cur.state, incoming)
       // 🎟️ Fichas: só sobem o que dá para ganhar jogando (bônus diário e vitórias na Arena)
-      incoming.fichas = plausibleChips(u.id, cur.state, incoming)
+      incoming.fichas = locked ? (cur.state.fichas ?? 0) : plausibleChips(u.id, cur.state, incoming)
       // Prêmios de apostas resolvidas entram aqui; o navegador aplica o mesmo crédito no estado dele
       const credit = takeCredits(u.id)
       writeSave(u.id, credit ? applyBetCredit(incoming, credit) : incoming, cur.rev + 1)
@@ -492,6 +509,18 @@ export async function handle(req: Req, res: Res) {
       if (path !== '/api/pvp/poll') blockIfMaintenance(u)
       const body = method === 'POST' ? await readBody(req) : {}
       const out = handlePvp(path, method, url, body, u)
+      if (out) return json(res, out.status ?? 200, out.body)
+    }
+
+    // ----- 🔑 Aluguel de galos na Feira (server/aluguel.ts) -----
+    if (path === '/api/aluguel' || path.startsWith('/api/aluguel/')) {
+      const u = needUser(req)
+      if (method === 'POST') {
+        blockIfMaintenance(u)
+        if (limited(`aluguel:${u.id}`, 20, 60_000)) throw new HttpError(429, t('Muitas operações seguidas. Espere um pouco.'))
+      } else if (limited(`aluguel-get:${u.id}`, 60, 60_000)) throw new HttpError(429, t('Muitas operações seguidas. Espere um pouco.'))
+      const body = method === 'POST' ? await readBody(req) : {}
+      const out = handleAluguel(path, method, body, u)
       if (out) return json(res, out.status ?? 200, out.body)
     }
 
@@ -532,9 +561,30 @@ export async function handle(req: Req, res: Res) {
       if (out) return json(res, out.status ?? 200, out.body)
     }
 
+    // ----- 🏟️ Torneios (server/torneios.ts) -----
+    if (path === '/api/torneios' || path.startsWith('/api/torneios/')) {
+      const u = needUser(req)
+      if (method === 'POST') {
+        blockIfMaintenance(u)
+        if (limited(`torneio:${u.id}`, 20, 60_000)) throw new HttpError(429, t('Muitas operações seguidas. Espere um pouco.'))
+      }
+      const body = method === 'POST' ? await readBody(req) : {}
+      const out = handleTorneios(path, method, body, u)
+      if (out) return json(res, out.status ?? 200, out.body)
+    }
+
     // ----- Ranking de galinheiros e vitrine (server/criacao.ts) -----
     if (path === '/api/ranking' || path.startsWith('/api/players/')) {
       const out = handleCriacao(path, method, needUser(req))
+      if (out) return json(res, out.status ?? 200, out.body)
+    }
+
+    // ----- 🌽 Arena no servidor (server/economia.ts) -----
+    if (path.startsWith('/api/arena/')) {
+      const u = needUser(req)
+      if (method === 'POST') blockIfMaintenance(u)
+      const body = method === 'POST' ? await readBody(req) : {}
+      const out = handleEconomia(path, method, url, body, u, reqLang(req))
       if (out) return json(res, out.status ?? 200, out.body)
     }
 
@@ -710,11 +760,14 @@ export async function handle(req: Req, res: Res) {
     if (e instanceof HttpError) return json(res, e.status, { error: e.message, ...e.extra })
     if (e instanceof PvpError) return json(res, 400, { error: e.message })
     if (e instanceof FeiraError) return json(res, e.status, { error: e.message })
+    if (e instanceof AluguelError) return json(res, e.status, { error: e.message })
     if (e instanceof BetError) return json(res, 400, { error: e.message })
     if (e instanceof AdminError) return json(res, e.status, { error: e.message })
     if (e instanceof CriacaoError) return json(res, e.status, { error: e.message })
     if (e instanceof Web3Error) return json(res, e.status, { error: e.message, ...e.extra })
     if (e instanceof OfertasError) return json(res, e.status, { error: e.message })
+    if (e instanceof EconomiaError) return json(res, e.status, { error: e.message, ...e.extra })
+    if (e instanceof TorneioError) return json(res, e.status, { error: e.message })
     console.error('[api]', e)
     return json(res, 500, { error: t('Erro interno. Tente de novo.') })
   }

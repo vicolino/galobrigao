@@ -1,41 +1,17 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
-import {
-  ACC_BY_ID,
-  ACHIEVEMENTS,
-  BREED_BY_ID,
-  ITEM_BY_ID,
-  LEAGUE_TIERS,
-  TITLES,
-  VIP,
-  TOOL_BY_ID,
-  MAX_TOOLS,
-} from './data'
-import { simulate } from './battle'
-import {
-  ENERGY_COST,
-  addXp,
-  currentEnergy,
-  feedCost,
-  marketPrice,
-  trainCost,
-  sellPrice,
-  today,
-  uid,
-  withEnergy,
-  power,
-} from './rooster'
+import { ACC_BY_ID, ACHIEVEMENTS, LEAGUE_TIERS, TITLES } from './data'
+import { uid, power } from './rooster'
 import { setAudio, sfx } from './sound'
 import type { Accessory, Bet, BetPick, GameState, MissionKind, Rooster, Slot } from './types'
 import { api, ApiError, type ApiUser } from '../api'
-import { FEED_COOLDOWN, STAR_COST, type ShopOp } from './premium'
+import { FEED_COOLDOWN, STAR_COST, runShop, type ShopOp } from './premium'
+import { arenaFight, serverEconomy, type EconOp } from './economia'
 import { challengeTtl, type ChallengeView, type PvpPoll } from './pvp'
-import { DAILY_OVOS, arenaChips, arenaOvos, dailyChips } from './rewards'
 import { live, setLiveConfig, type PublicConfig } from './config'
 import type { Difficulty } from './engine'
 import { applyBetCredit, type BetCredit, type BetView, type ScheduledFight } from './bets'
-import { locale, t, tp, tx } from '../i18n'
+import { locale, t, tx } from '../i18n'
 
-import { addPassXp, PASS_XP } from './pass'
 import {
   checkAchievements,
   genMarket,
@@ -59,7 +35,7 @@ export interface Toast {
 }
 
 export interface Match {
-  kind: 'rinha' | 'casa' | 'pvp'
+  kind: 'rinha' | 'casa' | 'pvp' | 'torneio'
   mySide?: 0 | 1
   limited?: boolean
   a: Rooster
@@ -336,11 +312,6 @@ function useGameEngine() {
 
   const S = () => ref.current!
 
-  const log = (s: GameState, text: string, milho: number, ovo: number, fichas = 0): GameState => ({
-    ...s,
-    history: [{ id: uid(), at: Date.now(), text, milho, ovo, ...(fichas ? { fichas } : {}) }, ...s.history].slice(0, 80),
-  })
-
   const bump = (s: GameState, kind: MissionKind, n = 1): GameState => ({
     ...s,
     missions: {
@@ -377,6 +348,22 @@ async function shop<T = unknown>(op: ShopOp, sound?: () => void): Promise<Result
       return { ok: false, error: (e as Error).message }
     }
 }
+
+  // ----- 🌽 Economia: com a trava ligada roda no servidor; desligada, roda a mesma função aqui (modo antigo) -----
+  const econFail = (msg: string): never => {
+    throw new Error(msg)
+  }
+  async function econ<T = unknown>(op: EconOp, sound?: () => void): Promise<Result<T>> {
+    if (serverEconomy()) return shop<T>(op, sound)
+    try {
+      const r = runShop(tick(S()), op)
+      commit(r.state)
+      sound?.()
+      return { ok: true, value: r.value as T }
+    } catch (e) {
+      return { ok: false, error: (e as Error).message }
+    }
+  }
 
   const actions = {
     async signup(b: { email: string; password: string; name: string; adult: boolean; terms: boolean }): Promise<Result> {
@@ -456,66 +443,14 @@ async function shop<T = unknown>(op: ShopOp, sound?: () => void): Promise<Result
       commit({ ...s, player: { ...s.player, name: name.trim() || s.player.name, avatar } })
     },
 
-    claimDaily(): Result<{ milho: number; ovo: number; fichas: number; streak: number }> {
-      const s = S()
-      const d = today()
-      if (s.daily.last === d) return { ok: false, error: t('Você já pegou o bônus de hoje. Volte amanhã!') }
-      const yesterday = new Date(Date.now() - 864e5).toISOString().slice(0, 10)
-      const streak = s.daily.last === yesterday ? (s.daily.streak % 7) + 1 : 1
-      const milho = Math.round(300 * streak * (isVip(s) ? 1 + VIP.milhoBonus : 1))
-      const ovo = DAILY_OVOS(streak) + (isVip(s) ? VIP.dailyOvos : 0)
-      // 🎟️ Fichas do dia (só para apostar); garante um mínimo para ninguém ficar sem apostar
-      const fichas = dailyChips(s.fichas ?? 0)
-      let n = { ...s, milho: s.milho + milho, ovos: s.ovos + ovo, fichas: (s.fichas ?? 0) + fichas, daily: { last: d, streak } }
-      n = log(n, t('Bônus diário (dia {n})', { n: streak }), milho, ovo, fichas)
-      commit(n)
-      sfx.coin()
-      return { ok: true, value: { milho, ovo, fichas, streak } }
-    },
+    /** Bônus diário (servidor). */
+    claimDaily: () => econ<{ milho: number; ovo: number; fichas: number; streak: number }>({ op: 'claimDaily' }, sfx.coin),
 
-    buyRooster(id: string): Result {
-      const s = S()
-      const ro = s.market.roosters.find((r) => r.id === id)
-      if (!ro) return { ok: false, error: t('Esse galo já foi vendido.') }
-      if (s.roosters.length >= 12) return { ok: false, error: t('Galinheiro lotado (máx. 12). Venda algum galo.') }
-      const price = marketPrice(ro)
-      let n = pay(s, price, 'milho')
-      if (!n) return noMoney('milho')
-      const mine: Rooster = { ...ro, owner: s.player.name, energy: 100, energyAt: Date.now() }
-      n = { ...n, roosters: [...n.roosters, mine], market: { ...n.market, roosters: n.market.roosters.filter((r) => r.id !== id) } }
-      n = bump(n, 'comprar')
-      n = log(n, t('Comprou {nome} ({raca})', { nome: mine.name, raca: BREED_BY_ID[mine.breedId].name }), -price, 0)
-      n = { ...n, stats: { ...n.stats, purchases: n.stats.purchases + 1 } }
-      commit(n)
-      sfx.coin()
-      return { ok: true }
-    },
+    /** Compra um galo do mercado (servidor). */
+    buyRooster: (id: string) => econ({ op: 'buyRooster', id }, sfx.coin),
 
-    useItem(itemId: string, roosterId: string): Result<string> {
-      const s = S()
-      if (!s.items[itemId]) return { ok: false, error: t('Você não tem esse item.') }
-      const it = ITEM_BY_ID[itemId]
-      const ro = s.roosters.find((r) => r.id === roosterId)!
-      let msg = ''
-      let n = s
-      if (it.effect === 'energia' || it.effect === 'energia_total') {
-        const cur = currentEnergy(ro)
-        if (cur >= 100) return { ok: false, error: t('{nome} já está com energia cheia.', { nome: ro.name }) }
-        n = updRooster(n, roosterId, (r) => withEnergy(r, it.effect === 'energia_total' ? 100 : cur + it.value))
-        msg = t('{nome} comeu e recuperou energia! 🍽️', { nome: ro.name })
-      } else if (it.effect === 'xp') {
-        const { levels } = addXp(ro, it.value)
-        n = updRooster(n, roosterId, (r) => addXp(r, it.value).rooster)
-        msg = levels ? t('{nome} subiu para o nível {n}! ⭐', { nome: ro.name, n: ro.level + levels }) : t('{nome} ganhou {xp} XP.', { nome: ro.name, xp: it.value })
-      } else if (it.effect === 'sorte') {
-        n = updRooster(n, roosterId, (r) => ({ ...r, lucky: (r.lucky ?? 0) + it.value }))
-        msg = tp('{nome} está com sorte na próxima luta! 🍀', '{nome} está com sorte nas próximas {n} lutas! 🍀', it.value, { nome: ro.name })
-      }
-      n = { ...n, items: { ...n.items, [itemId]: n.items[itemId] - 1 } }
-      commit(n)
-      sfx.special()
-      return { ok: true, value: msg }
-    },
+    /** Usa um item da mochila no galo (servidor). */
+    useItem: (itemId: string, roosterId: string) => econ<string>({ op: 'useItem', itemId, roosterId }, sfx.special),
 
     equip(roosterId: string, accId: string): Result {
       const s = S()
@@ -561,94 +496,49 @@ async function shop<T = unknown>(op: ShopOp, sound?: () => void): Promise<Result
       return { ok: true }
     },
 
-    sell(roosterId: string): Result<number> {
-      const s = S()
-      if (s.roosters.length <= 1) return { ok: false, error: t('Você precisa ter pelo menos um galo.') }
-      const ro = s.roosters.find((r) => r.id === roosterId)!
-      const price = sellPrice(ro)
-      const accs = { ...s.accessories }
-      Object.values(ro.equipped).forEach((a) => a && (accs[a] = (accs[a] ?? 0) + 1))
-      let n: GameState = { ...s, milho: s.milho + price, accessories: accs, roosters: s.roosters.filter((r) => r.id !== roosterId) }
-      n = log(n, t('Vendeu {nome}', { nome: ro.name }), price, 0)
-      commit(n)
-      sfx.coin()
-      return { ok: true, value: price }
+    /** Vende o galo para a casa (servidor). */
+    sell(roosterId: string): Promise<Result<number>> {
+      const ro = S().roosters.find((r) => r.id === roosterId)
+      if (ro?.rental) return Promise.resolve({ ok: false, error: t('Galo alugado não pode ser vendido nem dado.') })
+      if (ro?.nft) return Promise.resolve({ ok: false, error: t('{nome} é um Galo NFT: negocie no Mercado USDC ou traga de volta para o jogo antes.', { nome: ro.name }) })
+      return econ<number>({ op: 'sellRooster', roosterId }, sfx.coin)
     },
 
-    train(roosterId: string): Result<string> {
-      const s = S()
-      const ro = s.roosters.find((r) => r.id === roosterId)!
-      const e = currentEnergy(ro)
-      if (e < 15) return { ok: false, error: t('{nome} está cansado demais para treinar.', { nome: ro.name }) }
-      const cost = trainCost(ro.level)
-      let n = pay(s, cost, 'milho')
-      if (!n) return noMoney('milho')
-      const xp = 40 + ro.level * 8
-      const { levels } = addXp(ro, xp)
-      n = updRooster(n, roosterId, (r) => withEnergy(addXp(r, xp).rooster, e - 15))
-      n = bump(n, 'treinar')
-      n = addPassXp(n, PASS_XP.treinar)
-      commit(n)
-      sfx.hit()
-      return { ok: true, value: levels ? t('🎉 {nome} subiu para o nível {n}!', { nome: ro.name, n: ro.level + levels }) : t('{nome} treinou e ganhou {xp} XP 💪', { nome: ro.name, xp }) }
-    },
+    /** Treino (servidor). */
+    train: (roosterId: string) => econ<string>({ op: 'train', roosterId }, sfx.hit),
 
-    /** Inicia uma luta na Rinha. O resultado é aplicado na hora (sem trapaça com F5). */
-    startRinha(roosterId: string, opp: Rooster, difficulty: Difficulty, myTools: string[] = [], oppTools: string[] = []): Result<Match> {
-      const s = S()
-      const ro = s.roosters.find((r) => r.id === roosterId)!
-      const e = currentEnergy(ro)
-      if (e < ENERGY_COST) return { ok: false, error: t('{nome} precisa de {n} de energia. Dê uma ração!', { nome: ro.name, n: ENERGY_COST }) }
-      myTools = myTools.slice(0, MAX_TOOLS)
-      for (const tl of myTools) if (!s.tools[tl]) return { ok: false, error: TOOL_BY_ID[tl] ? t('Você não tem {item}.', { item: TOOL_BY_ID[tl].name }) : t('Você não tem essa ferramenta.') }
-      const toolsLeft = { ...s.tools }
-      myTools.forEach((tl) => (toolsLeft[tl] -= 1))
-      const tools: [string[], string[]] = [myTools, oppTools]
-      const seed = Math.floor(Math.random() * 1e9)
-      const res = simulate(ro, opp, seed, tools)
-      const won = res.winner === 0
-      const diffMult = [0.8, 1.1, 1.6, 2.2][difficulty]
-      const vip = isVip(s) ? 1 + VIP.milhoBonus : 1
-      const milho = Math.round((won ? 180 + opp.level * 45 : 40 + opp.level * 10) * diffMult * vip * (won && res.method === 'ko' ? 1.25 : 1))
-      const ovo = arenaOvos(won, difficulty)
-      const fichas = arenaChips(won)
-      const xp = Math.round((won ? 60 + opp.level * 12 : 25 + opp.level * 5) * diffMult)
-      const points = won ? [15, 25, 40, 60][difficulty] : -8
-      const { levels } = addXp(ro, xp)
-      let n: GameState = { ...s, milho: s.milho + milho, ovos: s.ovos + ovo, fichas: (s.fichas ?? 0) + fichas, tools: toolsLeft }
-      n = updRooster(n, roosterId, (r) => {
-        const leveled = addXp(r, xp).rooster
-        return {
-          ...withEnergy(leveled, e - ENERGY_COST),
-          wins: r.wins + (won ? 1 : 0),
-          losses: r.losses + (won ? 0 : 1),
-          kos: r.kos + (won && res.method === 'ko' ? 1 : 0),
-          lucky: r.lucky ? r.lucky - 1 : 0,
+    /**
+     * Inicia uma luta na Arena. Com a economia no servidor, o servidor escolhe a semente, simula e aplica
+     * os prêmios; aqui só adotamos o save e assistimos ao replay. `opp`/`oppTools` só valem no modo antigo.
+     */
+    async startRinha(roosterId: string, opp: Rooster, difficulty: Difficulty, myTools: string[] = [], oppTools: string[] = []): Promise<Result<Match>> {
+      const before = S()
+      const wallet = { milho: before.milho, ovos: before.ovos, fichas: before.fichas ?? 0 }
+      if (!serverEconomy()) {
+        try {
+          const r = arenaFight(before, roosterId, opp, difficulty, myTools, oppTools, Math.floor(Math.random() * 1e9), econFail)
+          setHeld(wallet)
+          commit(r.state)
+          const m: Match = { kind: 'rinha', ...r.match }
+          setMatch(m)
+          return { ok: true, value: m }
+        } catch (e) {
+          return { ok: false, error: (e as Error).message }
         }
-      })
-      n = {
-        ...n,
-        league: { ...n.league, points: Math.max(0, n.league.points + points) },
-        stats: {
-          ...n.stats,
-          fights: n.stats.fights + 1,
-          wins: n.stats.wins + (won ? 1 : 0),
-          kos: n.stats.kos + (won && res.method === 'ko' ? 1 : 0),
-          milhoEarned: n.stats.milhoEarned + milho,
-          toolsUsed: n.stats.toolsUsed + myTools.length,
-          toolWins: n.stats.toolWins + (won && myTools.length >= 2 ? 1 : 0),
-        },
       }
-      n = bump(n, 'lutar')
-      if (won) n = bump(n, 'vencer')
-      if (won && res.method === 'ko') n = bump(n, 'ko')
-      n = addPassXp(n, PASS_XP.lutar + (won ? PASS_XP.vencer : 0))
-      n = log(n, t(won ? 'Vitória: {a} x {b}' : 'Derrota: {a} x {b}', { a: ro.name, b: opp.name }), milho, ovo, fichas)
-      setHeld({ milho: s.milho, ovos: s.ovos, fichas: s.fichas ?? 0 })
-      commit(n)
-      const m: Match = { kind: 'rinha', a: ro, b: opp, seed, difficulty, tools, rewards: { milho, ovo, xp, points, levels, fichas } }
-      setMatch(m)
-      return { ok: true, value: m }
+      try {
+        await flush()
+        const r = await api.arenaFight(roosterId, difficulty, myTools)
+        setHeld(wallet)
+        adopt({ rev: r.rev, state: r.state })
+        if (checkAchievements(r.state).length) commit(ref.current!)
+        const m: Match = { kind: 'rinha', a: r.match.a, b: r.match.b, seed: r.match.seed, difficulty: r.match.difficulty, tools: r.match.tools, rewards: r.match.rewards }
+        setMatch(m)
+        return { ok: true, value: m }
+      } catch (e) {
+        if (e instanceof ApiError && 'rev' in e.body) adopt(e.body as { rev: number; state: GameState | null })
+        return { ok: false, error: (e as Error).message }
+      }
     },
 
     /** Aposta numa luta da agenda (o servidor desconta as 🎟️ fichas e guarda a aposta). */
@@ -675,33 +565,16 @@ async function shop<T = unknown>(op: ShopOp, sound?: () => void): Promise<Result
       setMatch({ kind: 'casa', a: f.a, b: f.b, seed: f.seed, fightId: f.id, myBets })
     },
 
-    claimMission(id: string): Result {
-      const s = S()
-      const m = s.missions.list.find((x) => x.id === id)
-      if (!m || m.claimed || m.progress < m.goal) return { ok: false, error: t('Missão ainda não concluída.') }
-      let n: GameState = {
-        ...s,
-        milho: s.milho + m.reward.milho,
-        ovos: s.ovos + m.reward.ovo,
-        missions: { ...s.missions, list: s.missions.list.map((x) => (x.id === id ? { ...x, claimed: true } : x)) },
-      }
-      n = log(n, t('Missão: {texto}', { texto: tx(m.text) }), m.reward.milho, m.reward.ovo)
-      n = addPassXp(n, PASS_XP.missao)
-      commit(n)
-      sfx.coin()
-      return { ok: true }
+    /** 🏟️ Replay de uma luta de torneio (semente e galos guardados no servidor). */
+    watchTorneio(a: Rooster, b: Rooster, seed: number, mySide?: 0 | 1, fightId?: string) {
+      setMatch({ kind: 'torneio', a, b, seed, mySide, fightId })
     },
 
-    claimLeague(tierName: string): Result {
-      const s = S()
-      const tier = LEAGUE_TIERS.find((t) => t.name === tierName)!
-      if (s.league.points < tier.min || s.league.claimed.includes(tierName)) return { ok: false, error: t('Recompensa indisponível.') }
-      let n: GameState = { ...s, milho: s.milho + tier.reward.milho, ovos: s.ovos + tier.reward.ovo, league: { ...s.league, claimed: [...s.league.claimed, tierName] } }
-      n = log(n, t('Liga: recompensa {tier}', { tier: tx(tierName) }), tier.reward.milho, tier.reward.ovo)
-      commit(n)
-      sfx.win()
-      return { ok: true }
-    },
+    /** Resgata a recompensa de uma missão (servidor). */
+    claimMission: (id: string) => econ({ op: 'claimMission', id }, sfx.coin),
+
+    /** Resgata a recompensa de uma faixa da liga (servidor). */
+    claimLeague: (tierName: string) => econ({ op: 'claimLeague', tier: tierName }, sfx.win),
 
     applySkin(roosterId: string, skinId: string | null): Result {
       const s = S()
@@ -729,7 +602,7 @@ async function shop<T = unknown>(op: ShopOp, sound?: () => void): Promise<Result
     passBuy: () => shop({ op: 'passBuy' }, sfx.win),
     passSkip: () => shop<number>({ op: 'passSkip' }, sfx.coin),
 
-    /** Alimentar: a cada 4h pagando milho (local), ou na hora pagando ovos (servidor). Os dois sobem com o nível. */
+    /** Alimentar: a cada 4h pagando milho, ou na hora pagando ovos (os dois no servidor). Os dois sobem com o nível. */
     async feed(roosterId: string, instant = false): Promise<Result<string>> {
       const s = S()
       const ro = s.roosters.find((r) => r.id === roosterId)!
@@ -738,13 +611,7 @@ async function shop<T = unknown>(op: ShopOp, sound?: () => void): Promise<Result
         if (!instant) return { ok: false, error: t('{nome} ainda está de papo cheio.', { nome: ro.name }) }
         return shop<string>({ op: 'feedInstant', roosterId }, sfx.coin)
       }
-      const paid = pay(s, feedCost(ro.level), 'milho')
-      if (!paid) return noMoney('milho')
-      const xp = 30 + ro.level * 6
-      const { levels } = addXp(ro, xp)
-      commit(addPassXp(updRooster(paid, roosterId, (r) => ({ ...withEnergy(addXp(r, xp).rooster, currentEnergy(r) + 15), fedAt: Date.now() })), PASS_XP.alimentar))
-      sfx.coin()
-      return { ok: true, value: levels ? t('🎉 {nome} comeu e subiu para o nível {n}!', { nome: ro.name, n: ro.level + levels }) : t('{nome} comeu! +{xp} XP e +15 de energia 🌽', { nome: ro.name, xp }) }
+      return econ<string>({ op: 'feed', roosterId }, sfx.coin)
     },
 
     // ----- Desafios entre jogadores -----

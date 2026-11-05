@@ -3,7 +3,8 @@
 import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto'
 import { createPublicClient, createWalletClient, defineChain, formatEther, http, parseEther, parseEventLogs, type Abi, type Address, type Chain, type Hash, type PublicClient, type WalletClient } from 'viem'
 import { generatePrivateKey, privateKeyToAccount, type PrivateKeyAccount } from 'viem/accounts'
-import { baseSepolia } from 'viem/chains'
+import { polygon, polygonAmoy } from 'viem/chains'
+import { live } from '../src/game/config'
 import artifacts from './chain/artifacts.json'
 
 const TOKEN_ABI = artifacts.GameToken.abi as Abi
@@ -13,8 +14,11 @@ const USDC_ABI = artifacts.TestUSDC.abi as Abi // ERC-20 padrão (balanceOf/tran
 
 export type TokenKey = 'egg' | 'corn' | 'usdc'
 
+/** Rede: 'amoy' = Polygon Amoy (testnet, 80002), 'polygon' = Polygon PoS (mainnet, 137), 'local' = Hardhat/Anvil (31337). */
+export type ChainKey = 'amoy' | 'polygon' | 'local'
+
 export interface Web3Env {
-  chain: 'base-sepolia' | 'local'
+  chain: ChainKey
   rpc: string
   operatorKey: `0x${string}`
   secret: Buffer
@@ -27,24 +31,74 @@ export interface Web3Env {
 
 const ADDR = /^0x[0-9a-fA-F]{40}$/
 
+const NETWORKS: Record<ChainKey, { chain: Chain | null; rpc: string | null; explorer: string | null; usdc: Address | null }> = {
+  amoy: { chain: polygonAmoy, rpc: 'https://rpc-amoy.polygon.technology', explorer: 'https://amoy.polygonscan.com', usdc: null },
+  // USDC nativo da Circle na Polygon PoS
+  polygon: { chain: polygon, rpc: 'https://polygon-rpc.com', explorer: 'https://polygonscan.com', usdc: '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359' },
+  local: { chain: null, rpc: null, explorer: null, usdc: null },
+}
+
+/**
+ * Rede escolhida: WEB3_NETWORK=testnet|mainnet|local (ou o antigo WEB3_CHAIN=local|amoy|polygon).
+ * null = não configurado.
+ */
+export function web3Network(e = process.env): ChainKey | null {
+  const n = (e.WEB3_NETWORK ?? '').trim().toLowerCase()
+  if (n === 'testnet' || n === 'amoy') return 'amoy'
+  if (n === 'mainnet' || n === 'polygon') return 'polygon'
+  if (n === 'local') return 'local'
+  const c = (e.WEB3_CHAIN ?? '').trim().toLowerCase()
+  return c === 'local' || c === 'amoy' || c === 'polygon' ? c : null
+}
+
+export const isMainnet = () => web3Network() === 'polygon'
+
+/** Provedor de KYC configurado (KYC_PROVIDER). 'manual' = aprovação no backoffice (proibido na mainnet). */
+export const kycProvider = () => (process.env.KYC_PROVIDER ?? '').trim().toLowerCase() || null
+
+/**
+ * Travas da mainnet: sem TODAS elas a camada web3 não liga na rede principal.
+ * Devolve a lista do que falta (vazia = liberado). Na testnet/local não há trava.
+ */
+export function mainnetBlockers(e = process.env): string[] {
+  if (web3Network(e) !== 'polygon') return []
+  const out: string[] = []
+  if (e.WEB3_MAINNET_ACK !== 'yes') out.push('WEB3_MAINNET_ACK=yes') // i18n-ok (log do servidor)
+  const kyc = (e.KYC_PROVIDER ?? '').trim().toLowerCase()
+  if (!kyc || kyc === 'manual') out.push('KYC_PROVIDER (provedor real; manual não vale na mainnet)') // i18n-ok (log do servidor)
+  if (live.economy?.serverAuthoritative === false) out.push('economy.serverAuthoritative ligado no backoffice') // i18n-ok (log do servidor)
+  return out
+}
+
+let warned = ''
 /** Lê a configuração do ambiente. null = recursos cripto desligados. */
 export function web3Env(): Web3Env | null {
   const e = process.env
-  const chain = e.WEB3_CHAIN
-  if (chain !== 'base-sepolia' && chain !== 'local') return null
-  if (!e.WEB3_RPC_URL || !/^0x[0-9a-fA-F]{64}$/.test(e.WEB3_OPERATOR_KEY ?? '') || !/^[0-9a-fA-F]{64}$/.test(e.WEB3_WALLET_SECRET ?? '')) return null
-  const addrs = [e.WEB3_EGG, e.WEB3_CORN, e.WEB3_ITEMS, e.WEB3_MARKET, e.WEB3_USDC]
+  const chain = web3Network(e)
+  if (!chain) return null
+  const blockers = mainnetBlockers(e)
+  if (blockers.length) {
+    const msg = blockers.join(', ')
+    if (warned !== msg) console.error(`[web3] MAINNET bloqueada — falta: ${msg}`) // i18n-ok (log do servidor)
+    warned = msg
+    return null
+  }
+  const net = NETWORKS[chain]
+  const rpc = e.WEB3_RPC_URL || net.rpc
+  const usdc = e.WEB3_USDC || net.usdc
+  if (!rpc || !/^0x[0-9a-fA-F]{64}$/.test(e.WEB3_OPERATOR_KEY ?? '') || !/^[0-9a-fA-F]{64}$/.test(e.WEB3_WALLET_SECRET ?? '')) return null
+  const addrs = [e.WEB3_EGG, e.WEB3_CORN, e.WEB3_ITEMS, e.WEB3_MARKET, usdc]
   if (!addrs.every((a) => ADDR.test(a ?? ''))) return null
   return {
     chain,
-    rpc: e.WEB3_RPC_URL,
+    rpc,
     operatorKey: e.WEB3_OPERATOR_KEY as `0x${string}`,
     secret: Buffer.from(e.WEB3_WALLET_SECRET!, 'hex'),
     egg: e.WEB3_EGG as Address,
     corn: e.WEB3_CORN as Address,
     items: e.WEB3_ITEMS as Address,
     market: e.WEB3_MARKET as Address,
-    usdc: e.WEB3_USDC as Address,
+    usdc: usdc as Address,
   }
 }
 
@@ -64,12 +118,10 @@ export function chainy(): Chainy | null {
   if (!env) return null
   const sig = [env.chain, env.rpc, env.operatorKey, env.egg, env.corn, env.items, env.market, env.usdc].join('|')
   if (cached?.sig === sig) return cached.c
-  const chain: Chain =
-    env.chain === 'base-sepolia'
-      ? baseSepolia
-      : defineChain({ id: 31337, name: 'Local', nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 }, rpcUrls: { default: { http: [env.rpc] } } })
+  const net = NETWORKS[env.chain]
+  const chain: Chain = net.chain ?? defineChain({ id: 31337, name: 'Local', nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 }, rpcUrls: { default: { http: [env.rpc] } } })
   const pub = createPublicClient({ chain, transport: http(env.rpc) }) as PublicClient
-  const c: Chainy = { env, chain, pub, operator: privateKeyToAccount(env.operatorKey), explorer: env.chain === 'base-sepolia' ? 'https://sepolia.basescan.org' : null }
+  const c: Chainy = { env, chain, pub, operator: privateKeyToAccount(env.operatorKey), explorer: net.explorer }
   cached = { sig, c }
   return c
 }
@@ -125,7 +177,8 @@ async function send(c: Chainy, account: PrivateKeyAccount, address: Address, abi
 }
 
 /** Gás: mínimo na carteira antes de o jogador assinar algo, e quanto o operador manda. */
-const gas = (c: Chainy) => (c.env.chain === 'local' ? { min: parseEther('0.005'), top: parseEther('0.02') } : { min: parseEther('0.0002'), top: parseEther('0.001') })
+// Polygon: gás em POL (18 casas), bem mais barato por tx que ETH mas com preço em gwei mais alto
+const gas = (c: Chainy) => (c.env.chain === 'local' ? { min: parseEther('0.005'), top: parseEther('0.02') } : { min: parseEther('0.02'), top: parseEther('0.1') })
 
 async function topUp(c: Chainy, to: Address) {
   const { min, top } = gas(c)
@@ -201,13 +254,20 @@ export const burnToken = (k: 'egg' | 'corn', from: Address, amount: number): Pro
   })
 
 /** Cunha o NFT de um item e devolve o tokenId (lido do evento Minted). */
-export const mintNft = (to: Address, kind: 'acc' | 'skin', itemId: string): Promise<{ tokenId: number; hash: Hash }> =>
+export const mintNft = (to: Address, kind: 'acc' | 'skin' | 'galo', itemId: string): Promise<{ tokenId: number; hash: Hash }> =>
   serial(async () => {
     const c = need()
     const r = await send(c, c.operator, c.env.items, ITEMS_ABI, 'mint', [to, kind, itemId])
     const ev = parseEventLogs({ abi: ITEMS_ABI, logs: r.logs, eventName: 'Minted' })[0] as unknown as { args: { tokenId: bigint } } | undefined
     if (!ev) throw new Error('evento Minted ausente') // i18n-ok (erro interno)
     return { tokenId: Number(ev.args.tokenId), hash: r.transactionHash }
+  })
+
+/** Ponte de volta do Galo NFT: o operador queima o token. */
+export const burnNft = (tokenId: number): Promise<Hash> =>
+  serial(async () => {
+    const c = need()
+    return (await send(c, c.operator, c.env.items, ITEMS_ABI, 'burn', [BigInt(tokenId)])).transactionHash
   })
 
 // ---------- Escritas assinadas pela carteira do jogador (o operador paga o gás antes) ----------

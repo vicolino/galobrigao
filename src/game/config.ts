@@ -14,7 +14,7 @@ export interface AppConfig {
   catalog: Record<string, SkuOverride>
   rewards: { dailyOvos: number; day7Ovos: number; arenaHardWinOvos: number; missionOvosMultiplier: number }
   pvp: { maxLevelDiff: number; dailyRewards: number; challengeTtlSec: number }
-  economy: { freeOvosPerDay: number; freeMilhoPerDay: number; defaultSpendLimitCents: number }
+  economy: { freeOvosPerDay: number; freeMilhoPerDay: number; defaultSpendLimitCents: number; /** 🌽 Milho/XP/prêmios só pelo servidor (desligar = volta ao modo antigo). */ serverAuthoritative: boolean }
   announcement: { text: string; kind: 'info' | 'promo' | 'alerta' }
   maintenance: { on: boolean; message: string }
   mvp: { on: boolean; creditCents: number }
@@ -38,7 +38,7 @@ export const DEFAULT_CONFIG: AppConfig = {
   catalog: Object.fromEntries(CATALOG.map((s) => [s.id, { priceCents: s.priceCents, ovos: s.ovos, bonus: s.bonus, active: true }])),
   rewards: { dailyOvos: 6, day7Ovos: 35, arenaHardWinOvos: 2, missionOvosMultiplier: 1 },
   pvp: { maxLevelDiff: 1, dailyRewards: 20, challengeTtlSec: 60 },
-  economy: { freeOvosPerDay: FREE_OVOS_PER_DAY, freeMilhoPerDay: 3_000_000, defaultSpendLimitCents: DEFAULT_SPEND_LIMIT },
+  economy: { freeOvosPerDay: FREE_OVOS_PER_DAY, freeMilhoPerDay: 3_000_000, defaultSpendLimitCents: DEFAULT_SPEND_LIMIT, serverAuthoritative: true },
   announcement: { text: '', kind: 'info' },
   maintenance: { on: false, message: t('Estamos ajeitando o terreiro. Voltamos já!') },
   // Modo MVP: cada conta ganha crédito de teste (sem valor real) para comprar na loja
@@ -83,5 +83,5 @@ export function effectiveSku(id: string): (Sku & { active: boolean }) | undefine
 export const effectiveCatalog = () => CATALOG.map((s) => effectiveSku(s.id)!)
 
 /** Parte da configuração que o navegador precisa conhecer. */
-export const publicConfig = (c: AppConfig) => ({ rewards: c.rewards, pvp: c.pvp, announcement: c.announcement, maintenance: c.maintenance, mvp: c.mvp, bets: c.bets })
+export const publicConfig = (c: AppConfig) => ({ economy: c.economy, rewards: c.rewards, pvp: c.pvp, announcement: c.announcement, maintenance: c.maintenance, mvp: c.mvp, bets: c.bets })
 export type PublicConfig = ReturnType<typeof publicConfig> & { build?: string | null; web3?: boolean }

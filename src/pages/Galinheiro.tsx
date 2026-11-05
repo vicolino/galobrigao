@@ -8,6 +8,8 @@ import type { Slot, Style } from '../game/types'
 import { OVO_EM_MILHO, coopWorth, roosterValue, trackWorth } from '../game/worth'
 import { RefillButton } from '../components/Ofertas'
 import { locale, t, tn, tp, tx } from '../i18n'
+import { BreedBadge, NftBadge } from '../components/BreedBadge'
+import { LentCard, RentBadge, leftShort } from './FeiraAluguel'
 
 export function Galinheiro({ selectedId }: { selectedId?: string }) {
   const { state } = useGame()
@@ -45,11 +47,15 @@ function CoopList() {
             onClick={() => go(`/galinheiro/${r.id}`)}
             footer={
               <>
+                <RentBadge ro={r} />
                 <div className="rc-record">{t('{w}V · {l}D · {k} K.O.', { w: r.wins, l: r.losses, k: r.kos })}</div>
                 <div className="rc-value">{t('💰 Vale 🌽 {n}', { n: fmt(roosterValue(r)) })}</div>
               </>
             }
           />
+        ))}
+        {(s.lent ?? []).map((l) => (
+          <LentCard key={l.listingId} l={l} />
         ))}
         <div className="card add-card clickable" onClick={() => go('/loja/galos')}>
           <div className="add-plus">＋</div>
@@ -162,8 +168,8 @@ function RoosterDetail({ id }: { id: string }) {
     setTimeout(() => setAnim('idle'), ms)
   }
 
-  const train = () => {
-    const r = actions.train(ro.id)
+  const train = async () => {
+    const r = await actions.train(ro.id)
     if (r.ok) {
       flash('attack')
       toast(tx(r.value!), 'ok')
@@ -244,6 +250,10 @@ function RoosterDetail({ id }: { id: string }) {
               {ro.parents && t('🐣 Filho de {a} com {b}', { a: ro.parents[0], b: ro.parents[1] })} {ro.tint && t('🌈 Pelagem rara')}
             </p>
           )}
+          <div className="gn-badges">
+            <BreedBadge ro={ro} long />
+            <NftBadge ro={ro} />
+          </div>
 
           <div className="bars">
             <Bar value={ro.xp} max={xpMax} kind="xp" label={t('XP {xp}/{max}', { xp: fmt(ro.xp), max: fmt(xpMax) })} />
@@ -345,16 +355,30 @@ function RoosterDetail({ id }: { id: string }) {
             <button className="btn" onClick={() => setStyleOpen(true)}>
               {t('🎭 Estilo')}
             </button>
+            {ro.rental ? (
+              <div className="alu-detail tiny">
+                {t('🔑 Alugado de {nome}: volta em {t}. Não dá para vender, dar, cruzar nem anunciar. Nome e estilo voltam ao original.', { nome: ro.rental.ownerName, t: leftShort(ro.rental.until) })}
+              </div>
+            ) : (
+            <>
             <button className="btn" onClick={() => go(`/cruzamento?a=${ro.id}`)}>
               {t('🥚 Cruzar')}
             </button>
-            <button className="btn btn-danger" onClick={() => setSellOpen(true)}>
-              {t('💰 Vender')}
-            </button>
-            {s.roosters.length > 1 && (
+            {ro.nft ? (
+              <button className="btn btn-gold" onClick={() => go('/carteira')}>
+                {t('💎 Galo NFT: ver na Carteira')}
+              </button>
+            ) : (
+              <button className="btn btn-danger" onClick={() => setSellOpen(true)}>
+                {t('💰 Vender')}
+              </button>
+            )}
+            {s.roosters.length > 1 && !ro.nft && (
               <button className="btn btn-gold" onClick={() => go(`/feira/vender?galo=${ro.id}`)}>
                 {t('💰 Vender na Feira')}
               </button>
+            )}
+            </>
             )}
           </div>
         </div>
@@ -432,8 +456,8 @@ function RoosterDetail({ id }: { id: string }) {
               {(s.items[it.id] ?? 0) > 0 ? (
                 <button
                   className="btn btn-sm btn-primary"
-                  onClick={() => {
-                    const r = actions.useItem(it.id, ro.id)
+                  onClick={async () => {
+                    const r = await actions.useItem(it.id, ro.id)
                     if (r.ok) {
                       toast(tx(r.value!), 'ok')
                       flash('special', 900)
@@ -538,8 +562,8 @@ function RoosterDetail({ id }: { id: string }) {
           </button>
           <button
             className="btn btn-danger"
-            onClick={() => {
-              const r = actions.sell(ro.id)
+            onClick={async () => {
+              const r = await actions.sell(ro.id)
               if (r.ok) {
                 toast(t('Vendido por 🌽 {n}', { n: fmt(r.value!) }), 'ok')
                 go('/galinheiro')

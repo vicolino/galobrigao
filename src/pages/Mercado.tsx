@@ -4,8 +4,10 @@ import { Empty, Modal, PageHead, RarityTag, Tabs, go } from '../components/ui'
 import { useGame } from '../game/store'
 import { t } from '../i18n'
 import { TestnetBadge, errMsg, nftItem, num, usdc, useTxToast } from './Carteira'
+import { NftArt } from './GaloNft'
+import { BreedBadge } from '../components/BreedBadge'
 
-type Filter = 'todos' | 'acc' | 'skin'
+type Filter = 'todos' | 'galo' | 'acc' | 'skin'
 
 export function Mercado() {
   const { actions, toast } = useGame()
@@ -67,7 +69,7 @@ export function Mercado() {
     try {
       await actions.reloadFromServer() // envia progresso pendente antes
       const r = await api.marketBuy(l.tokenId)
-      okTx(t('Compra feita! {nome} já está no seu jogo.', { nome: nftItem(l.kind, l.itemId).name }), r.tx)
+      okTx(t('Compra feita! {nome} já está no seu jogo.', { nome: nftItem(l.kind, l.itemId, l.rooster).name }), r.tx)
       await actions.reloadFromServer()
       setBuy(null)
     } catch (e) {
@@ -100,6 +102,7 @@ export function Mercado() {
           onChange={setFilter}
           tabs={[
             { id: 'todos', label: t('Todos') },
+            { id: 'galo', label: t('🐓 Galos') },
             { id: 'acc', label: t('Acessórios') },
             { id: 'skin', label: t('Skins') },
           ]}
@@ -119,13 +122,18 @@ export function Mercado() {
       ) : (
         <div className="grid-shop">
           {shown.map((l) => {
-            const it = nftItem(l.kind, l.itemId)
+            const it = nftItem(l.kind, l.itemId, l.rooster)
             const short = !l.mine && myUsdc < num(l.price)
             return (
               <div key={l.tokenId} className={`card shop-item web3-item rar-${it.rarity}`}>
                 {l.mine && <span className="corner-tag web3-mine">{t('Seu')}</span>}
-                <div className="shop-emoji">{it.emoji}</div>
+                <NftArt kind={l.kind} itemId={l.itemId} rooster={l.rooster} />
                 <b>{it.name}</b>
+                {l.rooster && (
+                  <span className="tiny muted">
+                    {t('Nv {n}', { n: l.rooster.level })} · {'★'.repeat(l.rooster.stars)} · <BreedBadge ro={{ breedCount: l.rooster.breedCount }} />
+                  </span>
+                )}
                 <div className="row gap wrap">
                   <RarityTag rarity={it.rarity} />
                   <span className="tiny muted">{it.kindLabel}</span>
@@ -154,9 +162,9 @@ export function Mercado() {
       <Modal open={!!buy} onClose={() => setBuy(null)} title={'🛒 ' + t('Confirmar compra')}>
         {buy && (
           <div className="center">
-            <div className="shop-emoji">{nftItem(buy.kind, buy.itemId).emoji}</div>
-            <h3>{nftItem(buy.kind, buy.itemId).name}</h3>
-            <RarityTag rarity={nftItem(buy.kind, buy.itemId).rarity} />
+            <NftArt kind={buy.kind} itemId={buy.itemId} rooster={buy.rooster} />
+            <h3>{nftItem(buy.kind, buy.itemId, buy.rooster).name}</h3>
+            <RarityTag rarity={nftItem(buy.kind, buy.itemId, buy.rooster).rarity} />
             <p className="reward-big">💵 {usdc(buy.price)} USDC</p>
             <p className="muted">{t('O valor sai do USDC da sua carteira. O NFT vai para a sua carteira e o item aparece no seu jogo.')}</p>
             <p className="tiny muted">{t('Saldo depois da compra: {n} USDC', { n: usdc(myUsdc - num(buy.price)) })}</p>

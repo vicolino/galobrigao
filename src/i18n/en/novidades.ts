@@ -1,5 +1,16 @@
 // Dicionário inglês das Novidades (notas de versão).
 const dict: Record<string, string> = {
+  'Torneios, aluguel e galos NFT': 'Tournaments, rentals and NFT roosters',
+  'Torneios': 'Tournaments',
+  'Torneio Diário às 21h e Copa do Terreiro aos domingos. Inscrição grátis, prêmios da casa e replay de todas as lutas.': 'Daily Tournament at 9 pm (Brasília time) and the Yard Cup on Sundays. Free entry, house prizes and replays of every fight.',
+  'Aluguel de galos': 'Rooster rentals',
+  'Alugue seus galos para outros criadores e ganhe parte do milho que eles fizerem na Arena.': 'Rent your roosters to other breeders and earn a share of the corn they win in the Arena.',
+  'Galo NFT': 'NFT Rooster',
+  'Transforme seu galo em NFT e venda no Mercado. Por enquanto na rede de teste da Polygon, sem valor real.': 'Turn your rooster into an NFT and sell it on the Marketplace. For now on the Polygon test network, with no real value.',
+  'Limite de cruzamentos': 'Breeding limit',
+  'Cada galo cruza no máximo 7 vezes. Galo virgem vale mais!': 'Each rooster can breed at most 7 times. Virgin roosters are worth more!',
+  'Arena mais justa': 'Fairer Arena',
+  'As lutas agora são decididas no servidor: ninguém consegue trapacear.': 'Fights are now decided on the server: nobody can cheat.',
   'A maior atualização do terreiro!': 'The biggest update the yard has ever seen!',
   'Feira': 'Trading Post',
   'Compre e venda galos, acessórios e skins com outros criadores. Dá até para mandar presente!': 'Buy and sell roosters, accessories and skins with other breeders. You can even send gifts!',

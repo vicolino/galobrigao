@@ -185,6 +185,16 @@ export function getDb() {
   // Moeda de cada aposta: as antigas foram feitas em milho (pagam em milho); as novas usam 🎟️ fichas
   const betCols = (db.prepare('PRAGMA table_info(house_bets)').all() as { name: string }[]).map((c) => c.name)
   if (!betCols.includes('currency')) db.exec("ALTER TABLE house_bets ADD COLUMN currency TEXT NOT NULL DEFAULT 'milho'")
+  // 🌽 Arena no servidor: adversários gerados para cada galo (vida curta; server/economia.ts)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS arena_opps (
+      user_id TEXT NOT NULL,
+      rooster_id TEXT NOT NULL,
+      data TEXT NOT NULL,
+      created_at INTEGER NOT NULL,
+      PRIMARY KEY (user_id, rooster_id)
+    );
+  `)
   return db
 }
 

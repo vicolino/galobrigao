@@ -8,6 +8,22 @@ import { lang, t, tx } from './i18n'
 import type { Currency } from './game/types'
 import type { FeiraAdmin, FeiraData, FeiraKind, FeiraListing, FeiraPlayer } from './game/feira'
 import type { LimitedStock } from './game/ofertas'
+import type { PrizeRow, TorneioDetail, TorneioKind, TorneioNotice, TorneioResult, TorneioStatus, TorneioView } from './game/torneio'
+
+export interface TorneioAdminRow {
+  id: string
+  kind: TorneioKind
+  startsAt: number
+  status: TorneioStatus
+  entrants: number
+  size: number
+  champion: string | null
+  reason: string | null
+  ovos: number
+  milho: number
+  fees: number
+  tokens: number
+}
 
 export interface ApiUser {
   id: string
@@ -103,6 +119,14 @@ export const api = {
   offersAdmin: (days: number) => call<OffersAdmin>(`/offers/admin?days=${days}`),
   offersStock: (id: string, total: number, endsAt: number | null) => call<{ stock: LimitedStock[] }>('/offers/admin/stock', { method: 'PUT', body: { id, total, endsAt } }),
   shop: (op: ShopOp) => call<{ rev: number; state: GameState; value: unknown }>('/shop', { method: 'POST', body: op }),
+  // 🌽 Arena no servidor (server/economia.ts)
+  arenaOpponents: (roosterId: string, fresh = false) =>
+    call<{ opponents: { d: 0 | 1 | 2 | 3; o: Rooster; tools: string[] }[] }>(`/arena/opponents?roosterId=${encodeURIComponent(roosterId)}${fresh ? '&fresh=1' : ''}`),
+  arenaFight: (roosterId: string, difficulty: number, tools: string[]) =>
+    call<{ rev: number; state: GameState; match: { a: Rooster; b: Rooster; seed: number; difficulty: 0 | 1 | 2 | 3; tools: [string[], string[]]; rewards: { milho: number; ovo: number; xp: number; points: number; levels: number; fichas: number } } }>('/arena/fight', {
+      method: 'POST',
+      body: { roosterId, difficulty, tools },
+    }),
   betsSchedule: () =>
     call<{ now: number; closeMs: number; liveMs: number; fights: ScheduledFight[]; mine: BetView[] }>('/bets/schedule').then((r) => ({
       ...r,
@@ -117,6 +141,15 @@ export const api = {
   pvpCancel: (id: string) => call('/pvp/cancel', { method: 'POST', body: { id } }),
   pvpSeen: (id: string) => call('/pvp/seen', { method: 'POST', body: { id } }),
   pvpHistory: () => call<{ history: ChallengeView[] }>('/pvp/history'),
+  // 🔑 Aluguel de galos (Feira)
+  aluguel: {
+    get: () => call<import('./game/aluguel').AluguelData>('/aluguel'),
+    list: (roosterId: string, days: number, price: number, currency: Currency, sharePct: number) =>
+      call<{ rev: number; state: GameState }>('/aluguel/list', { method: 'POST', body: { roosterId, days, price, currency, sharePct } }),
+    cancel: (id: string) => call<{ rev: number; state: GameState }>('/aluguel/cancel', { method: 'POST', body: { id } }),
+    rent: (id: string, price: number, currency: Currency) => call<{ rev: number; state: GameState }>('/aluguel/rent', { method: 'POST', body: { id, price, currency } }),
+    giveBack: (id: string) => call<{ rev: number; state: GameState }>('/aluguel/return', { method: 'POST', body: { id } }),
+  },
   // 🏪 Feira entre jogadores
   feira: {
     get: () => call<FeiraData>('/feira'),
@@ -125,6 +158,19 @@ export const api = {
     cancel: (id: string) => call<{ rev: number; state: GameState }>('/feira/cancel', { method: 'POST', body: { id } }),
     buy: (id: string, price: number, currency: Currency) => call<{ rev: number; state: GameState }>('/feira/buy', { method: 'POST', body: { id, price, currency } }),
     gift: (to: string, kind: FeiraKind, id: string) => call<{ rev: number; state: GameState }>('/feira/gift', { method: 'POST', body: { to, kind, id } }),
+  },
+  // 🏟️ Torneios (server/torneios.ts)
+  torneios: {
+    list: () => call<{ now: number; prizes: Record<TorneioKind, PrizeRow[]>; fee: number; list: TorneioView[]; recent: TorneioView[] }>('/torneios'),
+    get: (id: string) => call<{ now: number; torneio: TorneioDetail }>(`/torneios/${encodeURIComponent(id)}`),
+    mine: () => call<{ results: TorneioResult[] }>('/torneios/mine'),
+    notices: () => call<{ notices: TorneioNotice[] }>('/torneios/notices'),
+    tokens: () => call<{ enabled: boolean; total: number; list: { torneio_id: string; asset: string; amount: number; status: string; created_at: number }[] }>('/torneios/tokens'),
+    register: (id: string, roosterId: string) => call<{ ok: true; rev?: number | null; changed?: boolean }>('/torneios/register', { method: 'POST', body: { id, roosterId } }),
+    withdraw: (id: string) => call<{ ok: true }>('/torneios/withdraw', { method: 'POST', body: { id } }),
+    admin: () => call<{ list: TorneioAdminRow[]; totals: { ovos: number; milho: number; fees: number; tokens: number } }>('/torneios/admin'),
+    adminCancel: (id: string) => call<{ ok: true }>('/torneios/admin/cancel', { method: 'POST', body: { id } }),
+    adminStart: (id: string, skipLive: boolean) => call<{ ok: true }>('/torneios/admin/start', { method: 'POST', body: { id, skipLive } }),
   },
   config: () => call<PublicConfig>('/config'),
   admin: {
@@ -149,6 +195,8 @@ export const api = {
   send: (asset: Web3Asset, to: string, amount: number) => call<{ tx: Web3Tx }>('/web3/send', { method: 'POST', body: { asset, to, amount } }),
   mint: (key: string) => call<{ tokenId: number; tx: Web3Tx; rev: number; state: GameState }>('/web3/mint', { method: 'POST', body: { key } }),
   kyc: () => call<{ kyc: KycStatus }>('/web3/kyc', { method: 'POST' }),
+  mintGalo: (roosterId: string) => call<{ tokenId: number; tx: Web3Tx; rev: number; state: GameState }>('/web3/mint-galo', { method: 'POST', body: { roosterId } }),
+  unmintGalo: (tokenId: number) => call<{ tx: Web3Tx; rev: number; state: GameState }>('/web3/unmint-galo', { method: 'POST', body: { tokenId } }),
   market: () => call<{ listings: MarketListing[]; feeBps: number }>('/market'),
   marketList: (tokenId: number, price: number) => call<{ tx?: Web3Tx }>('/market/list', { method: 'POST', body: { tokenId, price } }),
   marketCancel: (tokenId: number) => call<{ tx?: Web3Tx }>('/market/cancel', { method: 'POST', body: { tokenId } }),
@@ -161,8 +209,8 @@ export const api = {
 
 // ---------- Tipos do ranking e vitrine ----------
 export interface PublicRooster { id: string; name: string; breedId: string; level: number; stars: number; skin: string | null; equipped: Rooster['equipped']; tint: Rooster['tint'] | null; wins: number; value: number }
-export interface RankRow { id: string; name: string; avatar: string; total: number; roosters: number; best: PublicRooster | null }
-export interface Showcase { id: string; name: string; avatar: string; since: number | null; worth: number; pos: number | null; achievements: number; tier: { name: string; emoji: string }; wins: number; fights: number; count: number; roosters: PublicRooster[] }
+export interface RankRow { id: string; name: string; avatar: string; total: number; roosters: number; best: PublicRooster | null; champ?: number }
+export interface Showcase { id: string; name: string; avatar: string; since: number | null; worth: number; pos: number | null; achievements: number; champ?: number; podiums?: number; tier: { name: string; emoji: string }; wins: number; fights: number; count: number; roosters: PublicRooster[] }
 
 // ---------- Tipos da carteira cripto ----------
 export type KycStatus = 'none' | 'pending' | 'verified' | 'rejected'
@@ -173,7 +221,9 @@ export type Web3Tx = Web3TxView | string | null
 /** Saldos null = não deu para ler a rede agora. */
 export interface Web3Wallet { address: string; eth: number | string | null; egg: number | string | null; corn: number | string | null; usdc: number | string | null }
 export interface Web3Mintable { key: string; kind: 'acc' | 'skin'; itemId: string; count: number }
-export interface Web3Nft { tokenId: number; kind: 'acc' | 'skin'; itemId: string; status: 'held' | 'listed'; price: number | null }
+export interface Web3Nft { tokenId: number; kind: 'acc' | 'skin' | 'galo'; itemId: string; status: 'held' | 'listed'; price: number | null; rooster?: GaloLook }
+/** 🐓 Galo NFT: visual público do galo do token. */
+export interface GaloLook { id: string; name: string; breedId: string; level: number; stars: number; tint: Rooster['tint'] | null; parents: [string, string] | null; breedCount: number; base: Rooster['base'] }
 export interface Web3Info {
   enabled: boolean
   chain?: { id: number; name: string; explorer: string }
@@ -185,7 +235,7 @@ export interface Web3Info {
   caps?: { send?: Partial<Record<Web3Asset, number>>; bridgeOut?: Partial<Record<Web3Asset, number>>; usedToday?: { send?: Partial<Record<Web3Asset, number>>; bridgeOut?: Partial<Record<Web3Asset, number>> } }
   recent?: Web3TxView[]
 }
-export interface MarketListing { tokenId: number; kind: 'acc' | 'skin'; itemId: string; price: number; seller: string; mine: boolean }
+export interface MarketListing { tokenId: number; kind: 'acc' | 'skin' | 'galo'; itemId: string; price: number; seller: string; mine: boolean; rooster?: GaloLook }
 export interface AdminWeb3TxRow {
   id: number | string
   user_id: string

@@ -31,6 +31,8 @@ export interface RankRow {
   total: number
   roosters: number
   best: PublicRooster | null
+  /** 🏟️ Títulos de campeão de torneio. */
+  champ?: number
 }
 
 let cache: { at: number; rows: RankRow[] } | null = null
@@ -54,7 +56,7 @@ function ranking(): RankRow[] {
   for (const r of rows) {
     const s = safe(r.data)
     if (!s || !Array.isArray(s.roosters)) continue
-    out.push({ id: r.id, name: s.player?.name || r.uname, avatar: s.player?.avatar ?? '🧑‍🌾', total: coopWorth(s).total, roosters: s.roosters.length, best: best(s) })
+    out.push({ id: r.id, name: s.player?.name || r.uname, avatar: s.player?.avatar ?? '🧑‍🌾', total: coopWorth(s).total, roosters: s.roosters.length, best: best(s), champ: (s.trophies ?? []).filter((x) => x.place === 1).length })
   }
   out.sort((a, b) => b.total - a.total)
   cache = { at: Date.now(), rows: out }
@@ -94,6 +96,9 @@ export function handleCriacao(path: string, method: string, user: UserRow): { st
         worth: coopWorth(s).total,
         pos: pos >= 0 ? pos + 1 : null,
         achievements: s.achievements?.length ?? 0,
+        // 🏟️ Torneios: títulos de campeão e pódios
+        champ: (s.trophies ?? []).filter((x) => x.place === 1).length,
+        podiums: (s.trophies ?? []).length,
         tier: { name: tier.name, emoji: tier.emoji },
         wins: s.stats?.wins ?? 0,
         fights: s.stats?.fights ?? 0,

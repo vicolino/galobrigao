@@ -189,8 +189,8 @@ function Galos() {
                 <button
                   className="btn btn-primary full"
                   disabled={s.milho < price}
-                  onClick={() => {
-                    const res = actions.buyRooster(r.id)
+                  onClick={async () => {
+                    const res = await actions.buyRooster(r.id)
                     if (res.ok) toast(t('{nome} chegou ao galinheiro! 🐓', { nome: r.name }), 'ok')
                     else toast(tx(res.error), 'erro')
                   }}
