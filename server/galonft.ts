@@ -3,7 +3,7 @@ import { createElement } from 'react'
 // Versão "browser": não depende de node:stream (o bundle ESM do servidor não aceita require dinâmico)
 import { renderToStaticMarkup } from 'react-dom/server.browser'
 import { RoosterSvg } from '../src/components/RoosterSvg'
-import { BREED_BY_ID, ELECTION_ROOSTERS, FOOTBALL_ROOSTERS, SPECIAL_ROOSTERS } from '../src/game/data'
+import { BREED_BY_ID, ELECTION_ROOSTERS, FOOTBALL_ROOSTERS, BRAZIL_ROOSTERS, SPECIAL_ROOSTERS } from '../src/game/data'
 import { MAX_COOP } from '../src/game/criacao'
 import { MAX_BREEDS, breedsOf } from '../src/game/galonft'
 import type { GameState, Rooster } from '../src/game/types'
@@ -60,7 +60,7 @@ export const galoLook = (r: Rooster) => ({ id: r.id, name: r.name, breedId: r.br
 
 // ---------- Mercado USDC: tirar e dar o galo ----------
 
-const UNIQUE = new Set([...ELECTION_ROOSTERS, ...SPECIAL_ROOSTERS, ...FOOTBALL_ROOSTERS].map((e) => e.breedId))
+const UNIQUE = new Set([...ELECTION_ROOSTERS, ...SPECIAL_ROOSTERS, ...FOOTBALL_ROOSTERS, ...BRAZIL_ROOSTERS].map((e) => e.breedId))
 
 /** O comprador pode receber esse galo? (motivo ou null) */
 export function galoReceiveBlock(s: GameState, ro: Rooster): string | null {

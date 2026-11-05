@@ -4,7 +4,7 @@ import { Checkout } from '../components/Checkout'
 import { brl } from '../game/catalog'
 import { RoosterSvg } from '../components/RoosterSvg'
 import { Modal, PageHead, Price, RarityTag, RoosterCard, Tabs, go } from '../components/ui'
-import { ACCESSORIES, BOXES, BREED_BY_ID, CORN_PACKS, ELECTION_ROOSTERS, FOOTBALL_ROOSTERS, ITEMS, SPECIAL_ROOSTERS, RARITY, SLOTS, VIP } from '../game/data'
+import { ACCESSORIES, BOXES, BREED_BY_ID, CORN_PACKS, ELECTION_ROOSTERS, FOOTBALL_ROOSTERS, BRAZIL_ROOSTERS, ITEMS, SPECIAL_ROOSTERS, RARITY, SLOTS, VIP } from '../game/data'
 import { fmt, marketPrice } from '../game/rooster'
 import { sfx } from '../game/sound'
 import { useGame } from '../game/store'
@@ -126,6 +126,42 @@ function Galos() {
           </div>
         )
       })}
+
+      <div className="card football brasileiros">
+        <div className="election-head">
+          <span className="sale-tag">{t('🇧🇷 BRASILEIROS')}</span>
+          <span className="tiny muted">{t('Tipos de cada canto do Brasil, com o figurino a caráter. Cada um custa 🥚 {n}.', { n: 99 })}</span>
+        </div>
+        <div className="football-grid">
+          {BRAZIL_ROOSTERS.map((e) => {
+            const b = BREED_BY_ID[e.breedId]
+            const owned = s.roosters.some((r) => r.breedId === e.breedId)
+            return (
+              <div key={e.breedId} className="football-item">
+                <RoosterSvg breedId={e.breedId} size={190} anim="idle" />
+                <b>
+                  {e.emoji} {e.name}
+                </b>
+                <p className="tiny muted italic">"{b.desc}"</p>
+                <p className="tiny">
+                  <RarityTag rarity={b.rarity} /> · ❤️ {b.base.hp} · 🗡️ {b.base.atk} · 🛡️ {b.base.def} · 💨 {b.base.spd}
+                </p>
+                <button
+                  className="btn btn-gold btn-sm full"
+                  disabled={owned}
+                  onClick={async () => {
+                    const r = await actions.buyElection(e.breedId)
+                    if (r.ok) toast(t('{nome} chegou ao galinheiro!', { nome: `${e.emoji} ${e.name}` }), 'ok')
+                    else toast(tx(r.error), 'erro')
+                  }}
+                >
+                  {owned ? t('✅ Já está no seu galinheiro') : <>{t('Comprar')} · 🥚 {b.price}</>}
+                </button>
+              </div>
+            )
+          })}
+        </div>
+      </div>
 
       <div className="card football">
         <div className="election-head">

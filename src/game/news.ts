@@ -18,6 +18,15 @@ export interface Release {
 
 export const RELEASES = (): Release[] => [
   {
+    id: '2026-11-05-3',
+    date: '2026-11-05',
+    title: t('Chegaram os Brasileiros!'),
+    items: [
+      { emoji: '🧉', title: t('Galo Gaudério'), text: t('Chapéu campeiro, bombacha e lenço vermelho. Bah, tchê!'), link: '/loja/galos' },
+      { emoji: '🩴', title: t('Malandro Carioca'), text: t('Bermuda florida, chinelo no pé e muito gingado.'), link: '/loja/galos' },
+    ],
+  },
+  {
     id: '2026-11-05-2',
     date: '2026-11-05',
     title: t('Torneios, aluguel e galos NFT'),

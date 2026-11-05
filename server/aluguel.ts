@@ -3,7 +3,7 @@
 // (só o servidor mexe) e volta sozinho ao dono no fim do prazo, com o XP e os níveis que ganhou.
 // Parte opcional da Arena: o dono fica com X% do milho que o galo ganhar (rentalShare, chamada pela Arena do servidor).
 import { randomUUID } from 'node:crypto'
-import { BREED_BY_ID, ELECTION_ROOSTERS, FOOTBALL_ROOSTERS, SPECIAL_ROOSTERS } from '../src/game/data'
+import { BREED_BY_ID, ELECTION_ROOSTERS, FOOTBALL_ROOSTERS, BRAZIL_ROOSTERS, SPECIAL_ROOSTERS } from '../src/game/data'
 import { ALUGUEL, DAY, rentalCut, rentDaysOk, sharePctOk, type AluguelAdmin, type AluguelData, type AluguelListing } from '../src/game/aluguel'
 import { FEIRA, feiraFee, feiraPriceOk } from '../src/game/feira'
 import { roosterLock } from '../src/game/galonft'
@@ -30,7 +30,7 @@ const now = () => Date.now()
 const HOUR = 3600_000
 /** Teto do save (PUT /api/save recusa mais que isso). */
 const SAVE_MAX_ROOSTERS = 16
-const UNIQUE_BREEDS = new Set([...ELECTION_ROOSTERS, ...SPECIAL_ROOSTERS, ...FOOTBALL_ROOSTERS].map((e) => e.breedId))
+const UNIQUE_BREEDS = new Set([...ELECTION_ROOSTERS, ...SPECIAL_ROOSTERS, ...FOOTBALL_ROOSTERS, ...BRAZIL_ROOSTERS].map((e) => e.breedId))
 
 type Status = AluguelListing['status']
 interface Row {

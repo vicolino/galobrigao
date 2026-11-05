@@ -290,6 +290,8 @@ const en: Record<string, string> = {
   'Retorno possível': 'Potential payout',
   '🇺🇸 EDIÇÃO ESPECIAL EUA': '🇺🇸 USA SPECIAL EDITION',
   '⚽ EDIÇÃO FUTEBOL': '⚽ FOOTBALL EDITION',
+  '🇧🇷 BRASILEIROS': '🇧🇷 BRAZILIANS',
+  'Tipos de cada canto do Brasil, com o figurino a caráter. Cada um custa 🥚 {n}.': 'Characters from every corner of Brazil, in full regional outfit. Each costs 🥚 {n}.',
   '👑 O REI DO FUTEBOL': '👑 THE KING OF FOOTBALL',
   '🏆🏆🏆 3 Copas do Mundo · ⚽ 1.000+ gols': '🏆🏆🏆 3 World Cups · ⚽ 1,000+ goals',
   'Lendas da bola com a camisa da seleção. A partir de 🥚 {n}.': 'Football legends in their national team shirts. From 🥚 {n}.',

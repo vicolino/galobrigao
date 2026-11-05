@@ -1,7 +1,7 @@
 // 🏪 Feira: anúncios entre jogadores (galos, acessórios e skins) + presentes.
 // O servidor guarda o item em custódia enquanto está à venda e cobra 10% de taxa na venda.
 import { randomUUID } from 'node:crypto'
-import { ACC_BY_ID, BREED_BY_ID, ELECTION_ROOSTERS, FOOTBALL_ROOSTERS, SKIN_BY_ID, SPECIAL_ROOSTERS } from '../src/game/data'
+import { ACC_BY_ID, BREED_BY_ID, ELECTION_ROOSTERS, FOOTBALL_ROOSTERS, BRAZIL_ROOSTERS, SKIN_BY_ID, SPECIAL_ROOSTERS } from '../src/game/data'
 import { today, uid } from '../src/game/rooster'
 import { FEIRA, feiraFee, feiraPriceOk, type FeiraKind, type FeiraListing, type FeiraNotice, type FeiraPlayer, type FeiraTrade } from '../src/game/feira'
 import type { Currency, GameState, Rooster } from '../src/game/types'
@@ -27,7 +27,7 @@ const fail = (m: string, status = 400): never => {
 }
 
 const db = () => getDb()
-const UNIQUE_BREEDS = new Set([...ELECTION_ROOSTERS, ...SPECIAL_ROOSTERS, ...FOOTBALL_ROOSTERS].map((e) => e.breedId))
+const UNIQUE_BREEDS = new Set([...ELECTION_ROOSTERS, ...SPECIAL_ROOSTERS, ...FOOTBALL_ROOSTERS, ...BRAZIL_ROOSTERS].map((e) => e.breedId))
 const now = () => Date.now()
 const HOUR = 3600_000
 

@@ -160,6 +160,32 @@ BREEDS.push(
   futebol('rei', t('Rei do Gramado'), t('O Rei: mais de mil gols, três Copas e coroa na cabeça.'), { ...BRASIL, neck: '#5a3820' }, { hp: 126, atk: 24, def: 16, spd: 18 }, 199),
 )
 
+// Edição Brasileiros: tipos regionais com o figurino de cada canto do país.
+BREEDS.push(
+  {
+    id: 'gauderio',
+    name: t('Galo Gaudério'),
+    desc: t('Chapéu de aba larga, bombacha e lenço vermelho. Bah, tchê, não foge de briga!'),
+    rarity: 'lendario',
+    pattern: 'solido',
+    special: true,
+    colors: { body: '#b5651d', wing: '#8a4b16', tail: '#2b1a0e', tail2: '#1f7a3a', neck: '#d9a066', comb: '#e23b3b', legs: '#e8b04a' },
+    base: { hp: 124, atk: 21, def: 13, spd: 8 },
+    price: 99,
+  },
+  {
+    id: 'malandro',
+    name: t('Malandro Carioca'),
+    desc: t('Bermuda florida, chinelo no pé e gingado de sobra. Bate e sai sambando.'),
+    rarity: 'lendario',
+    pattern: 'solido',
+    special: true,
+    colors: { body: '#f3e3c3', wing: '#e2c99a', tail: '#ff8c1a', tail2: '#1fb5a6', neck: '#f7ead2', comb: '#e23b3b', legs: '#e8b04a' },
+    base: { hp: 112, atk: 19, def: 15, spd: 20 },
+    price: 99,
+  },
+)
+
 // Galo Livre: grátis no cadastro, fraco e com potencial baixo (1 estrela).
 BREEDS.push({
   id: 'livre',
@@ -193,6 +219,12 @@ export const ELECTION_ROOSTERS = [
 
 /** Galos de edição especial vendidos fora do confronto eleitoral. */
 export const SPECIAL_ROOSTERS = [{ breedId: 'trump', name: t('Topete Laranja'), emoji: '🇺🇸' }]
+
+/** Edição Brasileiros. */
+export const BRAZIL_ROOSTERS = [
+  { breedId: 'gauderio', name: t('Galo Gaudério'), emoji: '🧉' },
+  { breedId: 'malandro', name: t('Malandro Carioca'), emoji: '🩴' },
+]
 
 /** Edição Futebol (mesmo preço para todos). */
 export const FOOTBALL_ROOSTERS = [

@@ -1,5 +1,8 @@
 // Dicionário inglês das Novidades (notas de versão).
 const dict: Record<string, string> = {
+  'Chegaram os Brasileiros!': 'The Brazilians have arrived!',
+  'Chapéu campeiro, bombacha e lenço vermelho. Bah, tchê!': 'Gaucho hat, baggy bombacha trousers and a red neckerchief. Bah, tchê!',
+  'Bermuda florida, chinelo no pé e muito gingado.': 'Flowery shorts, flip-flops and plenty of swagger.',
   'Torneios, aluguel e galos NFT': 'Tournaments, rentals and NFT roosters',
   'Torneios': 'Tournaments',
   'Torneio Diário às 21h e Copa do Terreiro aos domingos. Inscrição grátis, prêmios da casa e replay de todas as lutas.': 'Daily Tournament at 9 pm (Brasília time) and the Yard Cup on Sundays. Free entry, house prizes and replays of every fight.',

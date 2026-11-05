@@ -73,7 +73,7 @@ export function RoosterSvg({ breedId, skin, equipped = {}, tint, flip, anim = 'i
   // Gordinho: barriga e peito maiores
   const body = look?.chubby ? { cx: 102, cy: 140, rx: 66, ry: 52 } : BODY
   const chest = look?.chubby ? { cx: 140, cy: 134, rx: 42, ry: 44 } : CHEST
-  const hideComb = breed.id === 'trump' || !!look?.hair
+  const hideComb = breed.id === 'trump' || !!look?.hair || (breed.id === 'gauderio' && !e.cabeca)
 
   return (
     <svg
@@ -154,6 +154,13 @@ export function RoosterSvg({ breedId, skin, equipped = {}, tint, flip, anim = 'i
 
         {/* Pernas fortes */}
         <g className="r-legs">
+          {breed.id === 'malandro' && !e.pes && (
+            <g stroke={outline} strokeWidth="2.5">
+              {/* Chinelo: sola */}
+              <ellipse cx="87" cy="203" rx="19" ry="5" fill="#ffd23f" />
+              <ellipse cx="122" cy="203" rx="19" ry="5" fill="#ffd23f" />
+            </g>
+          )}
           <ellipse cx="90" cy="168" rx="15" ry="15" fill={bodyFill} stroke={outline} strokeWidth="3" />
           <ellipse cx="120" cy="168" rx="15" ry="15" fill={bodyFill} stroke={outline} strokeWidth="3" />
           <g stroke={outline} strokeWidth="12" strokeLinecap="round" fill="none">
@@ -199,6 +206,8 @@ export function RoosterSvg({ breedId, skin, equipped = {}, tint, flip, anim = 'i
           {/* Peitoral marcado */}
           <path d="M120,112 Q136,124 132,150" stroke="#000" strokeOpacity="0.22" strokeWidth="3" fill="none" strokeLinecap="round" />
         </g>
+
+        <RegionalOutfit breedId={breed.id} outline={outline} shoes={!!e.pes} clip={clip} />
 
         {/* Asa musculosa */}
         <g className="r-wing">
@@ -271,6 +280,15 @@ export function RoosterSvg({ breedId, skin, equipped = {}, tint, flip, anim = 'i
           )}
           {breed.id === 'trump' && !e.cabeca && <Combover outline={outline} />}
           {look && <FootballHead look={look} outline={outline} hat={!!e.cabeca} />}
+          {breed.id === 'gauderio' && !e.cabeca && (
+            <g stroke={outline} strokeWidth="3" strokeLinejoin="round">
+              {/* Chapéu campeiro com barbicacho */}
+              <path d="M117,52 Q122,92 158,98" stroke="#3b2a1a" strokeWidth="1.8" fill="none" />
+              <ellipse cx="146" cy="50" rx="44" ry="7.5" fill="#1f1a17" />
+              <path d="M126,50 L129,26 C139,21 155,21 165,26 L168,50 Z" fill="#2b241f" />
+              <path d="M127,42 L167,42 L167.8,49 L126.2,49 Z" fill="#8a4b16" strokeWidth="1.5" />
+            </g>
+          )}
           {skin === 'diamante' && !e.cabeca && (
             <g stroke={outline} strokeWidth="2.5" strokeLinejoin="round">
               {/* Coroa de Diamante (edição limitada) */}
@@ -394,6 +412,54 @@ function Combover({ outline }: { outline: string }) {
   )
 }
 
+/** Roupa da Edição Brasileiros: segue o formato do corpo (cintura curva) e as pernas da calça saem por baixo. */
+function RegionalOutfit({ breedId, outline, shoes, clip }: { breedId: string; outline: string; shoes: boolean; clip: string }) {
+  if (breedId !== 'gauderio' && breedId !== 'malandro') return null
+  const gaucho = breedId === 'gauderio'
+  const cloth = gaucho ? '#4a4a52' : '#1fb5a6'
+  const dark = gaucho ? '#2c2c33' : '#14857a'
+  // Cintura: curva que acompanha a barriga
+  const waist = 'M30,146 Q100,168 175,138'
+  // Pernas: bombacha é larga e franzida no tornozelo; bermuda é curta e reta
+  const legs = gaucho
+    ? ['M73,170 C66,182 72,195 82,196 L96,196 C103,194 106,182 103,170 Z', 'M106,170 C102,182 106,194 114,196 L129,196 C137,195 142,182 136,170 Z']
+    : ['M74,170 L71,188 Q87,191 102,188 L102,170 Z', 'M106,170 L106,188 Q121,191 137,188 L134,170 Z']
+  const flowers = [[60, 162], [82, 172], [104, 166], [128, 160], [146, 152], [70, 178], [94, 182], [120, 180], [132, 172], [86, 160]]
+  return (
+    <g>
+      {/* Pernas da calça (por baixo do corpo) */}
+      <g stroke={outline} strokeWidth="2.5" strokeLinejoin="round" fill={cloth}>
+        {legs.map((d) => (
+          <path key={d} d={d} />
+        ))}
+      </g>
+      {/* Parte de cima: pinta o corpo abaixo da cintura */}
+      <g clipPath={clip}>
+        <path d={`${waist} L220,220 L0,220 Z`} fill={cloth} />
+        {!gaucho &&
+          flowers.map(([x, y]) => (
+            <g key={`${x}-${y}`}>
+              {[[0, -2.6], [2.6, 0], [0, 2.6], [-2.6, 0]].map(([dx, dy], i) => (
+                <circle key={i} cx={x + dx} cy={y + dy} r="2.3" fill={i % 2 ? '#ffd23f' : '#ff5fa2'} />
+              ))}
+              <circle cx={x} cy={y} r="1.3" fill="#fff" />
+            </g>
+          ))}
+        {gaucho && <path d="M70,160 Q74,176 72,196 M96,164 Q98,180 96,196 M124,160 Q122,178 124,196" stroke={dark} strokeWidth="1.6" fill="none" />}
+        <path d={waist} stroke={dark} strokeWidth="5" fill="none" />
+      </g>
+      {gaucho && (
+        // Franzido da bombacha no tornozelo
+        <path d="M81,192 L97,192 L97,197 L81,197 Z M113,192 L130,192 L130,197 L113,197 Z" fill={dark} stroke={outline} strokeWidth="1.5" />
+      )}
+      {!gaucho && !shoes && (
+        // Chinelo: tira em V
+        <path d="M78,203 L87,194 L96,203 M113,203 L122,194 L131,203" stroke="#1f9d4a" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      )}
+    </g>
+  )
+}
+
 /** Marcas da Edição Eleições (desenhadas por cima do corpo, mesmo com skin). */
 function BodyMark({ breedId, clip, outline }: { breedId: string; clip: string; outline: string }) {
   if (breedId === 'lula') {
@@ -405,6 +471,15 @@ function BodyMark({ breedId, clip, outline }: { breedId: string; clip: string; o
       return `${cx + r * Math.cos(a)},${cy + r * Math.sin(a)}`
     })
     return <polygon points={pts.join(' ')} fill="#fff" stroke={outline} strokeWidth="2.5" strokeLinejoin="round" />
+  }
+  if (breedId === 'gauderio') {
+    // Lenço vermelho no pescoço
+    return (
+      <g stroke={outline} strokeWidth="2.5" strokeLinejoin="round">
+        <path d="M132,100 L162,96 L150,120 Z" fill="#c8102e" />
+        <circle cx="147" cy="100" r="4.5" fill="#a50d26" />
+      </g>
+    )
   }
   if (breedId === 'trump') {
     // Colarinho branco + gravata vermelha comprida
