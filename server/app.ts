@@ -16,13 +16,17 @@ import { getDb, type OrderRow, type UserRow } from './db'
 import { sendMail } from './mail'
 import { loadSave, writeSave } from './saves'
 import { handlePvp, PvpError } from './pvp'
+import { FeiraError, feiraDeleteUser, handleFeira } from './feira'
 import { BetError, creditSave, handleBets, migrateOldBets, plausibleChips, takeCredits, tickBets } from './bets'
 import { applyBetCredit } from '../src/game/bets'
 import { fetchRemoteStatus, parseMpWebhook, providerName, startPayment } from './payments'
 import { t, tx, withLang, type Lang } from '../src/i18n'
 import { appName } from '../src/brand'
 import { SKIN_BY_ID } from '../src/game/data'
-import { handleWeb3, Web3Error } from './web3'
+import { grantPassPremium, hasPassPremium, mergeClientPass, PASS_DAILY_XP } from '../src/game/pass'
+import { handleWeb3, Web3Error, web3Enabled } from './web3'
+import { afterShop, deleteOfferData, firstPurchaseSku, handleOfertas, isFirstPurchase, OfertasError, withStock } from './ofertas'
+import { CriacaoError, handleCriacao } from './criacao'
 
 try {
   process.loadEnvFile?.('.env')
@@ -207,6 +211,8 @@ function grant(state: GameState | null, sku: Sku, user: UserRow): GameState {
   const ovos = (sku.ovos ?? 0) + (sku.bonus ?? 0)
   if (ovos) s = { ...s, ovos: s.ovos + ovos }
   if (sku.kind === 'vip') s = { ...s, vip: { until: Math.max(Date.now(), s.vip.until) + 30 * 864e5 } }
+  // Passe da Temporada: premium do mês atual (se já tinha, vira ovos)
+  if (sku.kind === 'pass') s = grantPassPremium(s)
   const entry = { id: randomUUID().slice(0, 8), at: Date.now(), text: t('Compra: {item}', { item: sku.name }), milho: 0, ovo: ovos }
   return { ...s, history: [entry, ...s.history].slice(0, 80), stats: { ...s.stats, purchases: s.stats.purchases + 1 } }
 }
@@ -218,9 +224,11 @@ function fulfill(orderId: string, paidAmountCents?: number) {
   if (!order || order.fulfilled_at) return order
   if (paidAmountCents !== undefined && paidAmountCents < order.amount_cents) throw new Error(`valor pago menor que o pedido ${orderId}`)
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(order.user_id) as unknown as UserRow
-  const sku = effectiveSku(order.sku)!
+  const sku0 = effectiveSku(order.sku)!
   db.exec('BEGIN')
   try {
+    // Primeira compra: ovos em dobro (server/ofertas.ts)
+    const sku = firstPurchaseSku(user.id, orderId, sku0)
     const cur = loadSave(user.id)
     const next = grant(cur?.state ?? null, sku, user)
     writeSave(user.id, next, (cur?.rev ?? 0) + 1)
@@ -291,7 +299,7 @@ export async function handle(req: Req, res: Res) {
   loadConfig()
   try {
     // ----- Configuração pública (aviso, manutenção, recompensas) -----
-    if (path === '/api/config' && method === 'GET') return json(res, 200, { ...publicConfig(live), build: isProd() ? currentBuild() : null })
+    if (path === '/api/config' && method === 'GET') return json(res, 200, { ...publicConfig(live), build: isProd() ? currentBuild() : null, web3: web3Enabled() })
 
     // ----- Backoffice -----
     if (path.startsWith('/api/admin/')) {
@@ -403,7 +411,9 @@ export async function handle(req: Req, res: Res) {
       db.prepare('DELETE FROM sessions WHERE user_id = ?').run(u.id)
       db.prepare('DELETE FROM ovos_guard WHERE user_id = ?').run(u.id)
       db.prepare('DELETE FROM house_bets WHERE user_id = ?').run(u.id)
+      feiraDeleteUser(u.id)
       db.prepare('DELETE FROM password_resets WHERE user_id = ?').run(u.id)
+      deleteOfferData(u.id)
       // Pedidos pagos são mantidos anonimizados por obrigação fiscal; os dados pessoais saem.
       // Web3: carteira, NFTs e web3_tx ficam (ativos na chain + auditoria; só têm o id, sem dados pessoais).
       // Anúncios do jogador somem do mercado porque a listagem exige a conta existir.
@@ -422,7 +432,7 @@ export async function handle(req: Req, res: Res) {
     if (path === '/api/catalog' && method === 'GET') {
       const u = userFromRequest(req)
       const bought = u ? (db.prepare("SELECT sku FROM orders WHERE user_id = ? AND status = 'pago'").all(u.id) as { sku: string }[]).map((r) => r.sku) : []
-      return json(res, 200, { items: effectiveCatalog().filter((s) => s.active).map((s) => ({ ...s, owned: s.oncePerUser && bought.includes(s.id) })), provider: providerName(), paymentsLive: paymentsLive() })
+      return json(res, 200, { items: effectiveCatalog().filter((s) => s.active).map((s) => ({ ...s, owned: s.oncePerUser && bought.includes(s.id) })), provider: providerName(), paymentsLive: paymentsLive(), firstBonus: u ? isFirstPurchase(u.id) : true })
     }
 
     // ----- Save -----
@@ -456,6 +466,13 @@ export async function handle(req: Req, res: Res) {
       incoming.card = cur.state.card
       // Créditos de NFT são do servidor
       incoming.mintable = cur.state.mintable
+      // Passe da Temporada: premium e resgates são do servidor; XP limitado por dia
+      incoming.pass = mergeClientPass(cur.state, incoming, (gain) => guardDaily(u.id, 'px', gain, PASS_DAILY_XP))
+      // Ofertas relâmpago e recargas de energia são do servidor
+      incoming.offers = cur.state.offers
+      incoming.refills = cur.state.refills
+      // Ninho do cruzamento é do servidor
+      incoming.nest = cur.state.nest
       // 🎟️ Fichas: só sobem o que dá para ganhar jogando (bônus diário e vitórias na Arena)
       incoming.fichas = plausibleChips(u.id, cur.state, incoming)
       // Prêmios de apostas resolvidas entram aqui; o navegador aplica o mesmo crédito no estado dele
@@ -475,6 +492,18 @@ export async function handle(req: Req, res: Res) {
       if (path !== '/api/pvp/poll') blockIfMaintenance(u)
       const body = method === 'POST' ? await readBody(req) : {}
       const out = handlePvp(path, method, url, body, u)
+      if (out) return json(res, out.status ?? 200, out.body)
+    }
+
+    // ----- 🏪 Feira entre jogadores (server/feira.ts) -----
+    if (path === '/api/feira' || path.startsWith('/api/feira/')) {
+      const u = needUser(req)
+      if (method === 'POST') {
+        blockIfMaintenance(u)
+        if (limited(`feira:${u.id}`, 20, 60_000)) throw new HttpError(429, t('Muitas operações seguidas. Espere um pouco.'))
+      } else if (limited(`feira-get:${u.id}`, 60, 60_000)) throw new HttpError(429, t('Muitas operações seguidas. Espere um pouco.'))
+      const body = method === 'POST' ? await readBody(req) : {}
+      const out = handleFeira(path, method, url, body, u)
       if (out) return json(res, out.status ?? 200, out.body)
     }
 
@@ -503,6 +532,12 @@ export async function handle(req: Req, res: Res) {
       if (out) return json(res, out.status ?? 200, out.body)
     }
 
+    // ----- Ranking de galinheiros e vitrine (server/criacao.ts) -----
+    if (path === '/api/ranking' || path.startsWith('/api/players/')) {
+      const out = handleCriacao(path, method, needUser(req))
+      if (out) return json(res, out.status ?? 200, out.body)
+    }
+
     // ----- Loja (gastos de ovos e itens premium) -----
     if (path === '/api/shop' && method === 'POST') {
       const u = needUser(req)
@@ -511,13 +546,27 @@ export async function handle(req: Req, res: Res) {
       const cur = loadSave(u.id)
       if (!cur) throw new HttpError(409, t('Sem galinheiro'), { rev: 0, state: null })
       try {
-        const r = runShop(cur.state, b as unknown as ShopOp)
-        writeSave(u.id, r.state, cur.rev + 1)
+        const op = b as unknown as ShopOp
+        // Edição limitada: consome o estoque global junto com a compra (server/ofertas.ts)
+        const r = withStock(op, () => {
+          const r = runShop(cur.state, op)
+          writeSave(u.id, r.state, cur.rev + 1)
+          return r
+        })
+        afterShop(u.id, op, r.value)
         return json(res, 200, { rev: cur.rev + 1, state: r.state, value: r.value ?? null })
       } catch (e) {
         if (e instanceof ShopError) throw new HttpError(400, e.message)
         throw e
       }
+    }
+
+    // ----- Ofertas: estoque limitado, primeira compra, métricas (server/ofertas.ts) -----
+    if (path === '/api/limited' || path.startsWith('/api/offers')) {
+      const u = path === '/api/limited' ? null : needUser(req)
+      const body = method === 'PUT' ? await readBody(req) : {}
+      const out = handleOfertas(path, method, url, body, u)
+      if (out) return json(res, 200, out)
     }
 
     // ----- Onboarding grátis -----
@@ -543,6 +592,7 @@ export async function handle(req: Req, res: Res) {
       if (!sku || !sku.active) throw new HttpError(404, t('Produto indisponível no momento'))
       if (sku.kind !== 'starter' && !loadSave(u.id)) throw new HttpError(409, t('Crie seu galinheiro antes de comprar'))
       if (sku.oncePerUser && db.prepare("SELECT 1 FROM orders WHERE user_id = ? AND sku = ? AND status = 'pago'").get(u.id, sku.id)) throw new HttpError(409, t('Esse pacote só pode ser comprado uma vez'))
+      if (sku.kind === 'pass' && hasPassPremium(loadSave(u.id)?.state)) throw new HttpError(409, t('Você já tem o Passe Premium desta temporada.'))
 
       // Modo MVP: paga com o crédito de teste, entrega na hora
       if (b.method === 'credito') {
@@ -659,9 +709,12 @@ export async function handle(req: Req, res: Res) {
   } catch (e) {
     if (e instanceof HttpError) return json(res, e.status, { error: e.message, ...e.extra })
     if (e instanceof PvpError) return json(res, 400, { error: e.message })
+    if (e instanceof FeiraError) return json(res, e.status, { error: e.message })
     if (e instanceof BetError) return json(res, 400, { error: e.message })
     if (e instanceof AdminError) return json(res, e.status, { error: e.message })
+    if (e instanceof CriacaoError) return json(res, e.status, { error: e.message })
     if (e instanceof Web3Error) return json(res, e.status, { error: e.message, ...e.extra })
+    if (e instanceof OfertasError) return json(res, e.status, { error: e.message })
     console.error('[api]', e)
     return json(res, 500, { error: t('Erro interno. Tente de novo.') })
   }

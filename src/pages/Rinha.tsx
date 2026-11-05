@@ -8,6 +8,7 @@ import { sfx } from '../game/sound'
 import { makeOpponent, opponentTools, tierFor, useGame } from '../game/store'
 import type { Rooster } from '../game/types'
 import { t, tn, tx } from '../i18n'
+import { RefillButton, tryOffer } from '../components/Ofertas'
 
 const DIFFS = [
   { label: t('Fácil'), emoji: '🐣', cls: 'easy', reward: t('Pouco milho') },
@@ -50,6 +51,8 @@ export function Rinha() {
     const r = actions.startRinha(mine.id, o, d, myTools, oppTools)
     if (!r.ok) {
       toast(tx(r.error), 'erro')
+      // Sem energia: oferta relâmpago de Banquete
+      if (currentEnergy(mine) < ENERGY_COST) tryOffer(s, actions.shop, 'energia')
       return
     }
     sfx.bell()
@@ -118,7 +121,8 @@ export function Rinha() {
             atual: currentEnergy(mine),
             custo: ENERGY_COST,
             link: <a href={`#/galinheiro/${mine.id}`}>{t('dê uma ração')}</a>,
-          })}
+          })}{' '}
+          <RefillButton ro={mine} />
         </div>
       )}
 

@@ -4,7 +4,10 @@ import { ACCESSORIES, ACC_BY_ID, BOXES, BREED_BY_ID, CORN_PACKS, ELECTION_ROOSTE
 import { genMarket, skinPrice } from './engine'
 import { addXp, currentEnergy, feedInstantCost, makeRooster, pick, uid, withEnergy, xpToNext } from './rooster'
 import { t } from '../i18n'
+import { runBreed, type BreedOp } from './criacao'
 import type { Accessory, Currency, GameState, MissionKind, Rarity, Rooster } from './types'
+import { passViolation, runPass, type PassOp } from './pass'
+import { runOferta, type OfertaOp } from './ofertas'
 
 export const FEED_COOLDOWN = 4 * 3600_000
 export const STAR_COST = [0, 40, 80, 150, 250] // ovos para subir de N para N+1 estrelas
@@ -24,6 +27,9 @@ export type ShopOp =
   | { op: 'exchange'; id: string }
   | { op: 'upgradeStars'; roosterId: string }
   | { op: 'feedInstant'; roosterId: string }
+  | PassOp
+  | OfertaOp
+  | BreedOp
 
 export class ShopError extends Error {}
 
@@ -111,6 +117,7 @@ export function runShop(s: GameState, o: ShopOp): { state: GameState; value?: un
     }
     case 'buySkin': {
       const sk = SKIN_BY_ID[o.id] ?? fail(t('Skin não existe'))
+      if (sk.exclusive) fail(t('Essa skin é exclusiva do Passe da Temporada.'))
       if (s.skins.includes(o.id)) fail(t('Você já tem essa skin.'))
       const price = skinPrice(o.id)
       let n = pay(s, price, sk.currency)
@@ -158,6 +165,15 @@ export function runShop(s: GameState, o: ShopOp): { state: GameState; value?: un
       n = { ...n, roosters: n.roosters.map((r) => (r.id === ro.id ? { ...r, stars: r.stars + 1, base: { hp: up(r.base.hp), atk: up(r.base.atk), def: up(r.base.def), spd: up(r.base.spd) } } : r)) }
       return { state: log(n, t('{nome} evoluiu para {n} estrelas', { nome: ro.name, n: ro.stars + 1 }), 0, -cost) }
     }
+    case 'passClaim':
+    case 'passClaimAll':
+    case 'passBuy':
+    case 'passSkip':
+      try {
+        return runPass(s, o)
+      } catch (e) {
+        return fail((e as Error).message)
+      }
     case 'feedInstant': {
       const ro = findRooster(s, o.roosterId)
       let n = pay(s, feedInstantCost(ro.level), 'ovo')
@@ -166,6 +182,15 @@ export function runShop(s: GameState, o: ShopOp): { state: GameState; value?: un
       n = { ...n, roosters: n.roosters.map((r) => (r.id === ro.id ? { ...withEnergy(addXp(r, xp).rooster, currentEnergy(r) + 15), fedAt: Date.now() } : r)) }
       return { state: n, value: levels ? t('🎉 {nome} comeu e subiu para o nível {n}!', { nome: ro.name, n: ro.level + levels }) : t('{nome} comeu! +{xp} XP e +{e} de energia 🌽', { nome: ro.name, xp, e: 15 }) }
     }
+    case 'breedStart':
+    case 'breedHatch':
+    case 'breedSkip':
+      return runBreed(s, o, { fail, pay, log })
+    // Ofertas relâmpago e recarga de energia (src/game/ofertas.ts)
+    case 'triggerOffer':
+    case 'buyOffer':
+    case 'refillEnergy':
+      return runOferta(s, o, { pay, log, purchase, fail })
   }
   return fail(t('Operação desconhecida'))
 }
@@ -197,7 +222,7 @@ export function premiumViolation(cur: GameState, next: GameState): string | null
   const curMarket = new Map(cur.market.roosters.map((m) => [m.id, m]))
   if (next.market.roosters.some((m) => JSON.stringify(m) !== JSON.stringify(curMarket.get(m.id)))) return 'mercado' // i18n-ok (só log do servidor)
   // Galos: estrelas e atributos-base não mudam; galo novo só se veio do mercado do servidor
-  const same = (a: Rooster, b: Rooster) => a.breedId === b.breedId && a.stars === b.stars && JSON.stringify(a.base) === JSON.stringify(b.base)
+  const same = (a: Rooster, b: Rooster) => a.breedId === b.breedId && a.stars === b.stars && JSON.stringify(a.base) === JSON.stringify(b.base) && JSON.stringify(a.tint) === JSON.stringify(b.tint)
   const before = new Map(cur.roosters.map((r) => [r.id, r]))
   for (const r of next.roosters) {
     const old = before.get(r.id)
@@ -228,5 +253,7 @@ export function softViolation(cur: GameState, next: GameState): string | null {
   }
   if (next.league.points - cur.league.points > 200) return 'pontos de liga' // i18n-ok (só log do servidor)
   if (!Number.isFinite(next.milho) || next.milho < 0) return 'milho' // i18n-ok (só log do servidor)
+  const pv = passViolation(cur, next)
+  if (pv) return pv
   return null
 }

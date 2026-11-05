@@ -57,6 +57,8 @@ export interface Skin {
   price: number
   currency: Currency
   fx?: SkinFx
+  /** Exclusiva (ex.: Passe da Temporada): não é vendida na loja. */
+  exclusive?: boolean
   colors: Breed['colors']
   desc: string
 }
@@ -105,6 +107,17 @@ export interface Rooster {
   lucky?: number
   skin?: string
   fedAt?: number
+  /** Pelagem rara (cruzamento): cores próprias que substituem as da raça. */
+  tint?: { body: string; wing: string; neck: string; tail: string; tail2: string }
+  /** Nomes dos pais (cruzamento). */
+  parents?: [string, string]
+}
+
+/** Ninho do cruzamento: só o servidor mexe. */
+export interface Nest {
+  /** Fim do descanso de cada galo que cruzou (id → timestamp). */
+  cooldowns: Record<string, number>
+  egg?: { id: string; parents: [Pick<Rooster, 'id' | 'name' | 'breedId' | 'base' | 'stars'>, Pick<Rooster, 'id' | 'name' | 'breedId' | 'base' | 'stars'>]; startedAt: number; readyAt: number }
 }
 
 export interface Fighter {
@@ -250,7 +263,29 @@ export interface GameState {
   vip: { until: number }
   /** Itens lendários comprados com ovos ou dinheiro que ainda podem virar NFT (chave 'acc:id' | 'skin:id'). Só o servidor mexe. */
   mintable?: Record<string, number>
+  /** Ofertas relâmpago (só o servidor cria e marca como compradas). */
+  offers?: Offer[]
+  /** Recargas de energia com ovos no dia (preço sobe a cada uma). Só o servidor mexe. */
+  refills?: { day: string; n: number }
+  /** Ninho do cruzamento (servidor). */
+  nest?: Nest
+  /** Passe da Temporada (mês UTC). `premium` e `claimed` só o servidor mexe. */
+  pass?: { season: string; xp: number; premium: boolean; claimed: { free: number[]; premium: number[] }; day?: string; dayXp?: number }
   achievements: string[]
   history: Transaction[]
-  settings: { volume: number; muted: boolean }
+  /** newsSeen: id da última nota de Novidades que o jogador já viu. */
+  settings: { volume: number; muted: boolean; newsSeen?: string }
+}
+
+/** Oferta relâmpago personalizada (preço em ovos, vence em 60 min). */
+export interface Offer {
+  id: string
+  kind: 'treino' | 'revanche' | 'banquete'
+  items: Record<string, number>
+  tools: Record<string, number>
+  full: number
+  price: number
+  at: number
+  until: number
+  boughtAt?: number
 }

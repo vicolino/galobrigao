@@ -286,7 +286,7 @@ export function Luta() {
                   ))}
               </div>
             )}
-            <RoosterSvg breedId={side === 0 ? match.a.breedId : match.b.breedId} skin={side === 0 ? match.a.skin : match.b.skin} equipped={side === 0 ? match.a.equipped : match.b.equipped} flip={side === 1} anim={anims[side]} size="100%" />
+            <RoosterSvg breedId={side === 0 ? match.a.breedId : match.b.breedId} skin={side === 0 ? match.a.skin : match.b.skin} equipped={side === 0 ? match.a.equipped : match.b.equipped} tint={side === 0 ? match.a.tint : match.b.tint} flip={side === 1} anim={anims[side]} size="100%" />
             {fx && fx.side === side && (
               <div key={fx.key} className={`dmg ${fx.crit ? 'crit' : ''} ${fx.miss ? 'miss' : ''}`}>
                 {fx.text}

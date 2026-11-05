@@ -5,7 +5,9 @@ import { addXp, currentEnergy, today, uid, withEnergy } from '../src/game/rooste
 import type { GameState, MissionKind, Rooster } from '../src/game/types'
 import { getDb, type UserRow } from './db'
 import { loadSave, writeSave } from './saves'
+import { addPassXp, PASS_XP } from '../src/game/pass'
 import { betsNotice } from './bets'
+import { feiraNotices } from './feira'
 import { t } from '../src/i18n'
 
 export class PvpError extends Error {}
@@ -118,6 +120,7 @@ function applyResult(s: GameState, roosterId: string, won: boolean, ko: boolean,
   n = bump(n, 'lutar')
   if (won) n = bump(n, 'vencer')
   if (won && ko) n = bump(n, 'ko')
+  n = addPassXp(n, PASS_XP.desafio)
   n = { ...n, history: [{ id: uid(), at: now(), text: won ? t('Desafio vencido contra {nome}', { nome: oppName }) : t('Desafio perdido contra {nome}', { nome: oppName }), milho: rw.milho, ovo: 0 }, ...n.history].slice(0, 80) }
   return { state: n, rewards: { ...rw, levels, limited } }
 }
@@ -145,6 +148,7 @@ export function handlePvp(path: string, method: string, url: URL, body: Record<s
         updates: updates.map((c) => view(c, u.id)),
         online,
         bets: betsNotice(u.id),
+        feira: feiraNotices(u.id),
       },
     }
   }

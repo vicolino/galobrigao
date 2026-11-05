@@ -249,7 +249,7 @@ const en: Record<string, string> = {
   '{n} ovos de ouro': '{n} Golden Eggs',
   'Para começar.': 'To get you started.',
   '{a} + {b} de bônus.': '{a} + {b} bonus.',
-  'Passe do Criador ({n} dias)': "Breeder's Pass ({n} days)",
+  'Assinatura VIP ({n} dias)': "VIP Membership ({n} days)",
   '{a} ovos na hora, +{b} ovos/dia e +{p}% de milho.': '{a} eggs right away, +{b} eggs/day and +{p}% corn.',
   'Kit Brigão': 'Brawler Kit',
   'Brigão': 'Brawler',

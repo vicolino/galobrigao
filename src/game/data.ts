@@ -173,6 +173,19 @@ BREEDS.push({
   price: 0,
 })
 
+// Passe da Temporada: galo exclusivo do nível 30 premium (nunca aparece no mercado).
+BREEDS.push({
+  id: 'temporada',
+  name: t('Galo da Temporada'),
+  desc: t('Só quem fechou o Passe da Temporada tem. Medalha no peito e pose de campeão.'),
+  rarity: 'lendario',
+  pattern: 'dourado',
+  special: true,
+  colors: { body: '#6a3cc0', wing: '#4a2690', tail: '#2a1660', tail2: '#ffd23f', neck: '#8a5ae0', comb: '#ff3b6b', legs: '#ffd23f' },
+  base: { hp: 120, atk: 21, def: 16, spd: 16 },
+  price: 150,
+})
+
 export const ELECTION_ROOSTERS = [
   { breedId: 'lula', name: t('Barbudo Vermelho'), emoji: '⭐' },
   { breedId: 'bolsonaro', name: t('Capitão Verde-Amarelo'), emoji: '🇧🇷' },
@@ -346,8 +359,15 @@ export const SKINS: Skin[] = [
   { id: 'fogo', name: t('Fênix de Fogo'), emoji: '🔥', rarity: 'lendario', price: 220, currency: 'ovo', fx: 'fogo', colors: C('#ff6a1f', '#e2401a', '#ffb020', '#ff3b1f', '#ff9a2f', '#ffe14a', '#ffb020'), desc: t('Renasce das cinzas a cada luta.') },
   { id: 'galaxia', name: t('Galáxia Sideral'), emoji: '🌌', rarity: 'lendario', price: 250, currency: 'ovo', fx: 'galaxia', colors: C('#2a1a5e', '#1b1142', '#120b30', '#6a3cc0', '#3a2a78', '#ff4fd8', '#8a7ad8'), desc: t('Carrega o universo nas penas.') },
   { id: 'ouro', name: t('Ouro Maciço 24k'), emoji: '💰', rarity: 'lendario', price: 300, currency: 'ovo', fx: 'ouro', colors: C('#f5c542', '#d9a520', '#c48f12', '#ffe07a', '#ffd75e', '#ffef9a', '#d9a520'), desc: t('Vale mais que a fazenda inteira.') },
+  // Edição limitada: estoque global no servidor (src/game/ofertas.ts LIMITED_ITEMS)
+  { id: 'diamante', name: t('Coroa de Diamante'), emoji: '💎', rarity: 'lendario', price: 350, currency: 'ovo', fx: 'gelo', colors: C('#e9fbff', '#bfeeff', '#7fd8ff', '#ffffff', '#f4feff', '#4fc3ff', '#bfeeff'), desc: t('Edição limitada: só 50 no mundo. Brilha mais que o sol do meio-dia.') },
 ]
-export const SKIN_BY_ID: Record<string, Skin> = Object.fromEntries(SKINS.map((s) => [s.id, s]))
+/** Skins exclusivas do Passe da Temporada: não estão à venda na loja. */
+export const SEASON_SKINS: Skin[] = [
+  { id: 'tp-aurora', name: t('Aurora da Temporada'), emoji: '🌠', rarity: 'epico', price: 120, currency: 'ovo', fx: 'neon', exclusive: true, colors: C('#1a1236', '#2a1a52', '#3dffb0', '#b57bff', '#221846', '#3dffb0', '#b57bff'), desc: t('Brilho de fim de temporada. Só no Passe.') },
+  { id: 'tp-campeao', name: t('Campeão da Temporada'), emoji: '🏆', rarity: 'lendario', price: 300, currency: 'ovo', fx: 'galaxia', exclusive: true, colors: C('#3a1a78', '#2a1260', '#ffd23f', '#ff4fd8', '#4a2a90', '#ffd23f', '#ffd23f'), desc: t('Para quem chegou no nível 30. Só no Passe.') },
+]
+export const SKIN_BY_ID: Record<string, Skin> = Object.fromEntries([...SKINS, ...SEASON_SKINS].map((s) => [s.id, s]))
 
 export const SKIN_BUNDLES = [
   { id: 'elementos', name: t('Pacote Elementos'), emoji: '⚡', skins: ['fogo', 'gelo', 'lava'], price: 380, desc: t('Fogo, gelo e magma juntos.') },

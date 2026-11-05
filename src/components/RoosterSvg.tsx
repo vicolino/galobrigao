@@ -1,6 +1,6 @@
 import { useId, type ReactNode } from 'react'
 import { BREED_BY_ID, SKIN_BY_ID } from '../game/data'
-import type { Pattern, SkinFx, Slot } from '../game/types'
+import type { Pattern, Rooster, SkinFx, Slot } from '../game/types'
 
 export type Anim = 'idle' | 'attack' | 'hit' | 'ko' | 'win' | 'special' | 'defend' | 'miss' | 'none'
 
@@ -8,6 +8,8 @@ interface Props {
   breedId: string
   skin?: string
   equipped?: Partial<Record<Slot, string>>
+  /** Pelagem rara (cruzamento): vale só quando não tem skin. */
+  tint?: Rooster['tint']
   flip?: boolean
   anim?: Anim
   size?: number | string
@@ -54,11 +56,11 @@ const LOOKS: Record<string, Look> = {
 
 const GRADIENT_FX: SkinFx[] = ['fogo', 'arcoiris', 'galaxia', 'ouro', 'robo', 'lava', 'gelo']
 
-export function RoosterSvg({ breedId, skin, equipped = {}, flip, anim = 'idle', size = 200, className = '' }: Props) {
+export function RoosterSvg({ breedId, skin, equipped = {}, tint, flip, anim = 'idle', size = 200, className = '' }: Props) {
   const uid = useId().replace(/:/g, '')
   const breed = BREED_BY_ID[breedId] ?? BREED_BY_ID.caipira
   const sk = skin ? SKIN_BY_ID[skin] : undefined
-  const c = sk ? sk.colors : breed.colors
+  const c = sk ? sk.colors : tint ? { ...breed.colors, ...tint } : breed.colors
   const fx = sk?.fx
   const pattern: Pattern | null = sk ? null : breed.pattern
   const ko = anim === 'ko'
@@ -269,6 +271,19 @@ export function RoosterSvg({ breedId, skin, equipped = {}, flip, anim = 'idle', 
           )}
           {breed.id === 'trump' && !e.cabeca && <Combover outline={outline} />}
           {look && <FootballHead look={look} outline={outline} hat={!!e.cabeca} />}
+          {skin === 'diamante' && !e.cabeca && (
+            <g stroke={outline} strokeWidth="2.5" strokeLinejoin="round">
+              {/* Coroa de Diamante (edição limitada) */}
+              <path d="M124,48 L122,22 L136,34 L148,12 L160,34 L174,22 L170,50 C156,44 138,44 124,48 Z" fill="#dff7ff" />
+              <path d="M126,44 C140,39 156,39 170,45" stroke="#7fd8ff" strokeWidth="2" fill="none" />
+              <path d="M148,24 L153,31 L148,38 L143,31 Z" fill="#4fc3ff" strokeWidth="1.5" />
+              <path d="M134,34 L137,38 L134,42 L131,38 Z" fill="#b388ff" strokeWidth="1.2" />
+              <path d="M162,34 L165,38 L162,42 L159,38 Z" fill="#b388ff" strokeWidth="1.2" />
+              <circle cx="148" cy="12" r="2.6" fill="#fff" strokeWidth="1.2" />
+              <circle cx="122" cy="22" r="2" fill="#fff" strokeWidth="1" />
+              <circle cx="174" cy="22" r="2" fill="#fff" strokeWidth="1" />
+            </g>
+          )}
           {/* Cicatriz */}
           <path d="M140,80 L150,88" stroke="#000" strokeOpacity="0.3" strokeWidth="2" strokeLinecap="round" />
 
@@ -399,6 +414,17 @@ function BodyMark({ breedId, clip, outline }: { breedId: string; clip: string; o
         <path d="M138,112 L146,112 L144,120 L140,120 Z" fill="#c8102e" strokeWidth="2.2" />
         <path d="M140,120 L144,120 L150,166 L142,176 L134,166 Z" fill="#c8102e" strokeWidth="2.5" />
         <path d="M141,132 L147,140 M139,148 L148,156" stroke="#8a0a1f" strokeWidth="2" />
+      </g>
+    )
+  }
+  if (breedId === 'temporada') {
+    // Galo da Temporada: faixa de campeão e medalha no peito
+    return (
+      <g stroke={outline} strokeLinejoin="round">
+        <path d="M126,104 L140,128 L154,104" fill="none" stroke="#ffd23f" strokeWidth="5" />
+        <circle cx="140" cy="140" r="12" fill="#ffd23f" strokeWidth="2.5" />
+        <circle cx="140" cy="140" r="7" fill="none" stroke="#c48f12" strokeWidth="2" />
+        <path d="M140,134.5 L141.8,138.4 L146,138.8 L142.8,141.6 L143.7,145.7 L140,143.6 L136.3,145.7 L137.2,141.6 L134,138.8 L138.2,138.4 Z" fill="#fff6c8" stroke="none" />
       </g>
     )
   }

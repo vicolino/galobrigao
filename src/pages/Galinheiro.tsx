@@ -6,6 +6,7 @@ import { currentEnergy, feedCost, feedInstantCost, finalStats, fmt, power, sellP
 import { FEED_COOLDOWN, STAR_COST, useGame } from '../game/store'
 import type { Slot, Style } from '../game/types'
 import { OVO_EM_MILHO, coopWorth, roosterValue, trackWorth } from '../game/worth'
+import { RefillButton } from '../components/Ofertas'
 import { locale, t, tn, tp, tx } from '../i18n'
 
 export function Galinheiro({ selectedId }: { selectedId?: string }) {
@@ -192,7 +193,7 @@ function RoosterDetail({ id }: { id: string }) {
       <div className="detail">
         <div className="card detail-art">
           <div className="detail-stage">
-            <RoosterSvg breedId={ro.breedId} skin={ro.skin} equipped={ro.equipped} size="100%" anim={anim} />
+            <RoosterSvg breedId={ro.breedId} skin={ro.skin} equipped={ro.equipped} tint={ro.tint} size="100%" anim={anim} />
           </div>
           <div className="slots">
             {(Object.keys(SLOTS) as Slot[]).map((sl) => {
@@ -238,10 +239,16 @@ function RoosterDetail({ id }: { id: string }) {
             </div>
           </div>
           <p className="muted italic">"{breed.desc}"</p>
+          {(ro.parents || ro.tint) && (
+            <p className="tiny muted">
+              {ro.parents && t('🐣 Filho de {a} com {b}', { a: ro.parents[0], b: ro.parents[1] })} {ro.tint && t('🌈 Pelagem rara')}
+            </p>
+          )}
 
           <div className="bars">
             <Bar value={ro.xp} max={xpMax} kind="xp" label={t('XP {xp}/{max}', { xp: fmt(ro.xp), max: fmt(xpMax) })} />
             <Bar value={en} max={100} kind="energy" label={t('Energia {en}/100 {extra}', { en, extra: en < 100 ? '(+1/min)' : '' })} />
+            {en < 100 && <RefillButton ro={ro} className="btn btn-gold btn-sm refill-btn" />}
           </div>
 
           <div className="stat-grid">
@@ -338,9 +345,17 @@ function RoosterDetail({ id }: { id: string }) {
             <button className="btn" onClick={() => setStyleOpen(true)}>
               {t('🎭 Estilo')}
             </button>
+            <button className="btn" onClick={() => go(`/cruzamento?a=${ro.id}`)}>
+              {t('🥚 Cruzar')}
+            </button>
             <button className="btn btn-danger" onClick={() => setSellOpen(true)}>
               {t('💰 Vender')}
             </button>
+            {s.roosters.length > 1 && (
+              <button className="btn btn-gold" onClick={() => go(`/feira/vender?galo=${ro.id}`)}>
+                {t('💰 Vender na Feira')}
+              </button>
+            )}
           </div>
         </div>
       </div>

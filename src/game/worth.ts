@@ -15,7 +15,8 @@ export function roosterValue(ro: Rooster): number {
     const acc = id ? ACC_BY_ID[id] : undefined
     return a + (acc ? corn(acc.price, acc.currency) : 0)
   }, 0)
-  return Math.round(breed * (0.8 + ro.stars * 0.12) + ro.level * 260 + ro.wins * 20 + gear)
+  // Pelagem rara (cruzamento) vale 50% a mais na raça
+  return Math.round(breed * (0.8 + ro.stars * 0.12) * (ro.tint ? 1.5 : 1) + ro.level * 260 + ro.wins * 20 + gear)
 }
 
 export function coopWorth(s: GameState) {

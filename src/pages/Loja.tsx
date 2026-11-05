@@ -12,6 +12,7 @@ import type { Accessory, Slot } from '../game/types'
 import { bonusText } from './Galinheiro'
 import { FerramentasTab, SkinsTab } from './LojaExtra'
 import { locale, t, tn, tp, tx } from '../i18n'
+import { FirstBuyBanner, LimitedBadge, useFirstBonus, useLimited } from '../components/Ofertas'
 
 type Tab = 'galos' | 'skins' | 'acessorios' | 'ferramentas' | 'itens' | 'caixas' | 'ovos' | 'trocar'
 
@@ -48,6 +49,7 @@ export function Loja({ tab: tabParam }: { tab?: string }) {
 
 function Galos() {
   const { state, actions, toast } = useGame()
+  const rei = useLimited('rei')
   const s = state!
   const mins = Math.max(0, 30 - Math.floor((Date.now() - s.market.at) / 60000))
   // Mercado vencido: o servidor gera um novo de graça
@@ -143,19 +145,20 @@ function Galos() {
                 </b>
                 <p className="tiny muted italic">"{b.desc}"</p>
                 {e.breedId === 'rei' && <p className="king-titles">{t('🏆🏆🏆 3 Copas do Mundo · ⚽ 1.000+ gols')}</p>}
+                {e.breedId === 'rei' && <LimitedBadge id="rei" />}
                 <p className="tiny">
                   ❤️ {b.base.hp} · 🗡️ {b.base.atk} · 🛡️ {b.base.def} · 💨 {b.base.spd}
                 </p>
                 <button
                   className="btn btn-gold btn-sm full"
-                  disabled={owned}
+                  disabled={owned || (e.breedId === 'rei' && !!rei?.out)}
                   onClick={async () => {
                     const r = await actions.buyElection(e.breedId)
                     if (r.ok) toast(t('{nome} chegou ao galinheiro!', { nome: `${e.emoji} ${e.name}` }), 'ok')
                     else toast(tx(r.error), 'erro')
                   }}
                 >
-                  {owned ? t('✅ Já está no seu galinheiro') : <>{t('Comprar')} · 🥚 {b.price}</>}
+                  {owned ? t('✅ Já está no seu galinheiro') : e.breedId === 'rei' && rei?.out ? t('🚫 ESGOTADO') : <>{t('Comprar')} · 🥚 {b.price}</>}
                 </button>
               </div>
             )
@@ -408,6 +411,7 @@ function Ovos() {
 
   const vip = items.find((i) => i.kind === 'vip')
   const packs = items.filter((i) => i.kind === 'ovos')
+  const first = useFirstBonus()
   const starters = items.filter((i) => i.kind === 'starter' && !i.owned)
 
   return (
@@ -421,7 +425,7 @@ function Ovos() {
         <div className="card vip">
           <div className="vip-crown">👑</div>
           <div className="grow">
-            <h2>{t('Passe do Criador')}</h2>
+            <h2>{t('Assinatura VIP')}</h2>
             <ul className="tiny">
               <li>{t('🥚 100 ovos de ouro na hora')}</li>
               <li>{t('🥚 +{n} ovos todo dia no bônus diário', { n: VIP.dailyOvos })}</li>
@@ -458,11 +462,14 @@ function Ovos() {
       )}
 
       <h3 className="section-title">{t('🥚 Ovos de ouro')}</h3>
+      <FirstBuyBanner />
       <div className="grid-shop">
         {packs.map((p, i) => (
           <div key={p.id} className={`card egg-pack ${p.tag ? 'tagged' : ''}`}>
             {p.tag && <div className="pack-tag">{tx(p.tag)}</div>}
+            {first && <span className="x2-badge">2×</span>}
             <div className="egg-stack">{'🥚'.repeat(i + 1)}</div>
+            {first && <span className="tiny first-x2">{t('🎁 +{n} na primeira compra', { n: p.ovos!.toLocaleString(locale()) })}</span>}
             <b className="egg-amount">{(p.ovos! + (p.bonus ?? 0)).toLocaleString(locale())}</b>
             {p.bonus ? <span className="pos tiny">{t('+{n} de bônus', { n: p.bonus.toLocaleString(locale()) })}</span> : <span className="tiny">&nbsp;</span>}
             <span className="tiny muted">{t('{preco} por 100', { preco: brl(Math.round(p.priceCents / ((p.ovos! + (p.bonus ?? 0)) / 100))) })}</span>

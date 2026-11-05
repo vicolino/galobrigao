@@ -6,6 +6,7 @@ import { missionOvos } from './rewards'
 import { live } from './config'
 import { lang, t } from '../i18n'
 import type { GameState, HouseFight, LeagueRow, Mission, MissionKind, Rarity, Rooster, Slot } from './types'
+import { freshPass, seasonId as passSeason } from './pass'
 
 export const VERSION = 1
 
@@ -218,7 +219,8 @@ export function opponentTools(difficulty: Difficulty): string[] {
 /** Skin da semana com desconto. */
 export const WEEKLY_DISCOUNT = 0.3
 export function weeklySkin() {
-  const premium = SKINS.filter((k) => k.currency === 'ovo')
+  // Skin de edição limitada não entra na promoção da semana
+  const premium = SKINS.filter((k) => k.currency === 'ovo' && k.id !== 'diamante')
   return premium[seasonId() % premium.length]
 }
 export function skinPrice(id: string) {
@@ -281,6 +283,8 @@ export function migrate(s: GameState): GameState {
   s.stats.toolWins ??= 0
   // Fichas de aposta (novas): todo mundo começa com o valor inicial da configuração
   if (typeof s.fichas !== 'number' || !Number.isFinite(s.fichas)) s.fichas = live.bets.chipsStart
+  // Passe da Temporada: zera quando o mês (UTC) muda
+  if (!s.pass || s.pass.season !== passSeason()) s.pass = freshPass()
   return s
 }
 

@@ -8,6 +8,7 @@ import { getDb, type OrderRow, type UserRow } from './db'
 import { loadSave, writeSave } from './saves'
 import { t } from '../src/i18n'
 import { setKyc, walletAddress, web3Overview } from './web3'
+import { feiraAdmin } from './feira'
 
 export class AdminError extends Error {
   constructor(
@@ -155,6 +156,9 @@ export async function handleAdmin(path: string, method: string, url: URL, body: 
 
   // Web3 (carteiras, NFTs, fila de KYC)
   if (path === '/api/admin/web3' && method === 'GET') return web3Overview()
+
+  // Feira entre jogadores (só leitura: últimas trocas e taxas)
+  if (path === '/api/admin/feira' && method === 'GET') return feiraAdmin()
 
   // Jogadores
   if (path === '/api/admin/users' && method === 'GET') {

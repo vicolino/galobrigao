@@ -9,6 +9,7 @@ import type { BetPick, GameState, Rooster } from '../src/game/types'
 import { getDb } from './db'
 import { today } from '../src/game/rooster'
 import { loadSave, writeSave } from './saves'
+import { addPassXp, PASS_XP } from '../src/game/pass'
 import { locale, t } from '../src/i18n'
 
 export class BetError extends Error {}
@@ -289,7 +290,7 @@ export function handleBets(path: string, method: string, body: Record<string, un
     const b = JSON.parse(f!.b) as Rooster
     const odds = pick === 'a' ? f!.odds_a : pick === 'b' ? f!.odds_b : f!.odds_ko
     const label = pickLabel(pick, a.name, b.name)
-    state = applyBetPlaced(state, amount, label, odds)
+    state = addPassXp(applyBetPlaced(state, amount, label, odds), PASS_XP.apostar)
     const d = db()
     d.exec('BEGIN')
     try {

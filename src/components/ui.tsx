@@ -127,7 +127,7 @@ export function RoosterCard({ ro, onClick, footer, selected, compact }: { ro: Ro
         <span className="rc-level">{t('Nv {n}', { n: ro.level })}</span>
       </div>
       <div className="rc-art">
-        <RoosterSvg breedId={ro.breedId} skin={ro.skin} equipped={ro.equipped} size={compact ? 110 : 150} />
+        <RoosterSvg breedId={ro.breedId} skin={ro.skin} equipped={ro.equipped} tint={ro.tint} size={compact ? 110 : 150} />
       </div>
       <div className="rc-name">{ro.name}</div>
       <div className="rc-sub">

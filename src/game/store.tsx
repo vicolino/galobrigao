@@ -35,6 +35,7 @@ import type { Difficulty } from './engine'
 import { applyBetCredit, type BetCredit, type BetView, type ScheduledFight } from './bets'
 import { locale, t, tp, tx } from '../i18n'
 
+import { addPassXp, PASS_XP } from './pass'
 import {
   checkAchievements,
   genMarket,
@@ -222,6 +223,12 @@ function useGameEngine() {
             dirty.current = true
             void flush()
           }
+        }
+        // Feira: vendeu, ganhou presente ou anúncio voltou → avisa e puxa o save do servidor
+        if (p.feira?.length) {
+          for (const f of p.feira.slice(0, 3)) toast(tx(f.text), 'ok')
+          sfx.coin()
+          await reloadFromServer()
         }
         if (p.updates.length) {
           // Só abre a luta sozinho se o desafio é recente (não um de ontem visto agora)
@@ -422,6 +429,18 @@ async function shop<T = unknown>(op: ShopOp, sound?: () => void): Promise<Result
 
     reloadFromServer,
 
+    /** Operação da Feira no servidor: salva antes, depois adota o save que o servidor devolveu. */
+    async feiraOp(fn: () => Promise<{ rev: number; state: GameState }>): Promise<Result> {
+      try {
+        await flush()
+        adopt(await fn())
+        return { ok: true }
+      } catch (e) {
+        if (e instanceof ApiError && 'rev' in e.body) adopt(e.body as { rev: number; state: GameState | null })
+        return { ok: false, error: (e as Error).message }
+      }
+    },
+
     async reset() {
       await api.deleteSave()
       adopt({ rev: 0, state: null })
@@ -568,6 +587,7 @@ async function shop<T = unknown>(op: ShopOp, sound?: () => void): Promise<Result
       const { levels } = addXp(ro, xp)
       n = updRooster(n, roosterId, (r) => withEnergy(addXp(r, xp).rooster, e - 15))
       n = bump(n, 'treinar')
+      n = addPassXp(n, PASS_XP.treinar)
       commit(n)
       sfx.hit()
       return { ok: true, value: levels ? t('🎉 {nome} subiu para o nível {n}!', { nome: ro.name, n: ro.level + levels }) : t('{nome} treinou e ganhou {xp} XP 💪', { nome: ro.name, xp }) }
@@ -622,6 +642,7 @@ async function shop<T = unknown>(op: ShopOp, sound?: () => void): Promise<Result
       n = bump(n, 'lutar')
       if (won) n = bump(n, 'vencer')
       if (won && res.method === 'ko') n = bump(n, 'ko')
+      n = addPassXp(n, PASS_XP.lutar + (won ? PASS_XP.vencer : 0))
       n = log(n, t(won ? 'Vitória: {a} x {b}' : 'Derrota: {a} x {b}', { a: ro.name, b: opp.name }), milho, ovo, fichas)
       setHeld({ milho: s.milho, ovos: s.ovos, fichas: s.fichas ?? 0 })
       commit(n)
@@ -665,6 +686,7 @@ async function shop<T = unknown>(op: ShopOp, sound?: () => void): Promise<Result
         missions: { ...s.missions, list: s.missions.list.map((x) => (x.id === id ? { ...x, claimed: true } : x)) },
       }
       n = log(n, t('Missão: {texto}', { texto: tx(m.text) }), m.reward.milho, m.reward.ovo)
+      n = addPassXp(n, PASS_XP.missao)
       commit(n)
       sfx.coin()
       return { ok: true }
@@ -701,6 +723,11 @@ async function shop<T = unknown>(op: ShopOp, sound?: () => void): Promise<Result
     refreshMarket: () => shop({ op: 'refreshMarket' }),
     exchange: (id: string) => shop({ op: 'exchange', id }, sfx.coin),
     upgradeStars: (roosterId: string) => shop({ op: 'upgradeStars', roosterId }, sfx.win),
+    // Passe da Temporada (servidor)
+    passClaim: (track: 'free' | 'premium', tier: number) => shop<string>({ op: 'passClaim', track, tier }, sfx.win),
+    passClaimAll: () => shop<{ count: number; skipped: number }>({ op: 'passClaimAll' }, sfx.win),
+    passBuy: () => shop({ op: 'passBuy' }, sfx.win),
+    passSkip: () => shop<number>({ op: 'passSkip' }, sfx.coin),
 
     /** Alimentar: a cada 4h pagando milho (local), ou na hora pagando ovos (servidor). Os dois sobem com o nível. */
     async feed(roosterId: string, instant = false): Promise<Result<string>> {
@@ -715,7 +742,7 @@ async function shop<T = unknown>(op: ShopOp, sound?: () => void): Promise<Result
       if (!paid) return noMoney('milho')
       const xp = 30 + ro.level * 6
       const { levels } = addXp(ro, xp)
-      commit(updRooster(paid, roosterId, (r) => ({ ...withEnergy(addXp(r, xp).rooster, currentEnergy(r) + 15), fedAt: Date.now() })))
+      commit(addPassXp(updRooster(paid, roosterId, (r) => ({ ...withEnergy(addXp(r, xp).rooster, currentEnergy(r) + 15), fedAt: Date.now() })), PASS_XP.alimentar))
       sfx.coin()
       return { ok: true, value: levels ? t('🎉 {nome} comeu e subiu para o nível {n}!', { nome: ro.name, n: ro.level + levels }) : t('{nome} comeu! +{xp} XP e +15 de energia 🌽', { nome: ro.name, xp }) }
     },

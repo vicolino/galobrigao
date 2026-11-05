@@ -3,6 +3,7 @@ import { fmt } from '../game/rooster'
 import { useGame } from '../game/store'
 import type { MissionKind } from '../game/types'
 import { t, tx } from '../i18n'
+import { PassWidget } from './Passe'
 
 const LINKS: Record<MissionKind, string> = {
   vencer: '#/rinha',
@@ -29,6 +30,7 @@ export function Missoes() {
   return (
     <>
       <PageHead title={t('🎯 Missões diárias')} subtitle={t('Novas missões em {h}h {m}min · {feitas}/{total} resgatadas', { h: hrs, m: mins, feitas: done, total: s.missions.list.length })} />
+      <PassWidget />
       <div className="missions">
         {s.missions.list.map((m) => {
           const ready = m.progress >= m.goal && !m.claimed

@@ -3,8 +3,11 @@ import type { ShopOp } from './game/premium'
 import type { AppConfig, PublicConfig } from './game/config'
 import type { ChallengeView, LobbyEntry, PvpPoll } from './game/pvp'
 import type { BetCredit, BetView, ScheduledFight } from './game/bets'
-import type { BetPick, GameState } from './game/types'
+import type { BetPick, GameState, Rooster } from './game/types'
 import { lang, t, tx } from './i18n'
+import type { Currency } from './game/types'
+import type { FeiraAdmin, FeiraData, FeiraKind, FeiraListing, FeiraPlayer } from './game/feira'
+import type { LimitedStock } from './game/ofertas'
 
 export interface ApiUser {
   id: string
@@ -31,6 +34,18 @@ export interface ApiOrder {
 }
 
 export type CatalogItem = Sku & { owned?: boolean }
+
+export interface OffersAdmin {
+  shown: number
+  bought: number
+  conversion: number
+  offerOvos: number
+  firstBonus: number
+  limitedSold: number
+  refills: number
+  refillOvos: number
+  stock: LimitedStock[]
+}
 
 export class ApiError extends Error {
   constructor(
@@ -77,11 +92,16 @@ export const api = {
   putSave: (state: GameState, rev: number) => call<{ rev: number; credit: BetCredit | null }>('/save', { method: 'PUT', body: { state, rev } }),
   deleteSave: () => call('/save', { method: 'DELETE' }),
   startFree: (avatar: string) => call<{ rev: number; state: GameState }>('/onboarding/free', { method: 'POST', body: { avatar } }),
-  catalog: () => call<{ items: CatalogItem[]; provider: string }>('/catalog'),
+  catalog: () => call<{ items: CatalogItem[]; provider: string; firstBonus?: boolean }>('/catalog'),
   checkout: (sku: string, method: 'pix' | 'cartao' | 'credito') => call<{ order: ApiOrder }>('/checkout', { method: 'POST', body: { sku, method } }),
   order: (id: string) => call<{ order: ApiOrder }>(`/orders/${id}`),
   simulate: (id: string) => call<{ order: ApiOrder }>(`/orders/${id}/simulate`, { method: 'POST' }),
   orders: () => call<{ orders: ApiOrder[] }>('/orders'),
+  // Ofertas (server/ofertas.ts)
+  limited: () => call<{ items: LimitedStock[]; now: number }>('/limited'),
+  offersInfo: () => call<{ firstBonus: boolean }>('/offers'),
+  offersAdmin: (days: number) => call<OffersAdmin>(`/offers/admin?days=${days}`),
+  offersStock: (id: string, total: number, endsAt: number | null) => call<{ stock: LimitedStock[] }>('/offers/admin/stock', { method: 'PUT', body: { id, total, endsAt } }),
   shop: (op: ShopOp) => call<{ rev: number; state: GameState; value: unknown }>('/shop', { method: 'POST', body: op }),
   betsSchedule: () =>
     call<{ now: number; closeMs: number; liveMs: number; fights: ScheduledFight[]; mine: BetView[] }>('/bets/schedule').then((r) => ({
@@ -97,6 +117,15 @@ export const api = {
   pvpCancel: (id: string) => call('/pvp/cancel', { method: 'POST', body: { id } }),
   pvpSeen: (id: string) => call('/pvp/seen', { method: 'POST', body: { id } }),
   pvpHistory: () => call<{ history: ChallengeView[] }>('/pvp/history'),
+  // 🏪 Feira entre jogadores
+  feira: {
+    get: () => call<FeiraData>('/feira'),
+    players: (q: string) => call<{ players: FeiraPlayer[] }>(`/feira/players?q=${encodeURIComponent(q)}`),
+    list: (kind: FeiraKind, id: string, price: number, currency: Currency) => call<{ rev: number; state: GameState; listing: FeiraListing }>('/feira/list', { method: 'POST', body: { kind, id, price, currency } }),
+    cancel: (id: string) => call<{ rev: number; state: GameState }>('/feira/cancel', { method: 'POST', body: { id } }),
+    buy: (id: string, price: number, currency: Currency) => call<{ rev: number; state: GameState }>('/feira/buy', { method: 'POST', body: { id, price, currency } }),
+    gift: (to: string, kind: FeiraKind, id: string) => call<{ rev: number; state: GameState }>('/feira/gift', { method: 'POST', body: { to, kind, id } }),
+  },
   config: () => call<PublicConfig>('/config'),
   admin: {
     overview: (days: number) => call<AdminOverview>(`/admin/overview?days=${days}`),
@@ -112,6 +141,7 @@ export const api = {
     audit: () => call<{ log: AdminLogRow[] }>('/admin/audit'),
     kyc: (id: string, status: KycStatus) => call<{ ok: true }>(`/admin/users/${id}/kyc`, { method: 'POST', body: { status } }),
     web3: () => call<AdminWeb3>('/admin/web3'),
+    feira: () => call<FeiraAdmin>('/admin/feira'),
   },
   // ---------- Carteira cripto (testnet) ----------
   web3: () => call<Web3Info>('/web3'),
@@ -123,8 +153,16 @@ export const api = {
   marketList: (tokenId: number, price: number) => call<{ tx?: Web3Tx }>('/market/list', { method: 'POST', body: { tokenId, price } }),
   marketCancel: (tokenId: number) => call<{ tx?: Web3Tx }>('/market/cancel', { method: 'POST', body: { tokenId } }),
   marketBuy: (tokenId: number) => call<{ rev: number; state: GameState; tx: Web3Tx }>('/market/buy', { method: 'POST', body: { tokenId } }),
+  // ---------- Ranking e vitrine ----------
+  ranking: () => call<{ top: RankRow[]; total: number; me: (RankRow & { pos: number }) | null; at: number }>('/ranking'),
+  showcase: (id: string) => call<Showcase>(`/players/${encodeURIComponent(id)}/showcase`),
   setLimit: (monthlyCents: number) => call<{ user: ApiUser }>('/limits', { method: 'PUT', body: { monthlyCents } }),
 }
+
+// ---------- Tipos do ranking e vitrine ----------
+export interface PublicRooster { id: string; name: string; breedId: string; level: number; stars: number; skin: string | null; equipped: Rooster['equipped']; tint: Rooster['tint'] | null; wins: number; value: number }
+export interface RankRow { id: string; name: string; avatar: string; total: number; roosters: number; best: PublicRooster | null }
+export interface Showcase { id: string; name: string; avatar: string; since: number | null; worth: number; pos: number | null; achievements: number; tier: { name: string; emoji: string }; wins: number; fights: number; count: number; roosters: PublicRooster[] }
 
 // ---------- Tipos da carteira cripto ----------
 export type KycStatus = 'none' | 'pending' | 'verified' | 'rejected'

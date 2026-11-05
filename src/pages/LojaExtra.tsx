@@ -7,6 +7,7 @@ import { WEEKLY_DISCOUNT, skinPrice, useGame, weeklySkin } from '../game/store'
 import type { Skin } from '../game/types'
 import { ARENA } from '../brand'
 import { t, tn, tp, tx } from '../i18n'
+import { LimitedBadge, useLimited } from '../components/Ofertas'
 
 // ---------------- Skins ----------------
 
@@ -19,6 +20,7 @@ export function SkinsTab() {
   const weekly = weeklySkin()
   const daysLeft = 7 - (Math.floor((Date.now() - Date.UTC(2024, 0, 1)) / 864e5) % 7)
   const owned = (id: string) => s.skins.includes(id)
+  const diamante = useLimited('skin:diamante')
 
   const buy = async (sk: Skin) => {
     const r = await actions.buySkin(sk.id)
@@ -118,6 +120,7 @@ export function SkinsTab() {
               {sk.emoji} {sk.name}
             </b>
             <RarityTag rarity={sk.rarity} />
+            {sk.id === 'diamante' && <LimitedBadge id="skin:diamante" />}
             {owned(sk.id) ? (
               <button
                 className="btn full"
@@ -131,6 +134,7 @@ export function SkinsTab() {
             ) : (
               <button
                 className="btn btn-primary full"
+                disabled={sk.id === 'diamante' && !!diamante?.out}
                 onClick={(e) => {
                   e.stopPropagation()
                   buy(sk)

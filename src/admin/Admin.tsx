@@ -5,11 +5,13 @@ import { Modal } from '../components/ui'
 import { CATALOG, brl } from '../game/catalog'
 import type { AppConfig } from '../game/config'
 import { useGame } from '../game/store'
+import { OfertasAdmin } from './OfertasAdmin'
 import { SKIN_BY_ID } from '../game/data'
 import { locale, t, tp, tx } from '../i18n'
 import { C1, C2, DailyBars, HBars, Kpi, SplitBar } from './Charts'
+import type { FeiraAdmin } from '../game/feira'
 
-type Tab = 'geral' | 'jogadores' | 'pedidos' | 'config' | 'auditoria' | 'cripto'
+type Tab = 'geral' | 'jogadores' | 'pedidos' | 'config' | 'auditoria' | 'cripto' | 'feira'
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'geral', label: t('📈 Visão geral') },
@@ -18,6 +20,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'config', label: t('⚙️ Configurações') },
   { id: 'auditoria', label: t('🧾 Auditoria') },
   { id: 'cripto', label: t('⛓️ Cripto') },
+  { id: 'feira', label: t('🏪 Feira') },
 ]
 
 const n = (v: number) => v.toLocaleString(locale())
@@ -70,6 +73,7 @@ export function Admin({ tab: tabParam }: { tab?: string }) {
         {tab === 'config' && <Config />}
         {tab === 'auditoria' && <Audit />}
         {tab === 'cripto' && <Web3Admin />}
+        {tab === 'feira' && <FeiraAdminTab />}
       </main>
     </div>
   )
@@ -161,6 +165,7 @@ function Overview() {
             <Kpi label={t('Contas bloqueadas')} value={n(d.kpis.banned)} />
             <Kpi label={t('Gasto com crédito MVP ({n} dias)', { n: days })} value={brl(d.kpis.creditSpentCents)} hint={t('Compras pagas com crédito de teste — não entram na receita')} />
           </div>
+          <OfertasAdmin days={days} />
         </>
       )}
     </>
@@ -623,6 +628,64 @@ function Web3Admin() {
           </tbody>
         </table>
         {d && rows.length === 0 && <p className="muted center">{t('Nenhuma transação ainda.')}</p>}
+      </div>
+    </>
+  )
+}
+
+// ---------------- Feira (só leitura) ----------------
+
+function FeiraAdminTab() {
+  const [d, setD] = useState<FeiraAdmin | null>(null)
+  const [err, setErr] = useState<string | null>(null)
+  useEffect(() => {
+    api.admin.feira().then(setD).catch((e) => setErr(tx((e as Error).message)))
+  }, [])
+  return (
+    <>
+      <h1>{t('Feira')}</h1>
+      <p className="tiny muted">{t('Trocas entre jogadores. A taxa da Feira (10% das vendas + 🥚 2 por presente) sai da economia.')}</p>
+      {err && <div className="warn">{err}</div>}
+      {d && (
+        <div className="kpi-grid small">
+          <Kpi label={t('🏷️ Anúncios ativos')} value={n(d.active)} />
+          <Kpi label={t('🤝 Vendas')} value={n(d.sales)} />
+          <Kpi label={t('🎁 Presentes')} value={n(d.gifts)} />
+          <Kpi label={t('🌽 Taxas em milho')} value={n(d.feesMilho)} />
+          <Kpi label={t('🥚 Taxas em ovos')} value={n(d.feesOvos)} />
+          <Kpi label={t('🌽 Volume vendido')} value={n(d.volumeMilho)} />
+          <Kpi label={t('🥚 Volume vendido')} value={n(d.volumeOvos)} />
+        </div>
+      )}
+      <div className="card">
+        <h3>{t('Últimas trocas')}</h3>
+        <table className="table admin-table">
+          <thead>
+            <tr>
+              <th>{t('Quando')}</th>
+              <th>{t('Tipo')}</th>
+              <th>{t('De')}</th>
+              <th>{t('Para')}</th>
+              <th>{t('Item')}</th>
+              <th>{t('Preço')}</th>
+              <th>{t('Taxa')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(d?.trades ?? []).map((r) => (
+              <tr key={r.id}>
+                <td className="tiny">{dt(r.at)}</td>
+                <td>{r.kind === 'venda' ? t('Venda') : t('Presente')}</td>
+                <td className="tiny">{r.sellerName}</td>
+                <td className="tiny">{r.buyerName}</td>
+                <td className="tiny">{tx(r.assetName)}</td>
+                <td className="tiny">{r.price ? `${r.currency === 'milho' ? '🌽' : '🥚'} ${n(r.price)}` : '—'}</td>
+                <td className="tiny">{`${r.currency === 'milho' ? '🌽' : '🥚'} ${n(r.fee)}`}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {d && d.trades.length === 0 && <p className="muted center">{t('Nenhuma troca ainda.')}</p>}
       </div>
     </>
   )

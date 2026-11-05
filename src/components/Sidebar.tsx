@@ -1,3 +1,4 @@
+import { newsUnread } from './Novidades'
 import { useState } from 'react'
 import { fmt, today } from '../game/rooster'
 import { sfx } from '../game/sound'
@@ -8,19 +9,25 @@ import { brl } from '../game/catalog'
 import { APP_NAME, ARENA } from '../brand'
 import { t, tp } from '../i18n'
 import { LangSwitch } from './LangSwitch'
+import { passClaimable } from '../pages/Passe'
 
 const NAV = [
   { path: '/galinheiro', label: t('Galinheiro'), emoji: '🏠' },
+  { path: '/cruzamento', label: t('Cruzamento'), emoji: '🥚' },
   { path: '/rinha', label: t(ARENA), emoji: '⚔️' },
   { path: '/desafios', label: t('Desafios'), emoji: '🤝' },
   { path: '/apostas', label: t('Apostas'), emoji: '🎲' },
   { path: '/missoes', label: t('Missões'), emoji: '🎯' },
+  { path: '/passe', label: t('Passe'), emoji: '🎫' },
   { path: '/liga', label: t('Liga'), emoji: '🏆' },
+  { path: '/ranking', label: t('Ranking'), emoji: '📈' },
   { path: '/loja/skins', label: t('Skins'), emoji: '🎨' },
   { path: '/loja/ferramentas', label: t('Ferramentas'), emoji: '🧰' },
   { path: '/loja', label: t('Loja'), emoji: '🛒' },
+  { path: '/feira', label: t('Feira'), emoji: '🏪' },
   { path: '/carteira', label: t('Carteira'), emoji: '👛' },
-  { path: '/mercado', label: t('Mercado'), emoji: '🏪' },
+  { path: '/mercado', label: t('Mercado'), emoji: '💱' },
+  { path: '/novidades', label: t('Novidades'), emoji: '🆕' },
   { path: '/perfil', label: t('Perfil'), emoji: '👤' },
 ]
 
@@ -48,10 +55,10 @@ export function Sidebar({ route, open, onClose }: { route: string; open: boolean
           <span>{APP_NAME}</span>
         </div>
         <nav>
-          {NAV.map((n) => {
+          {NAV.filter((n) => pubConfig?.web3 || (n.path !== '/carteira' && n.path !== '/mercado')).map((n) => {
             const special = ['/loja/skins', '/loja/ferramentas']
             const active = special.includes(n.path) ? route.startsWith(n.path) : route.startsWith(n.path) && !special.some((p) => route.startsWith(p))
-            const badge = n.path === '/missoes' ? missionsReady : n.path === '/apostas' ? openBets : n.path === '/desafios' ? (pvp?.incoming.length ?? 0) : 0
+            const badge = n.path === '/missoes' ? missionsReady : n.path === '/passe' ? passClaimable(s) : n.path === '/apostas' ? openBets : n.path === '/desafios' ? (pvp?.incoming.length ?? 0) : n.path === '/novidades' ? newsUnread(s.settings.newsSeen) : 0
             return (
               <a
                 key={n.path}

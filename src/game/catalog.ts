@@ -5,7 +5,7 @@ import { locale, t } from '../i18n'
 
 const num = (n: number) => n.toLocaleString(locale())
 
-export type SkuKind = 'ovos' | 'vip' | 'starter'
+export type SkuKind = 'ovos' | 'vip' | 'starter' | 'pass'
 
 export interface Sku {
   id: string
@@ -33,7 +33,9 @@ export const CATALOG: Sku[] = [
   { id: 'ovos-700', kind: 'ovos', name: t('{n} ovos de ouro', { n: num(850) }), emoji: '🥚', desc: t('{a} + {b} de bônus.', { a: num(700), b: num(150) }), priceCents: 4990, ovos: 700, bonus: 150 },
   { id: 'ovos-1600', kind: 'ovos', name: t('{n} ovos de ouro', { n: num(2000) }), emoji: '🥚', desc: t('{a} + {b} de bônus.', { a: num(1600), b: num(400) }), priceCents: 9990, ovos: 1600, bonus: 400, tag: t('Melhor valor') },
   // Assinatura
-  { id: 'vip-30', kind: 'vip', name: t('Passe do Criador ({n} dias)', { n: 30 }), emoji: '👑', desc: t('{a} ovos na hora, +{b} ovos/dia e +{p}% de milho.', { a: 100, b: 10, p: 25 }), priceCents: 1990, ovos: 100 },
+  { id: 'vip-30', kind: 'vip', name: t('Assinatura VIP ({n} dias)', { n: 30 }), emoji: '👑', desc: t('{a} ovos na hora, +{b} ovos/dia e +{p}% de milho.', { a: 100, b: 10, p: 25 }), priceCents: 1990, ovos: 100 },
+  // Passe da Temporada (premium do mês atual; uma vez por temporada)
+  { id: 'passe-temporada', kind: 'pass', name: t('Passe da Temporada'), emoji: '🎫', desc: t('Trilha premium da temporada: skins e galo exclusivos, ovos e itens raros.'), priceCents: 1990 },
   // Pacotes iniciais (uma vez por conta)
   {
     id: 'starter-raro',

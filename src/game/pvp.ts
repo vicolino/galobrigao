@@ -55,4 +55,6 @@ export interface PvpPoll {
   updates: ChallengeView[]
   online: number
   bets?: { open: number; ready: number; liveFightId: string | null }
+  /** Avisos da Feira (venda feita, presente recebido, anúncio vencido). */
+  feira?: { id: number; text: string; at: number }[]
 }

@@ -9,14 +9,20 @@ import { Liga } from './pages/Liga'
 import { Loja } from './pages/Loja'
 import { Luta } from './pages/Luta'
 import { Missoes } from './pages/Missoes'
+import { Passe } from './pages/Passe'
 import { AuthScreen, ResetScreen, StarterScreen } from './pages/Onboarding'
 import { Legal } from './pages/Legal'
 import { ChallengeAlert, Desafios } from './pages/Desafios'
+import { OfferCenter } from './components/Ofertas'
+import { NewsCenter, Novidades } from './components/Novidades'
 import { Admin } from './admin/Admin'
 import { Perfil } from './pages/Perfil'
 import { Rinha } from './pages/Rinha'
 import { Carteira } from './pages/Carteira'
 import { Mercado } from './pages/Mercado'
+import { Feira } from './pages/Feira'
+import { Cruzamento } from './pages/Cruzamento'
+import { Ranking } from './pages/Ranking'
 import { APP_NAME } from './brand'
 import { t, tx } from './i18n'
 
@@ -59,11 +65,16 @@ export default function App() {
     case 'apostas': page = <Apostas />; break
     case 'luta': page = <Luta />; break
     case 'missoes': page = <Missoes />; break
+    case 'passe': page = <Passe />; break
     case 'liga': page = <Liga />; break
     case 'loja': page = <Loja tab={param} />; break
     case 'perfil': page = <Perfil />; break
     case 'carteira': page = <Carteira />; break
     case 'mercado': page = <Mercado />; break
+    case 'feira': page = <Feira tab={param} />; break
+    case 'cruzamento': page = <Cruzamento />; break
+    case 'ranking': page = <Ranking />; break
+    case 'novidades': page = <Novidades />; break
     default: page = <Galinheiro selectedId={param} />
   }
 
@@ -107,6 +118,8 @@ export default function App() {
         <div className="container" key={section}>{page}</div>
       </main>
       <ChallengeAlert />
+      <OfferCenter />
+      <NewsCenter />
       <Toasts />
     </div>
   )
