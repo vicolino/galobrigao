@@ -1,8 +1,9 @@
-// Redes sociais e origem dos cadastros. Troque aqui o @ do Instagram e o endereço do site.
-export const IG_HANDLE = '@galobrigao' // i18n-ok perfil do jogo no Instagram
+// Redes sociais e origem dos cadastros. Troque aqui o @ das redes e o endereço do site.
+export const IG_HANDLE = '@galobrigao.jogo' // i18n-ok perfil do jogo no Instagram
+export const TIKTOK_HANDLE = '@galobrigao.jogo' // i18n-ok perfil do jogo no TikTok
 
 /** Endereço do site (sem barra no fim). Por padrão, o próprio domínio onde o jogo está aberto. */
-export const SITE_URL = typeof location !== 'undefined' ? location.origin : 'https://galobrigao.com.br' // i18n-ok
+export const SITE_URL = typeof location !== 'undefined' ? location.origin : 'https://www.galobrigao.com.br' // i18n-ok
 
 /** Link com UTM para quem vem pelo Story compartilhado. */
 export const SHARE_URL = `${SITE_URL}/?utm_source=instagram&utm_medium=story&utm_campaign=share`
