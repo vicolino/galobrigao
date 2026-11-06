@@ -267,6 +267,12 @@ const en: Record<string, string> = {
   'Arena Esporão de Aço': 'Steel-Spur Arena',
   'Caldeirão Caipira': 'Country Cauldron',
   'Arena Cocoricó': 'Cock-a-Doodle Arena',
+  'Velocidade (toque para acelerar)': 'Speed (tap to speed up)',
+  'Velocidade': 'Speed',
+  'Pular para o resultado': 'Skip to the result',
+  'Esconder ▲': 'Hide ▲',
+  'Ver ▼': 'Show ▼',
+  'Pular': 'Skip',
 }
 
 export default en

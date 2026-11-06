@@ -69,6 +69,7 @@ export function Luta() {
   // 🎁 Drop: 0 = ainda não abriu, 1 = aberto, 2 = já viu
   const [dropOpen, setDropOpen] = useState(0)
   const [speed, setSpeed] = useState(1)
+  const [showLog, setShowLog] = useState(false)
   const [anims, setAnims] = useState<[Anim, Anim]>(['idle', 'idle'])
   const [fx, setFx] = useState<{ key: number; side: 0 | 1; text: string; crit: boolean; miss: boolean } | null>(null)
   const [shake, setShake] = useState(false)
@@ -360,13 +361,12 @@ export function Luta() {
             {t('⏩ Pular entrada')}
           </button>
         )}
-        {[1, 2, 3].map((v) => (
-          <button key={v} className={`btn btn-sm ${speed === v ? 'btn-primary' : ''}`} onClick={() => setSpeed(v)} disabled={finished}>
-            {v}x
-          </button>
-        ))}
-        <button className="btn btn-sm" onClick={skip} disabled={finished}>
-          {t('⏭ Pular')}
+        <button className="speed-btn" onClick={() => setSpeed((s) => (s >= 3 ? 1 : s + 1))} disabled={finished} title={t('Velocidade (toque para acelerar)')} aria-label={t('Velocidade')}>
+          <span className="speed-ico">»</span>
+          {speed}x
+        </button>
+        <button className="speed-btn skip" onClick={skip} disabled={finished} title={t('Pular para o resultado')} aria-label={t('Pular')}>
+          <span className="speed-ico">»|</span>
         </button>
       </div>
 
@@ -473,15 +473,20 @@ export function Luta() {
         </div>
       )}
 
-      <div className="card narration">
-        <h3>{t('Narração')}</h3>
-        <ol ref={logRef}>
-          {events.slice(0, idx).map((e, i) => (
-            <li key={i} className={`ev-${e.t} ${'crit' in e && e.crit ? 'ev-crit' : ''}`}>
-              {e.text}
-            </li>
-          ))}
-        </ol>
+      <div className={`card narration ${showLog ? 'open' : ''}`}>
+        <button className="narration-toggle" onClick={() => setShowLog((v) => !v)} aria-expanded={showLog}>
+          <h3>{t('Narração')}</h3>
+          <span className="narration-caret">{showLog ? t('Esconder ▲') : t('Ver ▼')}</span>
+        </button>
+        {showLog && (
+          <ol ref={logRef}>
+            {events.slice(0, idx).map((e, i) => (
+              <li key={i} className={`ev-${e.t} ${'crit' in e && e.crit ? 'ev-crit' : ''}`}>
+                {e.text}
+              </li>
+            ))}
+          </ol>
+        )}
       </div>
     </div>
   )
