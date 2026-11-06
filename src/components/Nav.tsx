@@ -5,6 +5,7 @@ import { sfx } from '../game/sound'
 import { titleFor, useGame } from '../game/store'
 import { Modal, go } from './ui'
 import { Icon, type IconName } from './Icon'
+import { Logo } from './Logo'
 import { DAILY_OVOS } from '../game/rewards'
 import { brl } from '../game/catalog'
 import { APP_NAME, ARENA } from '../brand'
@@ -103,7 +104,7 @@ export function Nav({ route }: { route: string }) {
       <header className="topbar">
         <div className="topbar-in">
           <button className="brand" onClick={() => go('/galinheiro')}>
-            <span className="brand-logo">🐓</span>
+            <Logo size={40} className="brand-logo" />
             <span className="brand-name">{APP_NAME}</span>
           </button>
           <nav className="topnav">{TOP.map((p) => byPath(p)).filter(Boolean).map((it) => link(it!, 'top'))}</nav>

@@ -72,7 +72,7 @@ p { margin: 6px 0; }
 .topbar { position: fixed; top: 0; left: 0; right: 0; z-index: 40; background: rgba(255, 255, 255, 0.92); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); box-shadow: 0 4px 16px rgba(23, 55, 83, 0.08); }
 .topbar-in { max-width: 1240px; margin: 0 auto; height: 64px; display: flex; align-items: center; gap: 14px; padding: 0 18px; }
 .brand { display: flex; align-items: center; gap: 10px; background: none; border: 0; cursor: pointer; padding: 0; font: inherit; color: var(--text); }
-.brand-logo { width: 40px; height: 40px; border-radius: 13px; display: grid; place-items: center; font-size: 23px; background: linear-gradient(160deg, #ffd34d, var(--accent2)); box-shadow: 0 4px 0 var(--accent-dk), 0 6px 14px rgba(255, 109, 42, 0.35); }
+.brand-logo { width: 40px; height: 40px; flex: none; filter: drop-shadow(0 3px 5px rgba(255, 109, 42, 0.3)); }
 .brand-name { font-family: 'Lilita One', sans-serif; font-size: 22px; letter-spacing: 0.3px; color: var(--ink); white-space: nowrap; }
 .topnav { display: flex; align-items: center; gap: 2px; margin-left: 6px; }
 .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
