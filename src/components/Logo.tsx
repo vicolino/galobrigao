@@ -1,6 +1,6 @@
 import { useId } from 'react'
 
-/** Logotipo do Galo Brigão: galo mascote desenhado num selo arredondado. Nítido em qualquer tamanho. */
+/** Logotipo do Galo Brigão: galo mascote de frente num selo arredondado. Nítido em qualquer tamanho. */
 export function Logo({ size = 40, className }: { size?: number; className?: string }) {
   const id = useId().replace(/:/g, '')
   return (
@@ -16,23 +16,26 @@ export function Logo({ size = 40, className }: { size?: number; className?: stri
           <stop offset="1" stopColor="#f3d9b0" />
         </linearGradient>
       </defs>
-      {/* selo */}
       <rect x="4" y="4" width="92" height="92" rx="26" fill={`url(#bg${id})`} stroke="#d97400" strokeWidth="4" />
       <rect x="4" y="4" width="92" height="46" rx="26" fill="#fff" opacity="0.14" />
-      <g stroke="#3a1606" strokeWidth="4.2" strokeLinejoin="round" strokeLinecap="round">
+      <g stroke="#3a1606" strokeWidth="3.6" strokeLinejoin="round" strokeLinecap="round">
         {/* crista */}
-        <path d="M44 30c-3-8 4-13 8-9 1-7 10-7 10 1 5-3 11 2 7 9z" fill="#ff4d4d" />
-        {/* cabeça/corpo do galo */}
-        <path d="M40 34c-9 2-16 11-16 22 0 12 10 21 24 21 7 0 13-2 17-6l10 7-2-13c2-4 3-8 3-12 0-16-22-24-36-16z" fill={`url(#face${id})`} />
+        <path d="M39 33c0-7 6-7 6-1 1-8 7-8 8-1 1-7 7-6 6 2z" fill="#ff4d4d" />
+        {/* cabeça */}
+        <ellipse cx="50" cy="57" rx="25" ry="23" fill={`url(#face${id})`} />
         {/* barbela */}
-        <path d="M44 72c-1 7 3 12 9 11 4-1 5-6 3-10z" fill="#ff4d4d" />
+        <path d="M45 76c-2 6 1 9 5 9 4 0 7-3 5-9z" fill="#ff4d4d" />
         {/* bico */}
-        <path d="M24 50l-14 3 14 7z" fill="#ffb020" />
+        <path d="M43 61h14l-7 10z" fill="#ffb020" />
       </g>
-      {/* olho bravo */}
-      <circle cx="44" cy="50" r="7.5" fill="#fff" stroke="#3a1606" strokeWidth="3" />
-      <circle cx="42" cy="51" r="3.6" fill="#1a0f08" />
-      <path d="M36 41l12 4" stroke="#3a1606" strokeWidth="4.5" strokeLinecap="round" />
+      {/* olhos */}
+      <circle cx="41" cy="55" r="6.5" fill="#fff" stroke="#3a1606" strokeWidth="3" />
+      <circle cx="59" cy="55" r="6.5" fill="#fff" stroke="#3a1606" strokeWidth="3" />
+      <circle cx="42" cy="56" r="3" fill="#1a0f08" />
+      <circle cx="58" cy="56" r="3" fill="#1a0f08" />
+      {/* sobrancelhas bravas */}
+      <path d="M34 48l10 4" stroke="#3a1606" strokeWidth="4" strokeLinecap="round" fill="none" />
+      <path d="M66 48l-10 4" stroke="#3a1606" strokeWidth="4" strokeLinecap="round" fill="none" />
     </svg>
   )
 }
