@@ -67,7 +67,7 @@ const LOOKS: Record<string, Look> = {
 const GRADIENT_FX: SkinFx[] = ['fogo', 'arcoiris', 'galaxia', 'ouro', 'robo', 'lava', 'gelo']
 
 export function RoosterSvg({ breedId, skin, equipped = {}, tint, flip, anim = 'idle', size = 200, className = '' }: Props) {
-  const uid = useId().replace(/:/g, '')
+  const uid = useId().replace(/[^a-zA-Z0-9]/g, '')
   const breed = BREED_BY_ID[breedId] ?? BREED_BY_ID.caipira
   const sk = skin ? SKIN_BY_ID[skin] : undefined
   const c = sk ? sk.colors : tint ? { ...breed.colors, ...tint } : breed.colors

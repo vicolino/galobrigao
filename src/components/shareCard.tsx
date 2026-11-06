@@ -146,7 +146,13 @@ function background(ctx: CanvasRenderingContext2D) {
 /** Desenha o card e devolve o PNG. */
 export async function makeShareCard(o: ShareCardOpts): Promise<Blob> {
   await loadFonts()
-  const img = await roosterImage(o.ro, 720)
+  // Se o navegador não conseguir rasterizar o galo (ex.: Safari antigo), o card sai mesmo assim.
+  let img: HTMLImageElement | null = null
+  try {
+    img = await roosterImage(o.ro, 720)
+  } catch {
+    img = null
+  }
   const cv = document.createElement('canvas')
   cv.width = W
   cv.height = H
@@ -174,11 +180,13 @@ export async function makeShareCard(o: ShareCardOpts): Promise<Blob> {
   fitText(ctx, o.headline, 448, 70, 800, display, '#fff', { color: '#7a2c0c', width: 10 })
 
   // Galo
-  ctx.save()
-  ctx.shadowColor = 'rgba(0,0,0,0.5)'
-  ctx.shadowBlur = 40
-  ctx.drawImage(img, (W - 600) / 2, 505, 600, 600)
-  ctx.restore()
+  if (img) {
+    ctx.save()
+    ctx.shadowColor = 'rgba(0,0,0,0.5)'
+    ctx.shadowBlur = 40
+    ctx.drawImage(img, (W - 600) / 2, 505, 600, 600)
+    ctx.restore()
+  }
 
   // Placa com nome, raça, nível e estrelas
   const breed = BREED_BY_ID[o.ro.breedId]?.name ?? ''
