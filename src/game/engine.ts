@@ -286,7 +286,22 @@ export function migrate(s: GameState): GameState {
   if (typeof s.fichas !== 'number' || !Number.isFinite(s.fichas)) s.fichas = live.bets.chipsStart
   // Passe da Temporada: zera quando o mês (UTC) muda
   if (!s.pass || s.pass.season !== passSeason()) s.pass = freshPass()
+  // Missões em formato antigo (id aleatório) → id determinístico do dia, guardando o progresso por tipo
+  s.missions = normalizeMissions(s.missions)
   return s
+}
+
+/** Converte missões antigas (id aleatório) para o formato determinístico `${dia}-${i}`, sem perder progresso. */
+export function normalizeMissions(m: GameState['missions']): GameState['missions'] {
+  if (!m || !Array.isArray(m.list) || !m.day) return { day: today(), list: genMissions(today()) }
+  const ok = m.list.length === 5 && m.list.every((x) => x.id === `${m.day}-${m.list.indexOf(x)}`)
+  if (ok) return m
+  const byKind = new Map(m.list.map((x) => [x.kind, x]))
+  const list = genMissions(m.day).map((g) => {
+    const old = byKind.get(g.kind)
+    return old ? { ...g, progress: Math.max(0, Math.min(g.goal, old.progress ?? 0)), claimed: !!old.claimed } : g
+  })
+  return { day: m.day, list }
 }
 
 export function checkAchievements(s: GameState): string[] {
