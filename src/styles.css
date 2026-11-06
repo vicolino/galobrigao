@@ -136,7 +136,7 @@ p { margin: 6px 0; }
   .topbar-in { height: 58px; padding: 0 12px; gap: 8px; }
   .logo-word { font-size: 20px; }
   .btn-daily { padding: 8px 11px; }
-  .main { padding: 74px 14px 86px; }
+  .main { padding: 74px 14px calc(96px + env(safe-area-inset-bottom)); }
   .bottombar {
     display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
     background: rgba(255, 255, 255, 0.96); backdrop-filter: blur(10px); border-top: 1px solid var(--line);
