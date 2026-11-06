@@ -289,10 +289,20 @@ export function simulate(r0: Rooster, r1: Rooster, seed: number, tools: [string[
     const p1 = S[1].hp / S[1].maxHp
     winner = p0 === p1 ? (r() < 0.5 ? 0 : 1) : p0 > p1 ? 0 : 1
     method = 'decisao'
+    const pct: [number, number] = [Math.round(p0 * 100), Math.round(p1 * 100)]
+    const lost: [number, number] = [Math.max(0, Math.round(S[0].maxHp - S[0].hp)), Math.max(0, Math.round(S[1].maxHp - S[1].hp))]
+    const L = (1 - winner) as 0 | 1
     events.push({
       t: 'decision',
       winner,
-      text: t('⚖️ Fim dos {n} rounds! Os juízes dão a vitória para {nome} por pontos.', { n: ROUNDS, nome: S[winner].ro.name }),
+      pct,
+      lost,
+      text:
+        t('⚖️ Fim dos {n} rounds! Os juízes olham quanto de vida cada galo ainda tem.', { n: ROUNDS }) +
+        ' ' +
+        (pct[winner] === pct[L]
+          ? t('Empate em {p}% — a moeda decidiu para {nome}.', { p: pct[winner], nome: S[winner].ro.name })
+          : t('{nome} terminou com {pv}% da vida e {rival} com {pl}%: vitória de {nome}.', { nome: S[winner].ro.name, pv: pct[winner], rival: S[L].ro.name, pl: pct[L] })),
     })
   }
 

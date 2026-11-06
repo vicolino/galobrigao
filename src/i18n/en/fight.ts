@@ -47,7 +47,13 @@ const en: Record<string, string> = {
   '🪶 PENA DE FÊNIX! {nome} se levanta do chão! A torcida não acredita!': '🪶 PHOENIX FEATHER! {nome} rises from the dirt! The crowd can\'t believe it!',
   '🩹 {nome} usa o Kit Curativo e volta pra briga!': '🩹 {nome} uses the First Aid Kit and jumps back in!',
   '🏆 K.O.! {perdedor} vê estrelinhas. {vencedor} vence!': '🏆 K.O.! {perdedor} is seeing stars. {vencedor} wins!',
-  '⚖️ Fim dos {n} rounds! Os juízes dão a vitória para {nome} por pontos.': '⚖️ All {n} rounds done! The judges give the win to {nome} on points.',
+  '⚖️ Fim dos {n} rounds! Os juízes olham quanto de vida cada galo ainda tem.': '⚖️ All {n} rounds done! The judges check how much health each rooster has left.',
+  'Empate em {p}% — a moeda decidiu para {nome}.': 'Tied at {p}% — a coin toss went to {nome}.',
+  '{nome} terminou com {pv}% da vida e {rival} com {pl}%: vitória de {nome}.': '{nome} finished with {pv}% of their health and {rival} with {pl}%: {nome} wins.',
+  '⚖️ Placar dos juízes': '⚖️ Judges’ scorecard',
+  'Sem nocaute, vence quem termina com a maior parte da própria vida. Conta a porcentagem, não os pontos: um galo com mais vida precisa aguentar mais.': 'With no knockout, the rooster that keeps the biggest share of its own health wins. It’s the percentage that counts, not the points: a rooster with more health has to hold on to more.',
+  '{hp} de {max} de vida · levou {d} de dano': '{hp} of {max} health · took {d} damage',
+  'Empate exato: a decisão foi no cara ou coroa.': 'Dead even: the decision came down to a coin toss.',
 
   // ---------- Luta.tsx ----------
   'Ataque +{pct}%': 'Attack +{pct}%',

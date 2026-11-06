@@ -1323,3 +1323,15 @@ tr.muted td { opacity: 0.55; }
   .tfx { display: none; }
   .ro-fx[class*='fx-'] { animation-name: roGlow; }
 }
+
+/* ---------- Placar dos juízes (vitória por decisão) ---------- */
+.judge { margin-top: 14px; padding: 12px 14px; border-radius: 12px; background: rgba(0, 0, 0, 0.25); border: 1px solid var(--line); text-align: left; display: flex; flex-direction: column; gap: 8px; }
+.judge-title { font-family: 'Lilita One', sans-serif; font-size: 17px; }
+.judge-row { display: grid; grid-template-columns: minmax(0, 9em) 1fr 3.2em; grid-template-areas: 'name bar pct' 'detail detail detail'; align-items: center; column-gap: 10px; row-gap: 2px; padding: 6px 8px; border-radius: 10px; }
+.judge-row.win { background: rgba(255, 198, 64, 0.1); outline: 1px solid rgba(255, 198, 64, 0.45); }
+.judge-name { grid-area: name; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.judge-bar { grid-area: bar; height: 10px; border-radius: 999px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
+.judge-bar i { display: block; height: 100%; border-radius: 999px; background: #e85d4f; }
+.judge-row.win .judge-bar i { background: var(--gold); }
+.judge-pct { grid-area: pct; text-align: right; font-size: 18px; }
+.judge-detail { grid-area: detail; }

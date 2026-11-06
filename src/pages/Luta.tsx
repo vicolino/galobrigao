@@ -427,6 +427,7 @@ export function Luta() {
               </div>
             </>
           )}
+          {result.method === 'decisao' && <JudgeCard ev={events.find((e) => e.t === 'decision')} names={[match.a.name, match.b.name]} maxHp={result.maxHp} />}
         </div>
       )}
 
@@ -495,6 +496,35 @@ function Walkout({ a, b, tools }: { a: Rooster; b: Rooster; tools?: [string[], s
       {card(b, 1)}
       <div className="wo-vs">VS</div>
       <div className="wo-flash" />
+    </div>
+  )
+}
+
+/** Placar dos juízes: explica por que a luta foi decidida assim (vida que sobrou em %). */
+function JudgeCard({ ev, names, maxHp }: { ev?: BattleEvent; names: [string, string]; maxHp: [number, number] }) {
+  if (!ev || ev.t !== 'decision' || !ev.pct) return null
+  const { pct, lost, winner } = ev
+  const tie = pct[0] === pct[1]
+  return (
+    <div className="judge">
+      <b className="judge-title">{t('⚖️ Placar dos juízes')}</b>
+      <p className="tiny muted">{t('Sem nocaute, vence quem termina com a maior parte da própria vida. Conta a porcentagem, não os pontos: um galo com mais vida precisa aguentar mais.')}</p>
+      {([0, 1] as const).map((i) => (
+        <div key={i} className={`judge-row ${winner === i ? 'win' : ''}`}>
+          <span className="judge-name">
+            {winner === i ? '🏆 ' : ''}
+            {names[i]}
+          </span>
+          <div className="judge-bar">
+            <i style={{ width: `${pct[i]}%` }} />
+          </div>
+          <b className="judge-pct">{pct[i]}%</b>
+          <span className="tiny muted judge-detail">
+            {t('{hp} de {max} de vida · levou {d} de dano', { hp: Math.max(0, maxHp[i] - (lost?.[i] ?? 0)), max: maxHp[i], d: lost?.[i] ?? 0 })}
+          </span>
+        </div>
+      ))}
+      {tie && <p className="tiny muted center">{t('Empate exato: a decisão foi no cara ou coroa.')}</p>}
     </div>
   )
 }

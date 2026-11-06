@@ -180,7 +180,7 @@ export type BattleEvent =
   | { t: 'special'; side: 0 | 1; move: string; hp: [number, number]; sta: [number, number]; text: string }
   | { t: 'tool'; side: 0 | 1; emoji: string; hp: [number, number]; sta: [number, number]; text: string }
   | { t: 'ko'; winner: 0 | 1; text: string }
-  | { t: 'decision'; winner: 0 | 1; text: string }
+  | { t: 'decision'; winner: 0 | 1; text: string; /** % de vida no fim e dano sofrido (para explicar a decisão) */ pct?: [number, number]; lost?: [number, number] }
 
 export interface BattleResult {
   events: BattleEvent[]
