@@ -1,6 +1,6 @@
-import { ACC_BY_ID, BREEDS, BREED_BY_ID, STYLES, npcOwners, roosterNames } from './data'
+import { ACC_BY_ID, BREEDS, BREED_BY_ID, SET_BY_ID, SET_SIZE, STYLES, npcOwners, roosterNames } from './data'
 import { locale } from '../i18n'
-import type { Rarity, Rooster, Stats, Style } from './types'
+import type { GearSet, Rarity, Rooster, SetTier, Slot, Stats, Style } from './types'
 
 // RNG determinístico (mulberry32) para lutas reproduzíveis.
 export function rng(seed: number) {
@@ -90,7 +90,60 @@ export function finalStats(ro: Rooster): Stats {
     if (!acc) continue
     for (const [k, v] of Object.entries(acc.bonus)) s[k as keyof Stats] += v ?? 0
   }
+  const sb = setBonus(ro.equipped)
+  s.hp += sb.hp
+  s.atk += sb.atk
+  s.def += sb.def
+  s.spd += sb.spd
   return { hp: Math.round(s.hp), atk: Math.round(s.atk), def: Math.round(s.def), spd: Math.round(s.spd) }
+}
+
+/** Soma os bônus de conjunto (sets) ativos conforme o nº de peças equipadas do mesmo set. Cumulativo. */
+export function setBonus(equipped: Partial<Record<Slot, string>>): Stats & { xp: number } {
+  const counts: Record<string, number> = {}
+  for (const id of Object.values(equipped)) {
+    const set = id ? ACC_BY_ID[id]?.set : undefined
+    if (set) counts[set] = (counts[set] ?? 0) + 1
+  }
+  const out = { hp: 0, atk: 0, def: 0, spd: 0, xp: 0 }
+  for (const [setId, n] of Object.entries(counts)) {
+    const gs = SET_BY_ID[setId]
+    if (!gs) continue
+    for (const tier of gs.tiers) {
+      if (n < tier.pieces) continue
+      out.hp += tier.bonus.hp ?? 0
+      out.atk += tier.bonus.atk ?? 0
+      out.def += tier.bonus.def ?? 0
+      out.spd += tier.bonus.spd ?? 0
+      out.xp += tier.xp ?? 0
+    }
+  }
+  return out
+}
+
+/** Maior nível entre os galos do jogador — serve de "experiência" para liberar itens fortes. */
+export function bestRoosterLevel(s: { roosters: Rooster[] }): number {
+  return s.roosters.reduce((m, r) => Math.max(m, r.level), 0)
+}
+
+/** Multiplicador de XP do galo pelo equipamento: soma o xp de cada peça + o xp dos sets ativos. */
+export function xpMult(ro: Rooster): number {
+  let m = 1
+  for (const id of Object.values(ro.equipped)) m += id ? ACC_BY_ID[id]?.xp ?? 0 : 0
+  m += setBonus(ro.equipped).xp
+  return m
+}
+
+/** Status dos conjuntos do galo (para a tela): quantas peças tem de cada set e quais tiers estão ativos. */
+export function gearSets(equipped: Partial<Record<Slot, string>>): { set: GearSet; count: number; size: number; tiers: { tier: SetTier; active: boolean }[] }[] {
+  const counts: Record<string, number> = {}
+  for (const id of Object.values(equipped)) {
+    const set = id ? ACC_BY_ID[id]?.set : undefined
+    if (set) counts[set] = (counts[set] ?? 0) + 1
+  }
+  return Object.entries(counts)
+    .map(([setId, n]) => ({ set: SET_BY_ID[setId], count: n, size: SET_SIZE[setId] ?? 4, tiers: (SET_BY_ID[setId]?.tiers ?? []).map((tier) => ({ tier, active: n >= tier.pieces })) }))
+    .filter((x) => x.set)
 }
 
 export function power(ro: Rooster) {

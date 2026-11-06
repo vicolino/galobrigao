@@ -5,8 +5,8 @@ import { Checkout } from '../components/Checkout'
 import { brl } from '../game/catalog'
 import { RoosterSvg } from '../components/RoosterSvg'
 import { Modal, PageHead, Price, RarityTag, RoosterCard, Tabs, go } from '../components/ui'
-import { ACCESSORIES, BOXES, BREED_BY_ID, CORN_PACKS, ELECTION_ROOSTERS, FOOTBALL_ROOSTERS, BRAZIL_ROOSTERS, ITEMS, SPECIAL_ROOSTERS, RARITY, SLOTS, VIP } from '../game/data'
-import { fmt, marketPrice } from '../game/rooster'
+import { ACCESSORIES, BOXES, BREED_BY_ID, CORN_PACKS, ELECTION_ROOSTERS, FOOTBALL_ROOSTERS, BRAZIL_ROOSTERS, ITEMS, SET_BY_ID, SPECIAL_ROOSTERS, RARITY, SLOTS, VIP } from '../game/data'
+import { bestRoosterLevel, fmt, marketPrice } from '../game/rooster'
 import { sfx } from '../game/sound'
 import { useGame } from '../game/store'
 import type { Accessory, Slot } from '../game/types'
@@ -256,6 +256,7 @@ function Acessorios() {
   const [slot, setSlot] = useState<Slot | 'todos'>('todos')
   const [preview, setPreview] = useState<Accessory | null>(null)
   const list = ACCESSORIES.filter((a) => slot === 'todos' || a.slot === slot)
+  const best = bestRoosterLevel(s)
   const previewRooster = s.roosters[0]
 
   return (
@@ -271,8 +272,11 @@ function Acessorios() {
         ))}
       </div>
       <div className="grid-shop">
-        {list.map((a) => (
-          <div key={a.id} className={`card shop-item rar-${a.rarity}`} onClick={() => setPreview(a)}>
+        {list.map((a) => {
+          const locked = !!a.unlock && best < a.unlock
+          const set = a.set ? SET_BY_ID[a.set] : null
+          return (
+          <div key={a.id} className={`card shop-item rar-${a.rarity} ${locked ? 'locked' : ''}`} onClick={() => setPreview(a)}>
             <div className="shop-art">
               <RoosterSvg breedId={previewRooster.breedId} skin={previewRooster.skin} equipped={{ [a.slot]: a.id }} size={120} anim="none" />
             </div>
@@ -286,20 +290,33 @@ function Acessorios() {
               <span className="tiny muted">{t('Você tem: {n}', { n: s.accessories[a.id] ?? 0 })}</span>
             </div>
             <div className="tiny bonus">{bonusText(a.bonus)}</div>
-            <button
-              className="btn btn-primary full"
-              onClick={async (e) => {
-                e.stopPropagation()
-                if (!(await confirmBuy({ emoji: a.emoji, title: a.name, detail: t('Acessório'), price: a.price, currency: a.currency }))) return
-                const r = await actions.buyAccessory(a.id)
-                if (r.ok) toast(t('{nome} comprado! Equipe no Galinheiro.', { nome: `${a.emoji} ${a.name}` }), 'ok')
-                else toast(tx(r.error), 'erro')
-              }}
-            >
-              <Price value={a.price} currency={a.currency} />
-            </button>
+            {(set || a.xp) && (
+              <div className="tiny set-tag">
+                {set && <span className="set-tag-name">{set.emoji} {set.name}</span>}
+                {a.xp ? <span className="set-tag-xp">{t('+{n}% XP', { n: Math.round(a.xp * 100) })}</span> : null}
+              </div>
+            )}
+            {locked ? (
+              <button className="btn btn-ghost full lock-btn" disabled onClick={(e) => e.stopPropagation()}>
+                {t('🔒 Libera no nível {n}', { n: a.unlock! })}
+              </button>
+            ) : (
+              <button
+                className="btn btn-primary full"
+                onClick={async (e) => {
+                  e.stopPropagation()
+                  if (!(await confirmBuy({ emoji: a.emoji, title: a.name, detail: t('Acessório'), price: a.price, currency: a.currency }))) return
+                  const r = await actions.buyAccessory(a.id)
+                  if (r.ok) toast(t('{nome} comprado! Equipe no Galinheiro.', { nome: `${a.emoji} ${a.name}` }), 'ok')
+                  else toast(tx(r.error), 'erro')
+                }}
+              >
+                <Price value={a.price} currency={a.currency} />
+              </button>
+            )}
           </div>
-        ))}
+          )
+        })}
       </div>
 
       <Modal open={!!preview} onClose={() => setPreview(null)} title={preview ? `${preview.emoji} ${preview.name}` : ''}>
@@ -314,19 +331,31 @@ function Acessorios() {
             <p>
               <RarityTag rarity={preview.rarity} /> · {SLOTS[preview.slot].label} · <span className="bonus">{bonusText(preview.bonus)}</span>
             </p>
-            <button
-              className="btn btn-primary btn-lg"
-              onClick={async () => {
-                if (!(await confirmBuy({ emoji: preview.emoji, title: preview.name, detail: t('Acessório'), price: preview.price, currency: preview.currency }))) return
-                const r = await actions.buyAccessory(preview.id)
-                if (r.ok) {
-                  toast(t('{nome} comprado!', { nome: preview.name }), 'ok')
-                  setPreview(null)
-                } else toast(tx(r.error), 'erro')
-              }}
-            >
-              {t('Comprar')} · <Price value={preview.price} currency={preview.currency} />
-            </button>
+            {preview.set && SET_BY_ID[preview.set] && (
+              <p className="tiny set-preview">
+                {SET_BY_ID[preview.set].emoji} <b>{t('Conjunto {nome}', { nome: SET_BY_ID[preview.set].name })}</b>
+                {preview.xp ? t(' · +{n}% XP', { n: Math.round(preview.xp * 100) }) : ''} — {SET_BY_ID[preview.set].desc}
+              </p>
+            )}
+            {preview.unlock && best < preview.unlock ? (
+              <button className="btn btn-ghost btn-lg lock-btn" disabled>
+                {t('🔒 Libera quando um galo seu chegar ao nível {n}', { n: preview.unlock })}
+              </button>
+            ) : (
+              <button
+                className="btn btn-primary btn-lg"
+                onClick={async () => {
+                  if (!(await confirmBuy({ emoji: preview.emoji, title: preview.name, detail: t('Acessório'), price: preview.price, currency: preview.currency }))) return
+                  const r = await actions.buyAccessory(preview.id)
+                  if (r.ok) {
+                    toast(t('{nome} comprado!', { nome: preview.name }), 'ok')
+                    setPreview(null)
+                  } else toast(tx(r.error), 'erro')
+                }}
+              >
+                {t('Comprar')} · <Price value={preview.price} currency={preview.currency} />
+              </button>
+            )}
           </div>
         )}
       </Modal>

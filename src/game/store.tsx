@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { ACC_BY_ID, ACHIEVEMENTS, LEAGUE_TIERS, TITLES } from './data'
-import { uid, power } from './rooster'
+import { bestRoosterLevel, uid, power } from './rooster'
 import { setAudio, sfx } from './sound'
 import type { Accessory, Bet, BetPick, GameState, MissionKind, Rooster, Slot } from './types'
 import { api, ApiError, type ApiUser } from '../api'
@@ -476,6 +476,7 @@ async function shop<T = unknown>(op: ShopOp, sound?: () => void): Promise<Result
       const s = S()
       if (!s.accessories[accId]) return { ok: false, error: t('Você não tem esse acessório livre.') }
       const acc = ACC_BY_ID[accId]
+      if (acc.unlock && bestRoosterLevel(s) < acc.unlock) return { ok: false, error: t('🔒 Esse acessório libera no nível {n}.', { n: acc.unlock }) }
       const ro = s.roosters.find((r) => r.id === roosterId)!
       const prev = ro.equipped[acc.slot]
       const accs = { ...s.accessories, [accId]: s.accessories[accId] - 1 }

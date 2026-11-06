@@ -3,7 +3,7 @@
 // com `economy.serverAuthoritative` desligado o navegador roda as mesmas funções localmente (modo antigo).
 import { ITEM_BY_ID, LEAGUE_TIERS, MAX_TOOLS, TOOL_BY_ID, VIP, BREED_BY_ID, ACCESSORIES } from './data'
 import { simulate } from './battle'
-import { ENERGY_COST, addXp, currentEnergy, feedCost, marketPrice, sellPrice, today, trainCost, uid, withEnergy } from './rooster'
+import { ENERGY_COST, addXp, currentEnergy, feedCost, marketPrice, sellPrice, today, trainCost, uid, withEnergy, xpMult } from './rooster'
 import { DAILY_OVOS, arenaChips, arenaOvos, dailyChips } from './rewards'
 import { addPassXp, passGain, PASS_XP } from './pass'
 import { checkAchievements, genMissions, type Difficulty } from './engine'
@@ -100,7 +100,7 @@ export function runEcon(s: GameState, o: EconOp, h: Helpers): { state: GameState
       const e = currentEnergy(ro)
       if (e < 15) h.fail(t('{nome} está cansado demais para treinar.', { nome: ro.name }))
       let n = h.pay(s, trainCost(ro.level), 'milho')
-      const xp = 40 + ro.level * 8
+      const xp = Math.round((40 + ro.level * 8) * xpMult(ro))
       const { levels } = addXp(ro, xp)
       n = upd(n, ro.id, (r) => withEnergy(addXp(r, xp).rooster, e - 15))
       n = addPassXp(bump(n, 'treinar'), PASS_XP.treinar)
@@ -110,7 +110,7 @@ export function runEcon(s: GameState, o: EconOp, h: Helpers): { state: GameState
       const ro = find(o.roosterId)
       if (ro.fedAt && Date.now() - ro.fedAt < FEED_COOLDOWN_MS) h.fail(t('{nome} ainda está de papo cheio.', { nome: ro.name }))
       let n = h.pay(s, feedCost(ro.level), 'milho')
-      const xp = 30 + ro.level * 6
+      const xp = Math.round((30 + ro.level * 6) * xpMult(ro))
       const { levels } = addXp(ro, xp)
       n = upd(n, ro.id, (r) => ({ ...withEnergy(addXp(r, xp).rooster, currentEnergy(r) + 15), fedAt: Date.now() }))
       n = addPassXp(n, PASS_XP.alimentar)
@@ -138,9 +138,10 @@ export function runEcon(s: GameState, o: EconOp, h: Helpers): { state: GameState
         n = upd(n, ro.id, (r) => withEnergy(r, it.effect === 'energia_total' ? 100 : cur + it.value))
         msg = t('{nome} comeu e recuperou energia! 🍽️', { nome: ro.name })
       } else if (it.effect === 'xp') {
-        const { levels } = addXp(ro, it.value)
-        n = upd(n, ro.id, (r) => addXp(r, it.value).rooster)
-        msg = levels ? t('{nome} subiu para o nível {n}! ⭐', { nome: ro.name, n: ro.level + levels }) : t('{nome} ganhou {xp} XP.', { nome: ro.name, xp: it.value })
+        const gain = Math.round(it.value * xpMult(ro))
+        const { levels } = addXp(ro, gain)
+        n = upd(n, ro.id, (r) => addXp(r, gain).rooster)
+        msg = levels ? t('{nome} subiu para o nível {n}! ⭐', { nome: ro.name, n: ro.level + levels }) : t('{nome} ganhou {xp} XP.', { nome: ro.name, xp: gain })
       } else if (it.effect === 'sorte') {
         n = upd(n, ro.id, (r) => ({ ...r, lucky: (r.lucky ?? 0) + it.value }))
         msg = tp('{nome} está com sorte na próxima luta! 🍀', '{nome} está com sorte nas próximas {n} lutas! 🍀', it.value, { nome: ro.name })
@@ -190,7 +191,7 @@ export function arenaFight(s: GameState, roosterId: string, opp: Rooster, diffic
   const milho = Math.round((won ? 180 + opp.level * 45 : 40 + opp.level * 10) * diffMult * vip * (ko ? 1.25 : 1))
   const ovo = arenaOvos(won, difficulty)
   const fichas = arenaChips(won)
-  const xp = Math.round((won ? 60 + opp.level * 12 : 25 + opp.level * 5) * diffMult)
+  const xp = Math.round((won ? 60 + opp.level * 12 : 25 + opp.level * 5) * diffMult * xpMult(ro))
   const points = won ? [15, 25, 40, 60][difficulty] : -8
   const { levels } = addXp(ro, xp)
   let n: GameState = { ...s, milho: s.milho + milho, ovos: s.ovos + ovo, fichas: (s.fichas ?? 0) + fichas, tools: toolsLeft }

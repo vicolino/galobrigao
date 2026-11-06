@@ -2,7 +2,7 @@
 // para que ninguém consiga criar ovos, skins ou itens premium editando o save.
 import { ACCESSORIES, ACC_BY_ID, BOXES, BREED_BY_ID, CORN_PACKS, ELECTION_ROOSTERS, FOOTBALL_ROOSTERS, BRAZIL_ROOSTERS, SPECIAL_ROOSTERS, ITEM_BY_ID, RARITY, SKIN_BY_ID, SKIN_BUNDLES, TOOL_BY_ID, TOOL_KITS } from './data'
 import { genMarket, skinPrice, tick } from './engine'
-import { addXp, currentEnergy, feedInstantCost, makeRooster, pick, uid, withEnergy, xpToNext } from './rooster'
+import { addXp, bestRoosterLevel, currentEnergy, feedInstantCost, makeRooster, pick, uid, withEnergy, xpToNext } from './rooster'
 import { t } from '../i18n'
 import { runBreed, type BreedOp } from './criacao'
 import type { Accessory, Currency, GameState, MissionKind, Rarity, Rooster } from './types'
@@ -70,6 +70,10 @@ export function runShop(s: GameState, o: ShopOp): { state: GameState; value?: un
   switch (o.op) {
     case 'buyAccessory': {
       const acc = ACC_BY_ID[o.id] ?? fail(t('Acessório não existe'))
+      if (acc.unlock) {
+        const best = bestRoosterLevel(s)
+        if (best < acc.unlock) fail(t('🔒 Esse acessório libera quando um galo seu chegar ao nível {n}. O seu melhor está no nível {b}.', { n: acc.unlock, b: best }))
+      }
       let n = pay(s, acc.price, acc.currency)
       n = { ...n, accessories: { ...n.accessories, [o.id]: (n.accessories[o.id] ?? 0) + 1 } }
       n = legendaryOvo(n, `acc:${o.id}`, acc.rarity, acc.currency)

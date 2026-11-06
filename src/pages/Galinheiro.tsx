@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { RoosterSvg, type Anim } from '../components/RoosterSvg'
 import { Bar, Empty, Modal, PageHead, RarityTag, RoosterCard, Stars, StyleTag, go } from '../components/ui'
 import { ACCESSORIES, ACC_BY_ID, BREED_BY_ID, ITEMS, SKIN_BY_ID, SLOTS, STYLES } from '../game/data'
-import { currentEnergy, feedCost, feedInstantCost, finalStats, fmt, power, sellPrice, trainCost, xpToNext } from '../game/rooster'
+import { currentEnergy, feedCost, feedInstantCost, finalStats, fmt, gearSets, power, sellPrice, trainCost, xpMult, xpToNext } from '../game/rooster'
 import { FEED_COOLDOWN, STAR_COST, useGame } from '../game/store'
 import type { Slot, Style } from '../game/types'
 import { OVO_EM_MILHO, coopWorth, roosterValue, trackWorth } from '../game/worth'
@@ -269,6 +269,35 @@ function RoosterDetail({ id }: { id: string }) {
             <Stat emoji="💨" label={t('Velocidade')} value={st.spd} max={50} />
           </div>
 
+          {(() => {
+            const sets = gearSets(ro.equipped)
+            const bonusXp = Math.round((xpMult(ro) - 1) * 100)
+            if (!sets.length) return null
+            return (
+              <div className="set-panel">
+                <div className="set-head">
+                  <span>{t('🎖️ Conjuntos')}</span>
+                  {bonusXp > 0 && <span className="set-xp">{t('+{n}% XP', { n: bonusXp })}</span>}
+                </div>
+                {sets.map(({ set, count, size, tiers }) => (
+                  <div key={set.id} className="set-row">
+                    <div className="set-row-top">
+                      <b>{set.emoji} {set.name}</b>
+                      <span className={`set-count ${count >= size ? 'full' : ''}`}>{t('{n}/{m}', { n: count, m: size })}</span>
+                    </div>
+                    <ul className="set-tiers">
+                      {tiers.map(({ tier, active }) => (
+                        <li key={tier.pieces} className={active ? 'on' : 'off'}>
+                          <span className="set-tier-n">{active ? '✓' : tier.pieces}</span> {tier.note}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            )
+          })()}
+
           <div className="row-between wrap gap">
             <div>
               <StyleTag style={ro.style} /> <span className="muted tiny">{t('Especial: {x}', { x: STYLES[ro.style].special })}</span>
@@ -301,7 +330,7 @@ function RoosterDetail({ id }: { id: string }) {
               <div className="grow">
                 <b>{t('Alimentar')}</b>
                 <div className="tiny muted">
-                  {t('+{xp} XP e +15 energia.', { xp: 30 + ro.level * 6 })} {feedReady ? t('Pronto para comer!') : t('Pode comer de novo em {t}.', { t: feedLeft })}
+                  {t('+{xp} XP e +15 energia.', { xp: Math.round((30 + ro.level * 6) * xpMult(ro)) })} {feedReady ? t('Pronto para comer!') : t('Pode comer de novo em {t}.', { t: feedLeft })}
                 </div>
               </div>
               {feedReady ? (

@@ -1,6 +1,6 @@
 import { lang, locale, t } from '../i18n'
 import { NPC_OWNERS_EN, NPC_OWNERS_PT, ROOSTER_NAMES_EN, ROOSTER_NAMES_PT } from './names'
-import type { Accessory, Breed, Item, Rarity, Skin, Style, Tool } from './types'
+import type { Accessory, Breed, GearSet, Item, Rarity, Skin, Style, Tool } from './types'
 
 export const BREEDS: Breed[] = [
   {
@@ -318,9 +318,68 @@ export const ACCESSORIES: Accessory[] = [
   { id: 'botas', name: t('Botas de Couro'), slot: 'pes', emoji: '🥾', rarity: 'raro', price: 1600, currency: 'milho', bonus: { def: 2, atk: 1 }, desc: t('Pisada firme.') },
   { id: 'patins', name: t('Patins Turbo'), slot: 'pes', emoji: '🛼', rarity: 'epico', price: 65, currency: 'ovo', bonus: { spd: 5 }, desc: t('Vruuum.') },
   { id: 'chinelo', name: t('Chinelo da Vó'), slot: 'pes', emoji: '🩴', rarity: 'lendario', price: 150, currency: 'ovo', bonus: { atk: 6, spd: 2 }, desc: t('Respeito instantâneo.') },
+
+  // ===== Conjuntos premium (sets). Peças caras, dão XP e, completas, liberam bônus potente. =====
+  // 🐉 Fúria do Dragão — ataque devastador
+  { id: 'drag-elmo', name: t('Elmo do Dragão'), slot: 'cabeca', emoji: '🐲', rarity: 'epico', price: 100, currency: 'ovo', bonus: { atk: 4, hp: 8 }, set: 'dragao', xp: 0.03, unlock: 20, desc: t('Forjado no fogo. Parte do conjunto Fúria do Dragão.') },
+  { id: 'drag-presas', name: t('Presas do Dragão'), slot: 'rosto', emoji: '🦷', rarity: 'epico', price: 95, currency: 'ovo', bonus: { atk: 4, spd: 2 }, set: 'dragao', xp: 0.03, unlock: 20, desc: t('Morde antes de pensar. Parte do conjunto Fúria do Dragão.') },
+  { id: 'drag-couraca', name: t('Couraça do Dragão'), slot: 'corpo', emoji: '🐉', rarity: 'lendario', price: 230, currency: 'ovo', bonus: { atk: 4, def: 3, hp: 16 }, set: 'dragao', xp: 0.05, unlock: 30, desc: t('Escamas que ninguém atravessa. Parte do conjunto Fúria do Dragão.') },
+  { id: 'drag-garras', name: t('Garras do Dragão'), slot: 'pes', emoji: '🦖', rarity: 'lendario', price: 200, currency: 'ovo', bonus: { atk: 6, spd: 2 }, set: 'dragao', xp: 0.05, unlock: 30, desc: t('Rasga o chão a cada passo. Parte do conjunto Fúria do Dragão.') },
+  // 🛡️ Guarda de Ferro — muralha viva
+  { id: 'ferro-capacete', name: t('Capacete de Ferro'), slot: 'cabeca', emoji: '🪖', rarity: 'epico', price: 90, currency: 'ovo', bonus: { def: 4, hp: 14 }, set: 'ferro', xp: 0.03, unlock: 20, desc: t('Nada passa. Parte do conjunto Guarda de Ferro.') },
+  { id: 'ferro-mascara', name: t('Máscara de Ferro'), slot: 'rosto', emoji: '🎭', rarity: 'epico', price: 85, currency: 'ovo', bonus: { def: 3, hp: 8 }, set: 'ferro', xp: 0.03, unlock: 20, desc: t('Cara fechada, defesa dura. Parte do conjunto Guarda de Ferro.') },
+  { id: 'ferro-peitoral', name: t('Peitoral de Ferro'), slot: 'corpo', emoji: '🛡️', rarity: 'lendario', price: 220, currency: 'ovo', bonus: { def: 5, hp: 24 }, set: 'ferro', xp: 0.05, unlock: 30, desc: t('Peso que vira proteção. Parte do conjunto Guarda de Ferro.') },
+  { id: 'ferro-grevas', name: t('Grevas de Ferro'), slot: 'pes', emoji: '🦿', rarity: 'lendario', price: 180, currency: 'ovo', bonus: { def: 4, atk: 2 }, set: 'ferro', xp: 0.05, unlock: 30, desc: t('Base firme, contra-ataque pronto. Parte do conjunto Guarda de Ferro.') },
+  // ⚡ Relâmpago — velocidade da luz
+  { id: 'raio-viseira', name: t('Viseira Relâmpago'), slot: 'cabeca', emoji: '⚡', rarity: 'epico', price: 90, currency: 'ovo', bonus: { spd: 4, atk: 2 }, set: 'raio', xp: 0.03, unlock: 20, desc: t('Vê tudo em câmera lenta. Parte do conjunto Relâmpago.') },
+  { id: 'raio-lente', name: t('Lente Relâmpago'), slot: 'rosto', emoji: '🔆', rarity: 'epico', price: 95, currency: 'ovo', bonus: { spd: 3, atk: 3 }, set: 'raio', xp: 0.03, unlock: 20, desc: t('Mira na velocidade do pensamento. Parte do conjunto Relâmpago.') },
+  { id: 'raio-colete', name: t('Colete Relâmpago'), slot: 'corpo', emoji: '🥋', rarity: 'lendario', price: 190, currency: 'ovo', bonus: { spd: 4, atk: 2, hp: 12 }, set: 'raio', xp: 0.05, unlock: 30, desc: t('Leve como um raio. Parte do conjunto Relâmpago.') },
+  { id: 'raio-esporas', name: t('Esporas Relâmpago'), slot: 'pes', emoji: '🌩️', rarity: 'lendario', price: 210, currency: 'ovo', bonus: { spd: 6, atk: 3 }, set: 'raio', xp: 0.05, unlock: 30, desc: t('Bate e some antes do troco. Parte do conjunto Relâmpago.') },
 ]
 
 export const ACC_BY_ID: Record<string, Accessory> = Object.fromEntries(ACCESSORIES.map((a) => [a.id, a]))
+
+// Conjuntos: bônus cumulativos por nº de peças equipadas do mesmo set. Completar o set = combinação potente + muito XP.
+export const SETS: GearSet[] = [
+  {
+    id: 'dragao',
+    name: t('Fúria do Dragão'),
+    emoji: '🐉',
+    desc: t('Conjunto de ataque puro. Completo, vira uma máquina de dano.'),
+    tiers: [
+      { pieces: 2, bonus: { atk: 3 }, xp: 0.1, note: t('Sangue de dragão: +3 de ataque e +10% de XP.') },
+      { pieces: 4, bonus: { atk: 5, spd: 3 }, xp: 0.25, note: t('Fúria total: +5 de ataque, +3 de velocidade e +25% de XP.') },
+    ],
+  },
+  {
+    id: 'ferro',
+    name: t('Guarda de Ferro'),
+    emoji: '🛡️',
+    desc: t('Conjunto defensivo. Completo, o galo vira quase imortal.'),
+    tiers: [
+      { pieces: 2, bonus: { def: 3, hp: 10 }, xp: 0.1, note: t('Casco de ferro: +3 de defesa, +10 de vida e +10% de XP.') },
+      { pieces: 4, bonus: { def: 5, hp: 30 }, xp: 0.25, note: t('Muralha viva: +5 de defesa, +30 de vida e +25% de XP.') },
+    ],
+  },
+  {
+    id: 'raio',
+    name: t('Relâmpago'),
+    emoji: '⚡',
+    desc: t('Conjunto de velocidade. Completo, ataca sempre primeiro.'),
+    tiers: [
+      { pieces: 2, bonus: { spd: 3 }, xp: 0.1, note: t('Reflexos elétricos: +3 de velocidade e +10% de XP.') },
+      { pieces: 4, bonus: { spd: 5, atk: 4 }, xp: 0.25, note: t('Velocidade da luz: +5 de velocidade, +4 de ataque e +25% de XP.') },
+    ],
+  },
+]
+
+export const SET_BY_ID: Record<string, GearSet> = Object.fromEntries(SETS.map((s) => [s.id, s]))
+
+/** Quantas peças cada set tem (para mostrar "2/4" na tela). */
+export const SET_SIZE: Record<string, number> = ACCESSORIES.reduce<Record<string, number>>((m, a) => {
+  if (a.set) m[a.set] = (m[a.set] ?? 0) + 1
+  return m
+}, {})
 
 export const SLOTS: Record<string, { label: string; emoji: string }> = {
   cabeca: { label: t('Cabeça'), emoji: '🎩' },

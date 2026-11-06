@@ -43,6 +43,29 @@ export interface Accessory {
   currency: Currency
   bonus: Partial<Stats>
   desc: string
+  /** Conjunto (set) a que a peça pertence. Equipar várias do mesmo set libera bônus extra. */
+  set?: string
+  /** Bônus de XP ao equipar (fração: 0.05 = +5% de XP ganho). Peças caras aceleram o nível. */
+  xp?: number
+  /** Nível mínimo do seu melhor galo para comprar/equipar. Trava itens fortes para quem já progrediu. */
+  unlock?: number
+}
+
+/** Bônus de conjunto: equipar N peças do mesmo set ativa o tier (cumulativo). */
+export interface SetTier {
+  pieces: number
+  bonus: Partial<Stats>
+  /** XP extra (fração) enquanto o tier está ativo. */
+  xp?: number
+  note: string
+}
+
+export interface GearSet {
+  id: string
+  name: string
+  emoji: string
+  desc: string
+  tiers: SetTier[]
 }
 
 export type ItemEffect = 'energia' | 'xp' | 'energia_total' | 'sorte'

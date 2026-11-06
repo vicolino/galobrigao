@@ -350,6 +350,17 @@ const en: Record<string, string> = {
   '{n} apostas certas': '{n} winning bets',
   'Não foi dessa vez': 'Not this time',
   'As fichas você ganha jogando: tente de novo na próxima luta.': 'You earn chips by playing: try again next fight.',
+
+  // Conjuntos (sets) — UI
+  '🎖️ Conjuntos': '🎖️ Sets',
+  '+{n}% XP': '+{n}% XP',
+  ' · +{n}% XP': ' · +{n}% XP',
+  '{n}/{m}': '{n}/{m}',
+  'Conjunto {nome}': '{nome} set',
+  '🔒 Libera no nível {n}': '🔒 Unlocks at level {n}',
+  '🔒 Libera quando um galo seu chegar ao nível {n}': '🔒 Unlocks when one of your roosters reaches level {n}',
+  '🔒 Esse acessório libera no nível {n}.': '🔒 This accessory unlocks at level {n}.',
+  '🔒 Esse acessório libera quando um galo seu chegar ao nível {n}. O seu melhor está no nível {b}.': '🔒 This accessory unlocks when one of your roosters reaches level {n}. Your best is level {b}.',
 }
 
 export default en
