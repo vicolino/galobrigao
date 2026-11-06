@@ -255,6 +255,18 @@ const en: Record<string, string> = {
   'Você não tem 🌽 {n} de milho para essa aposta.': "You don't have 🌽 {n} corn for this stake.",
   'Você só tem 🌽 {n}.': 'You only have 🌽 {n}.',
   'Você só tem 🌽 {n}: não dá para aceitar.': "You only have 🌽 {n}: you can't accept.",
+  'Coliseu do Terreiro': 'Backyard Coliseum',
+  'Ringue da Galinhada': 'Chicken-Stew Ring',
+  'Arena Poeira Brava': 'Dust-Up Arena',
+  'Caldeirão do Milho': 'Corn Cauldron',
+  'Estádio Pena Dura': 'Tough-Feather Stadium',
+  'Arena Bico de Ouro': 'Golden-Beak Arena',
+  'Coliseu Cacarejo': 'Cackle Coliseum',
+  'Arena do Seu Zé': "Old Joe's Arena",
+  'Ringue Asa Quebrada': 'Broken-Wing Ring',
+  'Arena Esporão de Aço': 'Steel-Spur Arena',
+  'Caldeirão Caipira': 'Country Cauldron',
+  'Arena Cocoricó': 'Cock-a-Doodle Arena',
 }
 
 export default en
