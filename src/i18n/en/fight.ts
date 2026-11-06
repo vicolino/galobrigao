@@ -273,6 +273,7 @@ const en: Record<string, string> = {
   'Esconder ▲': 'Hide ▲',
   'Ver ▼': 'Show ▼',
   'Pular': 'Skip',
+  'Pular entrada': 'Skip intro',
 }
 
 export default en

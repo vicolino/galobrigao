@@ -353,21 +353,26 @@ export function Luta() {
             )}
           </div>
         ))}
-      </div>
 
-      <div className="speed">
-        {intro && (
-          <button className="btn btn-sm" onClick={() => setIntro(false)}>
-            {t('⏩ Pular entrada')}
-          </button>
+        {!finished && (
+          <div className="arena-controls">
+            {intro ? (
+              <button className="arena-ctl wide" onClick={() => setIntro(false)}>
+                <span className="speed-ico">»|</span> {t('Pular entrada')}
+              </button>
+            ) : (
+              <>
+                <button className="arena-ctl" onClick={() => setSpeed((s) => (s >= 3 ? 1 : s + 1))} title={t('Velocidade (toque para acelerar)')} aria-label={t('Velocidade')}>
+                  <span className="speed-ico">»</span>
+                  {speed}x
+                </button>
+                <button className="arena-ctl" onClick={skip} title={t('Pular para o resultado')} aria-label={t('Pular')}>
+                  <span className="speed-ico">»|</span>
+                </button>
+              </>
+            )}
+          </div>
         )}
-        <button className="speed-btn" onClick={() => setSpeed((s) => (s >= 3 ? 1 : s + 1))} disabled={finished} title={t('Velocidade (toque para acelerar)')} aria-label={t('Velocidade')}>
-          <span className="speed-ico">»</span>
-          {speed}x
-        </button>
-        <button className="speed-btn skip" onClick={skip} disabled={finished} title={t('Pular para o resultado')} aria-label={t('Pular')}>
-          <span className="speed-ico">»|</span>
-        </button>
       </div>
 
       {finished && (
