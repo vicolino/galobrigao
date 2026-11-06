@@ -133,9 +133,13 @@ p { margin: 6px 0; }
 @media (max-width: 820px) {
   .topnav { display: none; }
   .hide-sm { display: none; }
-  .topbar-in { height: 58px; padding: 0 12px; gap: 8px; }
+  .topbar-in { height: 58px; padding: 0 10px; gap: 8px; }
   .logo-word { font-size: 20px; }
   .btn-daily { padding: 8px 11px; }
+  /* Topo cabe no celular: aperta o bloco da direita e esconde o "+" (redundante: a bolinha de ovo já leva à compra) */
+  .topbar-right { gap: 6px; }
+  .wpills { gap: 5px; padding: 3px; }
+  .wpill-add { display: none; }
   .main { padding: 74px 14px calc(96px + env(safe-area-inset-bottom)); }
   .bottombar {
     display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
@@ -148,9 +152,13 @@ p { margin: 6px 0; }
   .navlink-bottom.active { color: var(--accent-dk); }
   .navlink-bottom.active .navlink-ico { color: var(--accent); transform: translateY(-1px); }
 }
-@media (max-width: 420px) {
+/* O nome "Galo Brigão" some antes (deixa só o logo) para o topo não estourar em celulares médios */
+@media (max-width: 560px) {
   .logo-word { display: none; }
+}
+@media (max-width: 420px) {
   .wpill { padding: 5px 8px; font-size: 12.5px; }
+  .more-btn, .avatar-btn { width: 37px; height: 37px; }
 }
 
 /* ---------- Componentes ---------- */
