@@ -1632,3 +1632,16 @@ tr.muted td { opacity: 0.55; }
 
 .sheet-logout { margin-top: 4px; color: var(--red-dk); border-color: #ffc0c2; }
 .sheet-logout:hover { background: #fff0f0; }
+
+/* ---------- Menu do avatar (topo direito) ---------- */
+.avatar-wrap { position: relative; }
+.avatar-back { position: fixed; inset: 0; z-index: 45; }
+.avatar-menu { position: absolute; top: calc(100% + 8px); right: 0; z-index: 46; min-width: 210px; background: #fff; border: 1.5px solid var(--line); border-radius: 14px; box-shadow: var(--shadow-lg); padding: 6px; display: flex; flex-direction: column; gap: 2px; animation: fadeUp 0.15s ease; }
+.avatar-menu-head { display: flex; align-items: center; gap: 10px; padding: 8px 10px 10px; border-bottom: 1px solid var(--line); margin-bottom: 4px; }
+.avatar-menu-head .avatar.sm { font-size: 26px; }
+.avatar-menu-head b { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
+.avatar-menu-head .gold { color: var(--gold); font-weight: 800; }
+.avatar-menu-item { display: flex; align-items: center; gap: 9px; width: 100%; text-align: left; background: none; border: 0; border-radius: 10px; padding: 10px 11px; font: inherit; font-weight: 800; color: var(--text); cursor: pointer; }
+.avatar-menu-item:hover { background: var(--bg2); }
+.avatar-menu-item.danger { color: var(--red-dk); }
+.avatar-menu-item.danger:hover { background: #fff0f0; }

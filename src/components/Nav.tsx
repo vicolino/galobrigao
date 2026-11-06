@@ -45,6 +45,7 @@ const SPECIAL = ['/loja/skins', '/loja/ferramentas']
 export function Nav({ route }: { route: string }) {
   const { state, actions, toast, isVip, wallet, pvp, user, pubConfig, betsInfo } = useGame()
   const [sheet, setSheet] = useState(false)
+  const [avatarMenu, setAvatarMenu] = useState(false)
   const [daily, setDaily] = useState<{ milho: number; ovo: number; fichas: number; streak: number } | null>(null)
   if (!state) return null
   const s = state
@@ -116,9 +117,31 @@ export function Nav({ route }: { route: string }) {
               <Icon name="mais" size={22} />
               {totalBadge > 0 && <span className="navlink-dot">{totalBadge > 9 ? '9+' : totalBadge}</span>}
             </button>
-            <button className="avatar-btn" onClick={() => go('/perfil')} aria-label={t('Perfil')}>
-              <span className="avatar">{s.player.avatar}</span>
-            </button>
+            <div className="avatar-wrap">
+              <button className="avatar-btn" onClick={() => setAvatarMenu((v) => !v)} aria-label={t('Perfil')} aria-expanded={avatarMenu}>
+                <span className="avatar">{s.player.avatar}</span>
+              </button>
+              {avatarMenu && (
+                <>
+                  <div className="avatar-back" onClick={() => setAvatarMenu(false)} />
+                  <div className="avatar-menu">
+                    <div className="avatar-menu-head">
+                      <span className="avatar sm">{s.player.avatar}</span>
+                      <div>
+                        <b>{s.player.name}</b>
+                        <span className="tiny gold">{isVip ? '👑 ' : '🏅 '}{titleFor(s)}</span>
+                      </div>
+                    </div>
+                    <button className="avatar-menu-item" onClick={() => { setAvatarMenu(false); go('/perfil') }}>
+                      <Icon name="perfil" size={18} /> {t('Ver perfil')}
+                    </button>
+                    <button className="avatar-menu-item danger" onClick={() => { setAvatarMenu(false); actions.logout() }}>
+                      🚪 {t('Sair da conta')}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </header>
