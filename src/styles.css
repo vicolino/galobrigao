@@ -71,9 +71,11 @@ p { margin: 6px 0; }
 /* Barra de topo fixa */
 .topbar { position: fixed; top: 0; left: 0; right: 0; z-index: 40; background: rgba(255, 255, 255, 0.92); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); box-shadow: 0 4px 16px rgba(23, 55, 83, 0.08); }
 .topbar-in { max-width: 1240px; margin: 0 auto; height: 64px; display: flex; align-items: center; gap: 14px; padding: 0 18px; }
-.brand { display: flex; align-items: center; gap: 10px; background: none; border: 0; cursor: pointer; padding: 0; font: inherit; color: var(--text); }
-.brand-logo { width: 40px; height: 40px; flex: none; filter: drop-shadow(0 3px 5px rgba(255, 109, 42, 0.3)); }
-.brand-name { font-family: 'Lilita One', sans-serif; font-size: 22px; letter-spacing: 0.3px; color: var(--ink); white-space: nowrap; }
+.brand { display: flex; align-items: center; background: none; border: 0; cursor: pointer; padding: 0; font: inherit; color: var(--text); }
+.logo-lockup { display: inline-flex; align-items: center; gap: 9px; }
+.logo-mark { flex: none; display: grid; place-items: center; filter: drop-shadow(0 2px 3px rgba(23, 55, 83, 0.25)); }
+.logo-mark svg { display: block; }
+.logo-word { font-family: 'Lilita One', sans-serif; font-size: 23px; letter-spacing: 0.3px; line-height: 1; color: var(--ink); white-space: nowrap; }
 .topnav { display: flex; align-items: center; gap: 2px; margin-left: 6px; }
 .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
 
@@ -132,7 +134,7 @@ p { margin: 6px 0; }
   .topnav { display: none; }
   .hide-sm { display: none; }
   .topbar-in { height: 58px; padding: 0 12px; gap: 8px; }
-  .brand-name { font-size: 19px; }
+  .logo-word { font-size: 20px; }
   .btn-daily { padding: 8px 11px; }
   .main { padding: 74px 14px 86px; }
   .bottombar {
@@ -147,7 +149,7 @@ p { margin: 6px 0; }
   .navlink-bottom.active .navlink-ico { color: var(--accent); transform: translateY(-1px); }
 }
 @media (max-width: 420px) {
-  .brand-name { display: none; }
+  .logo-word { display: none; }
   .wpill { padding: 5px 8px; font-size: 12.5px; }
 }
 
@@ -347,10 +349,10 @@ input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 .opp { display: flex; flex-direction: column; gap: 4px; }
 .opp-head { display: flex; justify-content: space-between; align-items: center; }
 .diff-tag { font-weight: 900; padding: 3px 10px; border-radius: 8px; font-size: 13px; }
-.diff-tag.easy { background: #1d3a24; color: #8be28f; }
-.diff-tag.medium { background: #3d300e; color: #ffd966; }
-.diff-tag.hard { background: #3d1614; color: #ff8a80; }
-.diff-hard { border-color: #6a2622; }
+.diff-tag.easy { background: #e7f9ee; color: #1f9e5a; border: 1.5px solid #bfe9cf; }
+.diff-tag.medium { background: #fff4d6; color: #a67900; border: 1.5px solid #ffdf99; }
+.diff-tag.hard { background: #ffe9e9; color: #d63a42; border: 1.5px solid #ffc2c2; }
+.diff-hard { border-color: #ffb3b3; }
 .opp-vs { display: flex; align-items: center; justify-content: center; gap: 4px; background: radial-gradient(circle at 50% 80%, #2d5a40, transparent 70%); border-radius: 10px; }
 .vs { font-family: 'Lilita One', sans-serif; font-size: 22px; color: var(--accent); text-shadow: 0 2px 0 #000; }
 .chance { margin: 6px 0; font-size: 12px; color: var(--muted); }
@@ -952,8 +954,8 @@ tr.muted td { opacity: 0.55; }
 }
 
 /* Chefão da Arena */
-.diff-tag.boss { background: linear-gradient(90deg, #4a2a00, #6b3d00); color: #ffd36b; }
-.diff-boss { border-color: #b8860b; box-shadow: 0 0 0 1px rgba(255, 196, 64, 0.35), 0 0 22px rgba(255, 196, 64, 0.15); }
+.diff-tag.boss { background: linear-gradient(90deg, #fff0c2, #ffe08a); color: #9a6b00; border: 1.5px solid #ffc94a; }
+.diff-boss { border-color: var(--gold); box-shadow: 0 0 0 2px rgba(255, 184, 0, 0.3), 0 8px 22px rgba(255, 184, 0, 0.18); }
 .opponents.arena-opps { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 @media (max-width: 1280px) { .opponents.arena-opps { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 600px) { .opponents.arena-opps { grid-template-columns: 1fr; } }

@@ -8,7 +8,7 @@ import { Icon, type IconName } from './Icon'
 import { Logo } from './Logo'
 import { DAILY_OVOS } from '../game/rewards'
 import { brl } from '../game/catalog'
-import { APP_NAME, ARENA } from '../brand'
+import { ARENA } from '../brand'
 import { t, tp } from '../i18n'
 import { LangSwitch } from './LangSwitch'
 import { passClaimable } from '../pages/Passe'
@@ -104,8 +104,7 @@ export function Nav({ route }: { route: string }) {
       <header className="topbar">
         <div className="topbar-in">
           <button className="brand" onClick={() => go('/galinheiro')}>
-            <Logo size={40} className="brand-logo" />
-            <span className="brand-name">{APP_NAME}</span>
+            <Logo size={46} />
           </button>
           <nav className="topnav">{TOP.map((p) => byPath(p)).filter(Boolean).map((it) => link(it!, 'top'))}</nav>
           <div className="topbar-right">
