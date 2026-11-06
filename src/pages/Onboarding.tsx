@@ -15,7 +15,7 @@ import { locale, t, tn, tx } from '../i18n'
 
 export function AuthScreen() {
   const { actions } = useGame()
-  const [mode, setMode] = useState<'cadastro' | 'login' | 'esqueci'>('cadastro')
+  const [mode, setMode] = useState<'cadastro' | 'login' | 'esqueci'>('login')
   const [sent, setSent] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -56,11 +56,11 @@ export function AuthScreen() {
         </div>
 
         <div className="tabs">
-          <button className={`tab ${mode === 'cadastro' ? 'active' : ''}`} onClick={() => setMode('cadastro')}>
-            {t('Criar conta')}
-          </button>
           <button className={`tab ${mode === 'login' ? 'active' : ''}`} onClick={() => setMode('login')}>
             {t('Já tenho conta')}
+          </button>
+          <button className={`tab ${mode === 'cadastro' ? 'active' : ''}`} onClick={() => setMode('cadastro')}>
+            {t('Criar conta')}
           </button>
         </div>
 
