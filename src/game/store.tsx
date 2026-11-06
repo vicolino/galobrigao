@@ -77,6 +77,8 @@ function useGameEngine() {
   const [pubConfig, setPubConfig] = useState<PublicConfig | null>(null)
   const [updateReady, setUpdateReady] = useState(false)
   const [pvpDone, setPvpDone] = useState<ChallengeView[]>([])
+  // Desafio enviado que não rolou (recusado / sem resposta): aviso em janela
+  const [pvpDeclined, setPvpDeclined] = useState<ChallengeView | null>(null)
   // Saldo mostrado durante a luta (para não entregar o resultado antes da hora)
   const [held, setHeld] = useState<{ milho: number; ovos: number; fichas: number } | null>(null)
   const [betsInfo, setBetsInfo] = useState<{ open: number; ready: number; liveFightId: string | null } | null>(null)
@@ -232,8 +234,13 @@ function useGameEngine() {
                 sfx.bell()
               }
               setPvpDone((d) => [u, ...d].slice(0, 10))
-            } else if (u.status === 'recusado') toast(t('{nome} recusou o desafio.', { nome: u.toName }), 'info')
-            else if (u.status === 'expirado') toast(t('{nome} não respondeu a tempo.', { nome: u.toName }), 'info')
+            } else if (u.status === 'recusado' || u.status === 'expirado') {
+              // Só abre a janela para desafios recentes; antigos viram nota
+              if (Date.now() - u.createdAt < challengeTtl() + 5 * 60_000) {
+                setPvpDeclined(u)
+                sfx.miss()
+              } else toast(u.status === 'recusado' ? t('{nome} recusou o desafio.', { nome: u.toName }) : t('{nome} não respondeu a tempo.', { nome: u.toName }), 'info')
+            }
             else if (u.status === 'cancelado' && u.reason) toast(t('Desafio cancelado: {motivo}', { motivo: tx(u.reason) }), 'info')
             void api.pvpSeen(u.id)
           }
@@ -668,7 +675,7 @@ async function shop<T = unknown>(op: ShopOp, sound?: () => void): Promise<Result
     },
   }
 
-  return { state, actions, toasts, toast, match, phase, betsInfo, user, provider, paymentsLive, updateReady, pvp, pvpDone, pubConfig, wallet: held ?? (state ? { milho: state.milho, ovos: state.ovos, fichas: state.fichas ?? 0 } : null), isVip: state ? isVip(state) : false }
+  return { state, actions, toasts, toast, match, phase, betsInfo, user, provider, paymentsLive, updateReady, pvp, pvpDone, pvpDeclined, clearPvpDeclined: () => setPvpDeclined(null), pubConfig, wallet: held ?? (state ? { milho: state.milho, ovos: state.ovos, fichas: state.fichas ?? 0 } : null), isVip: state ? isVip(state) : false }
 }
 
 /** Monta a luta para assistir a partir de um desafio resolvido. */

@@ -12,7 +12,7 @@ import { Missoes } from './pages/Missoes'
 import { Passe } from './pages/Passe'
 import { AuthScreen, ResetScreen, StarterScreen } from './pages/Onboarding'
 import { Legal } from './pages/Legal'
-import { ChallengeAlert, Desafios } from './pages/Desafios'
+import { ChallengeAlert, ChallengeDeclined, Desafios } from './pages/Desafios'
 import { OfferCenter } from './components/Ofertas'
 import { NewsCenter, Novidades } from './components/Novidades'
 import { BuyConfirm } from './components/BuyConfirm'
@@ -123,6 +123,7 @@ export default function App() {
         <div className="container" key={section}>{page}</div>
       </main>
       <ChallengeAlert />
+      <ChallengeDeclined />
       <TorneioAlert />
       <OfferCenter />
       <NewsCenter />

@@ -234,6 +234,11 @@ const en: Record<string, string> = {
   'Nv {b}': 'Lv {b}',
   'Sem energia': 'Out of energy',
   'Seu galo': 'Your rooster',
+  '🙅 Desafio recusado': '🙅 Challenge declined',
+  '⌛ Desafio sem resposta': '⌛ No answer to your challenge',
+  '{nome} recusou seu desafio.': '{nome} declined your challenge.',
+  'Nenhuma energia foi gasta. Escolha outro adversário e tente de novo.': 'No energy was spent. Pick another opponent and try again.',
+  '🤝 Desafiar outro': '🤝 Challenge someone else',
 }
 
 export default en

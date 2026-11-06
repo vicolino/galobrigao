@@ -320,3 +320,45 @@ export function ChallengeAlert() {
     </Modal>
   )
 }
+
+/** Aviso para quem desafiou: o outro recusou ou não respondeu. Aparece em qualquer tela. */
+export function ChallengeDeclined() {
+  const { pvpDeclined: c, clearPvpDeclined } = useGame()
+  if (!c) return null
+  const refused = c.status === 'recusado'
+  return (
+    <Modal open onClose={clearPvpDeclined} title={refused ? t('🙅 Desafio recusado') : t('⌛ Desafio sem resposta')}>
+      <div className="center declined">
+        <p>{refused ? tn('{nome} recusou seu desafio.', { nome: <b>{c.toName}</b> }) : tn('{nome} não respondeu a tempo.', { nome: <b>{c.toName}</b> })}</p>
+        <div className="opp-vs alert-vs">
+          <div>
+            <RoosterSvg breedId={c.a.breedId} skin={c.a.skin} equipped={c.a.equipped} size={90} anim="none" />
+            <b>{c.a.name}</b>
+            <span className="alert-lv">{t('Nv {n}', { n: c.a.level })}</span>
+          </div>
+          <span className="vs">VS</span>
+          <div className="declined-them">
+            <RoosterSvg breedId={c.b.breedId} skin={c.b.skin} equipped={c.b.equipped} size={90} flip anim="none" />
+            <b>{c.b.name}</b>
+            <span className="alert-lv">{t('Nv {n}', { n: c.b.level })}</span>
+          </div>
+        </div>
+        <p className="tiny muted">{t('Nenhuma energia foi gasta. Escolha outro adversário e tente de novo.')}</p>
+        <div className="row-center gap">
+          <button className="btn" onClick={clearPvpDeclined}>
+            {t('Fechar')}
+          </button>
+          <button
+            className="btn btn-primary"
+            onClick={() => {
+              clearPvpDeclined()
+              go('/desafios')
+            }}
+          >
+            {t('🤝 Desafiar outro')}
+          </button>
+        </div>
+      </div>
+    </Modal>
+  )
+}

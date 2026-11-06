@@ -1452,3 +1452,4 @@ tr.muted td { opacity: 0.55; }
   .lobby-ro { flex-wrap: wrap; }
   .lobby-ro .btn { width: 100%; }
 }
+.declined-them { opacity: 0.6; filter: grayscale(0.4); }
