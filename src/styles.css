@@ -1645,3 +1645,7 @@ tr.muted td { opacity: 0.55; }
 .avatar-menu-item:hover { background: var(--bg2); }
 .avatar-menu-item.danger { color: var(--red-dk); }
 .avatar-menu-item.danger:hover { background: #fff0f0; }
+
+/* ---------- Tela de entrada: espaço entre botões empilhados (sombra 3D não invade) ---------- */
+.onboarding form .btn.full { margin-top: 10px; }
+.onboarding form .btn.full + .btn.full { margin-top: 12px; }
