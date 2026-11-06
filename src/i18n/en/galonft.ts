@@ -23,6 +23,7 @@ const dict: Record<string, string> = {
   '🐓 Galo NFT de volta ao jogo': '🐓 NFT Rooster back in the game',
   '🐓 Galo de volta ao jogo (NFT queimado).': '🐓 Rooster back in the game (NFT burned).',
   'Trazer de volta para o jogo': 'Bring back into the game',
+  'Virar NFT': 'Make it an NFT',
   '💎 Galo NFT: ver na Carteira': '💎 NFT Rooster: view in Wallet',
   'Viram NFT: galos de cruzamento, edições especiais, galos de kits pagos e qualquer galo de nível {n}+. O Galo Livre do cadastro não vira. O galo continua lutando no seu galinheiro.':
     'Can become NFTs: bred roosters, special editions, paid-kit roosters and any rooster at level {n}+. The free starter Free Rooster can’t. The rooster keeps fighting in your coop.',

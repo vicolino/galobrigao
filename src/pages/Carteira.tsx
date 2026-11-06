@@ -483,7 +483,7 @@ function MyItems({ info, busy, run, okTx, feeBps }: PanelProps & { feeBps: numbe
                 {m.count > 1 && <span className="tiny muted">{t('{n} disponíveis para NFT', { n: m.count })}</span>}
                 <div className="w3-actions">
                   <button className="btn btn-gold full" disabled={busy} onClick={() => setMintKey(m.key)}>
-                    ✨ {t('Transformar em NFT')}
+                    ✨ {t('Virar NFT')}
                   </button>
                 </div>
               </>,

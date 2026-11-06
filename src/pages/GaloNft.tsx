@@ -51,7 +51,7 @@ export function GaloNftPanel({ busy, run, okTx }: Omit<PanelProps, 'info'> & { i
               </div>
               <div className="w3-actions">
                 <button className="btn btn-gold full" disabled={busy} onClick={() => setPick(r)}>
-                  ✨ {t('Transformar em NFT')}
+                  ✨ {t('Virar NFT')}
                 </button>
               </div>
             </div>
