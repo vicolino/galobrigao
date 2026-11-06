@@ -1013,7 +1013,6 @@ function Config() {
         <div className="card cfg-section">
           <h3>{t('🤝 Desafios entre jogadores')}</h3>
           <div className="cfg-grid">
-            <NumField label={t('Diferença máxima de nível')} value={cfg.pvp.maxLevelDiff} onChange={(v) => set('pvp', { maxLevelDiff: v })} />
             <NumField label={t('Desafios com prêmio por dia')} value={cfg.pvp.dailyRewards} onChange={(v) => set('pvp', { dailyRewards: v })} />
             <NumField label={t('Tempo para aceitar (segundos)')} value={cfg.pvp.challengeTtlSec} onChange={(v) => set('pvp', { challengeTtlSec: v })} />
           </div>

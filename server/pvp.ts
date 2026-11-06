@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { simulate } from '../src/game/battle'
-import { challengeTtl, maxLevelDiff, ONLINE_WINDOW, pvpDailyRewards, PVP_ENERGY, levelsMatch, pvpRewards, type ChallengeView, type LobbyEntry, type PvpRewards } from '../src/game/pvp'
+import { challengeTtl, ONLINE_WINDOW, pvpDailyRewards, PVP_ENERGY, pvpRewards, type ChallengeView, type LobbyPlayer, type PvpRewards } from '../src/game/pvp'
 import { addXp, currentEnergy, today, uid, withEnergy } from '../src/game/rooster'
 import type { GameState, MissionKind, Rooster } from '../src/game/types'
 import { getDb, type UserRow } from './db'
@@ -96,9 +96,9 @@ const bump = (s: GameState, kind: MissionKind): GameState => ({
 })
 
 /** Aplica o resultado do desafio no save de um jogador. */
-function applyResult(s: GameState, roosterId: string, won: boolean, ko: boolean, oppName: string, limited: boolean): { state: GameState; rewards: PvpRewards } {
+function applyResult(s: GameState, roosterId: string, won: boolean, ko: boolean, oppName: string, limited: boolean, oppLevel: number): { state: GameState; rewards: PvpRewards } {
   const ro = s.roosters.find((r) => r.id === roosterId)!
-  const base = pvpRewards(ro.level, won, ko)
+  const base = pvpRewards(ro.level, won, ko, oppLevel)
   const rw = limited ? { milho: 0, xp: 0, points: 0 } : base
   const { levels } = addXp(ro, rw.xp)
   let n: GameState = {
@@ -129,7 +129,7 @@ function getChallenge(id: string) {
   return (db().prepare('SELECT * FROM challenges WHERE id = ?').get(id) as unknown as ChallengeRow | undefined) ?? fail(t('Desafio não encontrado'))
 }
 
-export function handlePvp(path: string, method: string, url: URL, body: Record<string, unknown>, u: UserRow): { status?: number; body: unknown } | null {
+export function handlePvp(path: string, method: string, _url: URL, body: Record<string, unknown>, u: UserRow): { status?: number; body: unknown } | null {
   touch(u.id)
   expireOld()
 
@@ -153,22 +153,22 @@ export function handlePvp(path: string, method: string, url: URL, body: Record<s
     }
   }
 
-  // Galos de jogadores online com nível compatível
+  // Lobby: todos os jogadores online e os galos deles, de qualquer nível
   if (path === '/api/pvp/lobby' && method === 'GET') {
-    const mine = findRooster(u.id, url.searchParams.get('roosterId') ?? '') ?? fail(t('Escolha um dos seus galos'))
     const busy = busyRoosters()
-    const users = db().prepare('SELECT user_id FROM presence WHERE last_seen > ? AND user_id != ?').all(now() - ONLINE_WINDOW, u.id) as { user_id: string }[]
-    const out: LobbyEntry[] = []
+    const pending = new Set((db().prepare("SELECT from_user, to_user FROM challenges WHERE status = 'pendente'").all() as { from_user: string; to_user: string }[]).flatMap((r) => [r.from_user, r.to_user]))
+    const users = db().prepare('SELECT user_id FROM presence WHERE last_seen > ? AND user_id != ? ORDER BY last_seen DESC LIMIT 200').all(now() - ONLINE_WINDOW, u.id) as { user_id: string }[]
+    const out: LobbyPlayer[] = []
     for (const { user_id } of users) {
       const save = loadSave(user_id)
-      if (!save) continue
-      for (const r of save.state.roosters) {
-        if (!levelsMatch(r.level, mine.level) || busy.has(r.id) || currentEnergy(r) < PVP_ENERGY) continue
-        out.push({ userId: user_id, name: userName(user_id), avatar: save.state.player.avatar, rooster: snap(r) })
-      }
+      if (!save || !save.state.roosters.length) continue
+      const roosters = [...save.state.roosters]
+        .sort((a, b) => b.level - a.level)
+        .map((r) => ({ ...snap(r), busy: busy.has(r.id) ? ('desafio' as const) : currentEnergy(r) < PVP_ENERGY ? ('energia' as const) : undefined }))
+      out.push({ userId: user_id, name: userName(user_id), avatar: save.state.player.avatar, leaguePoints: save.state.league?.points ?? 0, roosters, inChallenge: pending.has(user_id) })
     }
-    out.sort((x, y) => Math.abs(x.rooster.level - mine.level) - Math.abs(y.rooster.level - mine.level))
-    return { body: { players: out.slice(0, 40), myLevel: mine.level } }
+    out.sort((x, y) => Number(x.inChallenge) - Number(y.inChallenge) || (y.roosters[0]?.level ?? 0) - (x.roosters[0]?.level ?? 0))
+    return { body: { players: out.slice(0, 100) } }
   }
 
   // Enviar desafio
@@ -177,7 +177,6 @@ export function handlePvp(path: string, method: string, url: URL, body: Record<s
     const toUser = String(body.toUserId)
     if (toUser === u.id) fail(t('Você não pode desafiar a si mesmo'))
     const theirs = findRooster(toUser, String(body.toRoosterId)) ?? fail(t('Esse galo não está mais disponível'))
-    if (!levelsMatch(mine.level, theirs.level)) fail(t('Só é possível desafiar galos de nível parecido (diferença máxima de {max}). {galo} é nível {nivel}.', { max: maxLevelDiff(), galo: mine.name, nivel: mine.level }))
     if (!isOnline(toUser)) fail(t('Esse jogador saiu. Escolha outro adversário.'))
     if (currentEnergy(mine) < PVP_ENERGY) fail(t('{galo} precisa de {n} de energia.', { galo: mine.name, n: PVP_ENERGY }))
     if (currentEnergy(theirs) < PVP_ENERGY) fail(t('O galo adversário está sem energia.'))
@@ -209,7 +208,6 @@ export function handlePvp(path: string, method: string, url: URL, body: Record<s
       return fail(reason)
     }
     if (!fromSave || !toSave || !a || !b) return cancel(t('Um dos galos não existe mais.'))
-    if (!levelsMatch(a.level, b.level)) return cancel(t('Os galos não têm mais nível parecido.'))
     if (currentEnergy(a) < PVP_ENERGY || currentEnergy(b) < PVP_ENERGY) return cancel(t('Um dos galos ficou sem energia.'))
 
     const seed = Math.floor(Math.random() * 1e9)
@@ -217,8 +215,8 @@ export function handlePvp(path: string, method: string, url: URL, body: Record<s
     const ko = res.method === 'ko'
     const fromName = userName(c.from_user)
     const toName = userName(c.to_user)
-    const ra = applyResult(fromSave.state, a.id, res.winner === 0, ko, toName, rewardedToday(c.from_user) >= pvpDailyRewards())
-    const rb = applyResult(toSave.state, b.id, res.winner === 1, ko, fromName, rewardedToday(c.to_user) >= pvpDailyRewards())
+    const ra = applyResult(fromSave.state, a.id, res.winner === 0, ko, toName, rewardedToday(c.from_user) >= pvpDailyRewards(), b.level)
+    const rb = applyResult(toSave.state, b.id, res.winner === 1, ko, fromName, rewardedToday(c.to_user) >= pvpDailyRewards(), a.level)
     const d = db()
     d.exec('BEGIN')
     try {

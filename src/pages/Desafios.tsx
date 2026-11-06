@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { api } from '../api'
 import { RoosterSvg } from '../components/RoosterSvg'
-import { Empty, Modal, PageHead, RarityTag, RoosterCard, StyleTag, go } from '../components/ui'
+import { Empty, Modal, PageHead, RoosterCard, go } from '../components/ui'
 import { estimate } from '../game/battle'
-import { BREED_BY_ID } from '../game/data'
-import { maxLevelDiff, PVP_ENERGY, type ChallengeView, type LobbyEntry } from '../game/pvp'
+import { BREED_BY_ID, LEAGUE_TIERS } from '../game/data'
+import { PVP_ENERGY, type ChallengeView, type LobbyPlayer, type LobbyRooster } from '../game/pvp'
 import { currentEnergy, power } from '../game/rooster'
 import { sfx } from '../game/sound'
 import { useGame } from '../game/store'
@@ -26,18 +26,20 @@ export function Desafios() {
   const sorted = [...s.roosters].sort((a, b) => currentEnergy(b) - currentEnergy(a) || b.level - a.level)
   const [selId, setSelId] = useState(sorted[0]?.id)
   const mine = s.roosters.find((r) => r.id === selId) ?? s.roosters[0]
-  const [players, setPlayers] = useState<LobbyEntry[]>([])
+  const [players, setPlayers] = useState<LobbyPlayer[]>([])
   const [loading, setLoading] = useState(true)
   const [history, setHistory] = useState<ChallengeView[]>([])
+  const [openId, setOpenId] = useState<string | null>(null)
+  const [q, setQ] = useState('')
   const outgoing = pvp?.outgoing ?? null
   const left = useCountdown(outgoing?.expiresAt)
 
-  // Atualiza a lista de adversários a cada 5s
+  // Lobby: todos os jogadores online, atualiza a cada 5s
   useEffect(() => {
     let alive = true
     const load = async () => {
       try {
-        const r = await api.pvpLobby(mine.id)
+        const r = await api.pvpLobby()
         if (alive) setPlayers(r.players)
       } catch {
         /* tenta de novo */
@@ -45,35 +47,34 @@ export function Desafios() {
         if (alive) setLoading(false)
       }
     }
-    setLoading(true)
     void load()
     const iv = setInterval(load, 5000)
     return () => {
       alive = false
       clearInterval(iv)
     }
-  }, [mine.id, mine.level])
+  }, [])
 
   useEffect(() => {
     api.pvpHistory().then((r) => setHistory(r.history)).catch(() => null)
   }, [pvp?.updates.length, s.stats.fights])
 
-  const chances = useMemo(() => Object.fromEntries(players.map((p) => [p.rooster.id, estimate(mine, p.rooster, 80).pA])), [players, mine])
+  const shown = players.filter((p) => !q.trim() || p.name.toLowerCase().includes(q.trim().toLowerCase()))
+  const open = shown.find((p) => p.userId === openId) ?? null
 
-  const challenge = async (p: LobbyEntry) => {
-    const r = await actions.pvpChallenge(mine.id, p.userId, p.rooster.id)
+  const challenge = async (p: LobbyPlayer, ro: LobbyRooster) => {
+    const r = await actions.pvpChallenge(mine.id, p.userId, ro.id)
     if (r.ok) toast(t('Desafio enviado para {nome}! Esperando resposta...', { nome: p.name }), 'ok')
     else toast(tx(r.error), 'erro')
   }
 
   const lowEnergy = currentEnergy(mine) < PVP_ENERGY
-  const range = `${Math.max(1, mine.level - maxLevelDiff())}–${mine.level + maxLevelDiff()}`
 
   return (
     <>
       <PageHead
         title={t('🤝 Desafios')}
-        subtitle={tp('{n} jogador online agora · só galos de nível igual ou até {dif} de diferença', '{n} jogadores online agora · só galos de nível igual ou até {dif} de diferença', pvp?.online ?? 0, { dif: maxLevelDiff() })}
+        subtitle={tp('{n} jogador online agora · desafie qualquer um, de qualquer nível', '{n} jogadores online agora · desafie qualquer um, de qualquer nível', pvp?.online ?? 0)}
         right={<span className="pill">{t('🟢 Você está online')}</span>}
       />
 
@@ -112,17 +113,20 @@ export function Desafios() {
         </div>
       )}
 
-      <h2 className="section-title">
-        {t('2. Adversários online')} <span className="tiny muted">{t('(nível {range})', { range })}</span>
-      </h2>
+      <div className="row-between lobby-head">
+        <h2 className="section-title">
+          {t('2. Jogadores online')} <span className="count-badge">{players.length}</span>
+        </h2>
+        <input className="input lobby-search" placeholder={t('Buscar jogador...')} value={q} onChange={(e) => setQ(e.target.value)} />
+      </div>
       {loading && players.length === 0 ? (
         <p className="muted">
           <span className="spinner" /> {t('Procurando jogadores...')}
         </p>
-      ) : players.length === 0 ? (
+      ) : shown.length === 0 ? (
         <Empty
           emoji="🦗"
-          title={t('Ninguém online com galo de nível {range} agora', { range })}
+          title={q.trim() ? t('Ninguém online com esse nome') : t('Ninguém online agora')}
           text={t('Fique nesta tela: a lista atualiza sozinha. Você também pode treinar outro galo ou lutar na Arena enquanto espera.')}
           action={
             <button className="btn btn-primary" onClick={() => go('/rinha')}>
@@ -131,45 +135,73 @@ export function Desafios() {
           }
         />
       ) : (
-        <div className="opponents">
-          {players.map((p) => {
-            const b = BREED_BY_ID[p.rooster.breedId]
-            const diff = p.rooster.level - mine.level
-            const chance = chances[p.rooster.id] ?? 0.5
-            return (
-              <div key={p.rooster.id} className="card opp">
-                <div className="opp-head">
-                  <span className="player-tag">
-                    <span className="avatar sm">{p.avatar}</span> {p.name}
+        <div className="lobby">
+          <div className="card lobby-list">
+            {shown.map((p) => {
+              const tier = [...LEAGUE_TIERS].reverse().find((tr) => p.leaguePoints >= tr.min) ?? LEAGUE_TIERS[0]
+              const top = p.roosters[0]
+              const ready = p.roosters.filter((r) => !r.busy).length
+              return (
+                <button key={p.userId} className={`lobby-row ${openId === p.userId ? 'on' : ''}`} onClick={() => setOpenId(p.userId)}>
+                  <span className="avatar sm">{p.avatar}</span>
+                  <span className="lobby-name">
+                    <b>{p.name}</b>
+                    <span className="tiny muted">
+                      {tier.emoji} {tier.label} · {tp('{n} galo', '{n} galos', p.roosters.length)}
+                    </span>
                   </span>
-                  <span className={`lvl-diff ${diff === 0 ? 'same' : diff > 0 ? 'up' : 'down'}`}>{diff === 0 ? t('Mesmo nível') : tp('{d} nível', '{d} níveis', Math.abs(diff), { d: diff > 0 ? `+${diff}` : `${diff}` })}</span>
-                </div>
-                <div className="opp-vs">
-                  <RoosterSvg breedId={mine.breedId} skin={mine.skin} equipped={mine.equipped} size={90} anim="none" />
-                  <span className="vs">VS</span>
-                  <RoosterSvg breedId={p.rooster.breedId} skin={p.rooster.skin} equipped={p.rooster.equipped} size={90} flip anim="idle" />
-                </div>
-                <div className="rc-name">{p.rooster.name}</div>
-                <div className="rc-sub">
-                  {t('{raca} · Nv {nivel} · {v}V {d}D', { raca: b.name, nivel: p.rooster.level, v: p.rooster.wins, d: p.rooster.losses })}
-                </div>
-                <div className="rc-row">
-                  <RarityTag rarity={b.rarity} />
-                  <StyleTag style={p.rooster.style} />
-                  <span className="power">⚡ {power(p.rooster)}</span>
-                </div>
-                <div className="chance">
-                  <div className="chance-bar">
-                    <div style={{ width: `${Math.round(chance * 100)}%` }} />
-                  </div>
-                  <span>{t('Sua chance: ~{n}%', { n: Math.round(chance * 100) })}</span>
-                </div>
-                <button className="btn btn-primary full" disabled={!!outgoing || lowEnergy} onClick={() => challenge(p)}>
-                  {t('🤝 Desafiar')}
+                  <span className="lobby-lv" title={t('Galo de maior nível')}>
+                    {t('Nv {n}', { n: top?.level ?? 0 })}
+                  </span>
+                  <span className={`lobby-st ${p.inChallenge ? 'busy' : ready ? 'ok' : 'off'}`}>{p.inChallenge ? t('🟡 Em desafio') : ready ? t('🟢 Livre') : t('😴 Sem energia')}</span>
                 </button>
+              )
+            })}
+          </div>
+
+          <div className="lobby-detail">
+            {!open ? (
+              <div className="card center muted lobby-hint">{t('👈 Escolha um jogador para ver os galos dele e desafiar.')}</div>
+            ) : (
+              <div className="card">
+                <div className="row gap lobby-detail-head">
+                  <span className="avatar">{open.avatar}</span>
+                  <div className="grow">
+                    <b>{open.name}</b>
+                    <div className="tiny muted">{t('Escolha qual galo dele você quer enfrentar com {galo} (Nv {n}).', { galo: mine.name, n: mine.level })}</div>
+                  </div>
+                </div>
+                <div className="lobby-roosters">
+                  {open.roosters.map((ro) => {
+                    const diff = ro.level - mine.level
+                    const chance = estimate(mine, ro, 60).pA
+                    const why = ro.busy === 'desafio' ? t('Em outro desafio') : ro.busy === 'energia' ? t('Sem energia') : open.inChallenge ? t('Jogador em desafio') : null
+                    return (
+                      <div key={ro.id} className={`lobby-ro ${why ? 'off' : ''}`}>
+                        <RoosterSvg breedId={ro.breedId} skin={ro.skin} equipped={ro.equipped} tint={ro.tint} size={72} flip anim="none" />
+                        <div className="grow">
+                          <b>{ro.name}</b>
+                          <div className="tiny muted">
+                            {t('{raca} · {v}V {d}D', { raca: BREED_BY_ID[ro.breedId]?.name ?? '', v: ro.wins, d: ro.losses })} · ⚡ {power(ro)}
+                          </div>
+                          <div className="row gap wrap lobby-ro-tags">
+                            <span className="lv-vs">
+                              {t('Nv {a}', { a: mine.level })} <i>×</i> {t('Nv {b}', { b: ro.level })}
+                            </span>
+                            <span className={`lvl-diff ${diff === 0 ? 'same' : diff > 0 ? 'up' : 'down'}`}>{diff === 0 ? t('Mesmo nível') : diff > 0 ? tp('{d} nível acima', '{d} níveis acima', diff, { d: `+${diff}` }) : tp('{d} nível abaixo', '{d} níveis abaixo', -diff, { d: diff })}</span>
+                            <span className="tiny">{t('Sua chance: ~{n}%', { n: Math.round(chance * 100) })}</span>
+                          </div>
+                        </div>
+                        <button className="btn btn-primary btn-sm" disabled={!!outgoing || lowEnergy || !!why} title={why ?? undefined} onClick={() => challenge(open, ro)}>
+                          {why ?? t('🤝 Desafiar')}
+                        </button>
+                      </div>
+                    )
+                  })}
+                </div>
               </div>
-            )
-          })}
+            )}
+          </div>
         </div>
       )}
 
@@ -230,6 +262,10 @@ export function ChallengeAlert() {
     }
   }, [c?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Quem desafia é o lado A; o meu galo é o B
+  const gap = c ? c.a.level - c.b.level : 0
+  const myChance = useMemo(() => (c ? 1 - estimate(c.a, c.b, 60).pA : 0.5), [c?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+
   if (!c || left <= 0) return null
 
   const respond = async (accept: boolean) => {
@@ -251,21 +287,30 @@ export function ChallengeAlert() {
         </p>
         <div className="opp-vs alert-vs">
           <div>
+            <span className="tiny muted">{t('Galo dele')}</span>
             <RoosterSvg breedId={c.a.breedId} skin={c.a.skin} equipped={c.a.equipped} size={120} anim="idle" />
             <b>{c.a.name}</b>
-            <div className="tiny muted">
-              {t('Nv {n}', { n: c.a.level })} · ⚡ {power(c.a)}
-            </div>
+            <span className={`alert-lv ${gap > 0 ? 'up' : gap < 0 ? 'down' : ''}`}>{t('Nv {n}', { n: c.a.level })}</span>
+            <div className="tiny muted">⚡ {power(c.a)}</div>
           </div>
           <span className="vs">VS</span>
           <div>
+            <span className="tiny muted">{t('Seu galo')}</span>
             <RoosterSvg breedId={c.b.breedId} skin={c.b.skin} equipped={c.b.equipped} size={120} flip anim="idle" />
             <b>{c.b.name}</b>
-            <div className="tiny muted">
-              {t('Nv {n}', { n: c.b.level })} · ⚡ {power(c.b)}
-            </div>
+            <span className="alert-lv">{t('Nv {n}', { n: c.b.level })}</span>
+            <div className="tiny muted">⚡ {power(c.b)}</div>
           </div>
         </div>
+        <p className={`alert-gap ${gap > 0 ? 'up' : gap < 0 ? 'down' : 'same'}`}>
+          {gap === 0
+            ? t('⚖️ Mesmo nível')
+            : gap > 0
+              ? tp('⚠️ O galo dele é {d} nível acima do seu', '⚠️ O galo dele é {d} níveis acima do seu', gap, { d: gap })
+              : tp('💪 O galo dele é {d} nível abaixo do seu', '💪 O galo dele é {d} níveis abaixo do seu', -gap, { d: -gap })}
+          {' · '}
+          {t('Sua chance: ~{n}%', { n: Math.round(myChance * 100) })}
+        </p>
         <p className="tiny muted">{t('Gasta {n} de energia. Quem vencer leva milho, XP e pontos de liga.', { n: PVP_ENERGY })}</p>
         <div className="timer-bar">
           <div style={{ width: `${Math.min(100, (left / Math.max(1, Math.round((c.expiresAt - c.createdAt) / 1000))) * 100)}%` }} />

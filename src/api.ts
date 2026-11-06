@@ -1,7 +1,7 @@
 import type { Sku } from './game/catalog'
 import type { ShopOp } from './game/premium'
 import type { AppConfig, PublicConfig } from './game/config'
-import type { ChallengeView, LobbyEntry, PvpPoll } from './game/pvp'
+import type { ChallengeView, LobbyPlayer, PvpPoll } from './game/pvp'
 import type { BetCredit, BetView, ScheduledFight } from './game/bets'
 import type { BetPick, GameState, Rooster } from './game/types'
 import { lang, t, tx } from './i18n'
@@ -138,7 +138,7 @@ export const api = {
   betsMine: () => call<{ bets: BetView[] }>('/bets/mine'),
   placeBet: (fightId: string, pick: BetPick, amount: number) => call<{ rev: number; state: GameState; credit: BetCredit | null }>('/bets', { method: 'POST', body: { fightId, pick, amount } }),
   pvpPoll: () => call<PvpPoll>('/pvp/poll'),
-  pvpLobby: (roosterId: string) => call<{ players: LobbyEntry[]; myLevel: number }>(`/pvp/lobby?roosterId=${encodeURIComponent(roosterId)}`),
+  pvpLobby: () => call<{ players: LobbyPlayer[] }>('/pvp/lobby'),
   pvpChallenge: (roosterId: string, toUserId: string, toRoosterId: string) => call<{ challenge: ChallengeView }>('/pvp/challenge', { method: 'POST', body: { roosterId, toUserId, toRoosterId } }),
   pvpRespond: (id: string, accept: boolean) => call<{ challenge: ChallengeView }>('/pvp/respond', { method: 'POST', body: { id, accept } }),
   pvpCancel: (id: string) => call('/pvp/cancel', { method: 'POST', body: { id } }),

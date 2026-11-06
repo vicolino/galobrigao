@@ -2,22 +2,32 @@
 import { live } from './config'
 import type { Rooster } from './types'
 
-// Diferença de nível, tempo para aceitar e prêmios diários vêm da configuração (backoffice).
-export const maxLevelDiff = () => live.pvp.maxLevelDiff
+// Tempo para aceitar e prêmios diários vêm da configuração (backoffice).
+// Qualquer nível pode desafiar qualquer nível: quem é desafiado vê os níveis e decide se aceita.
 export const challengeTtl = () => live.pvp.challengeTtlSec * 1000
 export const ONLINE_WINDOW = 45_000 // online = sinal nos últimos 45s
 export const pvpDailyRewards = () => live.pvp.dailyRewards
 export const PVP_ENERGY = 25
 
-export const levelsMatch = (a: number, b: number) => Math.abs(a - b) <= live.pvp.maxLevelDiff
-
-export function pvpRewards(level: number, won: boolean, ko: boolean) {
-  return {
-    milho: won ? Math.round((220 + level * 55) * (ko ? 1.25 : 1)) : 60 + level * 10,
-    xp: won ? 80 + level * 14 : 35 + level * 6,
-    points: won ? 35 : -10,
+/**
+ * Prêmio do desafio. Quem vence ganha pelo nível de quem derrotou (até +10 acima do seu):
+ * bater galo fraco rende pouco, zebra rende mais. Perder para galo bem mais forte custa menos pontos.
+ */
+export function pvpRewards(level: number, won: boolean, ko: boolean, oppLevel = level) {
+  const up = oppLevel - level
+  if (won) {
+    const lv = Math.max(1, Math.min(oppLevel, level + 10))
+    return {
+      milho: Math.round((220 + lv * 55) * (ko ? 1.25 : 1)),
+      xp: 80 + lv * 14,
+      points: 35 + Math.max(0, Math.min(15, up)) * 2 - (up < -5 ? Math.min(25, -up - 5) : 0),
+    }
   }
+  return { milho: 60 + level * 10, xp: 35 + level * 6, points: up >= 5 ? -5 : -10 }
 }
+
+/** Texto da diferença de nível, do ponto de vista de quem olha (meu galo x galo dele). */
+export const levelGap = (mine: number, theirs: number) => theirs - mine
 
 export interface PvpRewards {
   milho: number
@@ -42,11 +52,20 @@ export interface ChallengeView {
   reason?: string
 }
 
-export interface LobbyEntry {
+/** Galo de um jogador online, com o motivo se não puder lutar agora. */
+export interface LobbyRooster extends Rooster {
+  busy?: 'energia' | 'desafio'
+}
+
+/** Jogador online no lobby (estilo Gamers Club). */
+export interface LobbyPlayer {
   userId: string
   name: string
   avatar: string
-  rooster: Rooster
+  leaguePoints: number
+  roosters: LobbyRooster[]
+  /** Já tem desafio pendente (enviado ou recebido) */
+  inChallenge: boolean
 }
 
 export interface PvpPoll {
