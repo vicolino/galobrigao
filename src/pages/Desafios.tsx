@@ -1,11 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { api } from '../api'
 import { RoosterSvg } from '../components/RoosterSvg'
 import { Empty, Modal, PageHead, RoosterCard, go } from '../components/ui'
-import { estimate } from '../game/battle'
 import { BREED_BY_ID, LEAGUE_TIERS } from '../game/data'
 import { PVP_ENERGY, type ChallengeView, type LobbyPlayer, type LobbyRooster } from '../game/pvp'
-import { currentEnergy, power } from '../game/rooster'
+import { currentEnergy } from '../game/rooster'
 import { sfx } from '../game/sound'
 import { useGame } from '../game/store'
 import { t, tn, tp, tx } from '../i18n'
@@ -174,7 +173,6 @@ export function Desafios() {
                 <div className="lobby-roosters">
                   {open.roosters.map((ro) => {
                     const diff = ro.level - mine.level
-                    const chance = estimate(mine, ro, 60).pA
                     const why = ro.busy === 'desafio' ? t('Em outro desafio') : ro.busy === 'energia' ? t('Sem energia') : open.inChallenge ? t('Jogador em desafio') : null
                     return (
                       <div key={ro.id} className={`lobby-ro ${why ? 'off' : ''}`}>
@@ -182,14 +180,13 @@ export function Desafios() {
                         <div className="grow">
                           <b>{ro.name}</b>
                           <div className="tiny muted">
-                            {t('{raca} · {v}V {d}D', { raca: BREED_BY_ID[ro.breedId]?.name ?? '', v: ro.wins, d: ro.losses })} · ⚡ {power(ro)}
+                            {t('{raca} · {v}V {d}D', { raca: BREED_BY_ID[ro.breedId]?.name ?? '', v: ro.wins, d: ro.losses })}
                           </div>
                           <div className="row gap wrap lobby-ro-tags">
                             <span className="lv-vs">
                               {t('Nv {a}', { a: mine.level })} <i>×</i> {t('Nv {b}', { b: ro.level })}
                             </span>
                             <span className={`lvl-diff ${diff === 0 ? 'same' : diff > 0 ? 'up' : 'down'}`}>{diff === 0 ? t('Mesmo nível') : diff > 0 ? tp('{d} nível acima', '{d} níveis acima', diff, { d: `+${diff}` }) : tp('{d} nível abaixo', '{d} níveis abaixo', -diff, { d: diff })}</span>
-                            <span className="tiny">{t('Sua chance: ~{n}%', { n: Math.round(chance * 100) })}</span>
                           </div>
                         </div>
                         <button className="btn btn-primary btn-sm" disabled={!!outgoing || lowEnergy || !!why} title={why ?? undefined} onClick={() => challenge(open, ro)}>
@@ -264,7 +261,6 @@ export function ChallengeAlert() {
 
   // Quem desafia é o lado A; o meu galo é o B
   const gap = c ? c.a.level - c.b.level : 0
-  const myChance = useMemo(() => (c ? 1 - estimate(c.a, c.b, 60).pA : 0.5), [c?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!c || left <= 0) return null
 
@@ -291,7 +287,6 @@ export function ChallengeAlert() {
             <RoosterSvg breedId={c.a.breedId} skin={c.a.skin} equipped={c.a.equipped} size={120} anim="idle" />
             <b>{c.a.name}</b>
             <span className={`alert-lv ${gap > 0 ? 'up' : gap < 0 ? 'down' : ''}`}>{t('Nv {n}', { n: c.a.level })}</span>
-            <div className="tiny muted">⚡ {power(c.a)}</div>
           </div>
           <span className="vs">VS</span>
           <div>
@@ -299,7 +294,6 @@ export function ChallengeAlert() {
             <RoosterSvg breedId={c.b.breedId} skin={c.b.skin} equipped={c.b.equipped} size={120} flip anim="idle" />
             <b>{c.b.name}</b>
             <span className="alert-lv">{t('Nv {n}', { n: c.b.level })}</span>
-            <div className="tiny muted">⚡ {power(c.b)}</div>
           </div>
         </div>
         <p className={`alert-gap ${gap > 0 ? 'up' : gap < 0 ? 'down' : 'same'}`}>
@@ -308,8 +302,6 @@ export function ChallengeAlert() {
             : gap > 0
               ? tp('⚠️ O galo dele é {d} nível acima do seu', '⚠️ O galo dele é {d} níveis acima do seu', gap, { d: gap })
               : tp('💪 O galo dele é {d} nível abaixo do seu', '💪 O galo dele é {d} níveis abaixo do seu', -gap, { d: -gap })}
-          {' · '}
-          {t('Sua chance: ~{n}%', { n: Math.round(myChance * 100) })}
         </p>
         <p className="tiny muted">{t('Gasta {n} de energia. Quem vencer leva milho, XP e pontos de liga.', { n: PVP_ENERGY })}</p>
         <div className="timer-bar">
