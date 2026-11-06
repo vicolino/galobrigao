@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { LANGS, lang, setLang, t } from '../i18n'
 
 /** Seletor de idioma próprio (HTML), não usa o <select> nativo. Recarrega a página ao trocar. */
-export function LangSwitch({ compact = false }: { compact?: boolean }) {
+export function LangSwitch({ compact = false, up = false }: { compact?: boolean; up?: boolean }) {
   const cur = lang()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -29,7 +29,7 @@ export function LangSwitch({ compact = false }: { compact?: boolean }) {
       {open && (
         <>
           <div className="lang-back" onClick={() => setOpen(false)} />
-          <ul className="lang-menu" role="listbox" aria-label={t('Idioma')}>
+          <ul className={`lang-menu${up ? ' up' : ''}`} role="listbox" aria-label={t('Idioma')}>
             {LANGS.map((l) => (
               <li key={l.id}>
                 <button

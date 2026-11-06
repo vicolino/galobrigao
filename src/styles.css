@@ -1017,6 +1017,7 @@ tr.muted td { opacity: 0.55; }
 .lang-caret { color: var(--text); opacity: 0.6; flex: none; }
 .lang-back { position: fixed; inset: 0; z-index: 60; }
 .lang-menu { position: absolute; top: calc(100% + 6px); right: 0; z-index: 61; min-width: 160px; margin: 0; padding: 6px; list-style: none; background: #fff; border: 1.5px solid var(--line); border-radius: 12px; box-shadow: var(--shadow-lg); animation: fadeUp 0.15s ease; }
+.lang-menu.up { top: auto; bottom: calc(100% + 6px); }
 .lang-opt { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; text-align: left; background: none; border: 0; border-radius: 8px; padding: 9px 10px; font: inherit; font-weight: 700; font-size: 14px; color: var(--text); cursor: pointer; }
 .lang-opt:hover { background: var(--bg2); }
 .lang-opt.on { color: var(--accent-dk, var(--accent)); }

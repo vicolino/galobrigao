@@ -211,7 +211,7 @@ export function Nav({ route }: { route: string }) {
               value={s.settings.muted ? 0 : s.settings.volume}
               onChange={(e) => actions.setSettings({ volume: Number(e.target.value), muted: false })}
             />
-            <LangSwitch compact />
+            <LangSwitch compact up />
           </div>
 
           <button className="btn btn-ghost full sheet-logout" onClick={() => actions.logout()}>
