@@ -145,7 +145,7 @@ fi
 
 echo "== Caddy (HTTPS automático)"
 cat > /etc/caddy/Caddyfile <<EOF
-$HOST {
+galobrigao.com.br {
 	encode zstd gzip
 	reverse_proxy 127.0.0.1:8787
 	log {
@@ -155,7 +155,16 @@ $HOST {
 		}
 	}
 }
+
+www.galobrigao.com.br {
+	redir https://galobrigao.com.br{uri} permanent
+}
+
+$HOST {
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:8787
+}
 EOF
 systemctl enable caddy
 systemctl reload caddy || systemctl restart caddy
-echo "== Pronto: https://$HOST"
+echo "== Pronto: https://galobrigao.com.br (e https://$HOST)"
