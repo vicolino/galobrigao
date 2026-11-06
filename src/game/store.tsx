@@ -79,6 +79,8 @@ function useGameEngine() {
   const [pvpDone, setPvpDone] = useState<ChallengeView[]>([])
   // Desafio enviado que não rolou (recusado / sem resposta): aviso em janela
   const [pvpDeclined, setPvpDeclined] = useState<ChallengeView | null>(null)
+  // Resultado das apostas resolvidas: janela que fica até o jogador fechar
+  const [betResult, setBetResult] = useState<BetCredit | null>(null)
   // Saldo mostrado durante a luta (para não entregar o resultado antes da hora)
   const [held, setHeld] = useState<{ milho: number; ovos: number; fichas: number } | null>(null)
   const [betsInfo, setBetsInfo] = useState<{ open: number; ready: number; liveFightId: string | null } | null>(null)
@@ -151,10 +153,17 @@ function useGameEngine() {
       const next = applyBetCredit(ref.current, c)
       ref.current = next
       setState(next)
-      for (const e of c.entries.slice(0, 4)) betToast(e)
+      // Junta com um resultado ainda aberto (várias lutas podem resolver juntas)
+      if (c.entries.length) {
+        setBetResult((prev) =>
+          prev
+            ? { ...prev, milho: prev.milho + c.milho, ovos: prev.ovos + c.ovos, fichas: (prev.fichas ?? 0) + (c.fichas ?? 0), won: prev.won + c.won, biggest: Math.max(prev.biggest, c.biggest), zebra: prev.zebra || c.zebra, entries: [...prev.entries, ...c.entries] }
+            : c,
+        )
+      }
       if (c.won) sfx.coin()
     },
-    [betToast],
+    [],
   )
 
   /** Envia o save ao servidor. Em conflito, o servidor vence. */
@@ -675,7 +684,7 @@ async function shop<T = unknown>(op: ShopOp, sound?: () => void): Promise<Result
     },
   }
 
-  return { state, actions, toasts, toast, match, phase, betsInfo, user, provider, paymentsLive, updateReady, pvp, pvpDone, pvpDeclined, clearPvpDeclined: () => setPvpDeclined(null), pubConfig, wallet: held ?? (state ? { milho: state.milho, ovos: state.ovos, fichas: state.fichas ?? 0 } : null), isVip: state ? isVip(state) : false }
+  return { state, actions, toasts, toast, match, phase, betsInfo, user, provider, paymentsLive, updateReady, pvp, pvpDone, pvpDeclined, clearPvpDeclined: () => setPvpDeclined(null), betResult, clearBetResult: () => setBetResult(null), pubConfig, wallet: held ?? (state ? { milho: state.milho, ovos: state.ovos, fichas: state.fichas ?? 0 } : null), isVip: state ? isVip(state) : false }
 }
 
 /** Monta a luta para assistir a partir de um desafio resolvido. */

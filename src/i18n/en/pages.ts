@@ -342,6 +342,14 @@ const en: Record<string, string> = {
   'Nv {n}': 'Lv {n}',
   'Edição Eleições': 'Election Edition',
   'Mercado': 'Market',
+  '🎲 Apostar de novo': '🎲 Bet again',
+  '🎲 Resultado das apostas': '🎲 Bet results',
+  '🎉 Você ganhou na aposta!': '🎉 You won your bet!',
+  '🦓 Zebra! Pagou odds altas': '🦓 Upset! Paid high odds',
+  '{n} aposta certa': '{n} winning bet',
+  '{n} apostas certas': '{n} winning bets',
+  'Não foi dessa vez': 'Not this time',
+  'As fichas você ganha jogando: tente de novo na próxima luta.': 'You earn chips by playing: try again next fight.',
 }
 
 export default en

@@ -580,3 +580,70 @@ function BetBox({
     </div>
   )
 }
+
+/** Resultado das apostas resolvidas: janela que fica até o jogador fechar, com o total ganho. */
+export function BetResult() {
+  const { betResult: c, clearBetResult } = useGame()
+  if (!c) return null
+  const won = c.won > 0
+  const total = c.milho + (c.fichas ?? 0)
+  const ganhos = c.entries.filter((e) => e.won)
+  const perdas = c.entries.filter((e) => !e.won)
+  const sym = (e: { fichas?: number }) => (e.fichas ? '🎟️' : '🌽')
+  const val = (e: { milho: number; fichas?: number }) => fmt(e.fichas || e.milho)
+  return (
+    <Modal open onClose={clearBetResult} title={won ? t('🎉 Você ganhou na aposta!') : t('🎲 Resultado das apostas')}>
+      <div className="bet-result">
+        {won ? (
+          <div className="bet-result-top win">
+            <span className="tiny muted">{tp('{n} aposta certa', '{n} apostas certas', c.won)}</span>
+            <b className="bet-result-total">
+              {c.fichas && !c.milho ? '🎟️' : '🌽'} +{fmt(total)}
+            </b>
+            {c.zebra && <span className="bet-zebra">{t('🦓 Zebra! Pagou odds altas')}</span>}
+          </div>
+        ) : (
+          <div className="bet-result-top">
+            <span className="big-emoji">😕</span>
+            <b>{t('Não foi dessa vez')}</b>
+            <span className="tiny muted">{t('As fichas você ganha jogando: tente de novo na próxima luta.')}</span>
+          </div>
+        )}
+
+        <div className="bet-result-list">
+          {ganhos.map((e, i) => (
+            <div key={`w${i}`} className="bet-line win">
+              <span>✅</span>
+              <span className="grow">{tx(e.text)}</span>
+              <b className="pos">
+                +{sym(e)} {val(e)}
+              </b>
+            </div>
+          ))}
+          {perdas.map((e, i) => (
+            <div key={`l${i}`} className="bet-line lose">
+              <span>❌</span>
+              <span className="grow">{tx(e.text)}</span>
+              <b className="neg">—</b>
+            </div>
+          ))}
+        </div>
+
+        <div className="row-center gap">
+          <button className="btn" onClick={clearBetResult}>
+            {t('Fechar')}
+          </button>
+          <button
+            className="btn btn-primary"
+            onClick={() => {
+              clearBetResult()
+              go('/apostas')
+            }}
+          >
+            {t('🎲 Apostar de novo')}
+          </button>
+        </div>
+      </div>
+    </Modal>
+  )
+}

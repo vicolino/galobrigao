@@ -3,7 +3,7 @@ import { Sidebar } from './components/Sidebar'
 import { Toasts, useHashRoute } from './components/ui'
 import { fmt } from './game/rooster'
 import { useGame } from './game/store'
-import { Apostas } from './pages/Apostas'
+import { Apostas, BetResult } from './pages/Apostas'
 import { Galinheiro } from './pages/Galinheiro'
 import { Liga } from './pages/Liga'
 import { Loja } from './pages/Loja'
@@ -124,6 +124,7 @@ export default function App() {
       </main>
       <ChallengeAlert />
       <ChallengeDeclined />
+      <BetResult />
       <TorneioAlert />
       <OfferCenter />
       <NewsCenter />
