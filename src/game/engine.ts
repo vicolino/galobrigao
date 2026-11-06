@@ -38,8 +38,16 @@ const MISSION_POOL: { kind: MissionKind; text: (n: number) => string; goals: num
 
 export function genMissions(day: string): Mission[] {
   const r = rng(hashStr(day))
-  const pool = [...MISSION_POOL].sort(() => r() - 0.5).slice(0, 5)
-  return pool.map((m, i) => {
+  // Embaralhamento determinístico (Fisher-Yates). NÃO usar sort(() => r() - 0.5):
+  // o resultado de um comparador aleatório varia entre versões do V8, então navegador (Chrome)
+  // e servidor (Node) geravam missões DIFERENTES no mesmo dia — recusando o save ('missão') e
+  // prendendo o jogador num loop de "recarregando". Fisher-Yates dá o mesmo resultado em qualquer V8.
+  const pool = [...MISSION_POOL]
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(r() * (i + 1))
+    ;[pool[i], pool[j]] = [pool[j], pool[i]]
+  }
+  return pool.slice(0, 5).map((m, i) => {
     const goal = pick(m.goals, r)
     const rw = m.reward(goal)
     // id determinístico: navegador e servidor geram as mesmas missões no mesmo dia
