@@ -18,6 +18,14 @@ export interface Release {
 
 export const RELEASES = (): Release[] => [
   {
+    id: '2026-11-06-3',
+    date: '2026-11-06',
+    title: t('Drops raros na Arena!'),
+    items: [
+      { emoji: '🎁', title: t('Drops da Arena'), text: t('Vença na Arena e ganhe drops grátis: ferramentas, skins da Coleção Drop e até galos lendários numerados que viram NFT. Chances abertas na página de Drops.'), link: '/drops' },
+    ],
+  },
+  {
     id: '2026-11-05-4',
     date: '2026-11-05',
     title: t('Deposite USDC e ganhe ovos'),

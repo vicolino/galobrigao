@@ -20,6 +20,8 @@ export interface AppConfig {
   mvp: { on: boolean; creditCents: number }
   /** 💵 Depósito de USDC → 🥚 ovos (só ida). Mínimo e limite diário em USDC por jogador. */
   deposit: { eggsPerUsdc: number; minUsdc: number; dailyCapUsdc: number }
+  /** 🎁 Drops da Arena (prêmio grátis por vitória). Chances em %; tiers somam 100. */
+  drops: DropsConfig
   bets: {
     intervalMin: number
     closeSec: number
@@ -36,6 +38,24 @@ export interface AppConfig {
   }
 }
 
+export interface DropsConfig {
+  on: boolean
+  chanceFacil: number
+  chanceMedio: number
+  chanceDificil: number
+  chanceChefao: number
+  tierComum: number
+  tierRaro: number
+  tierEpico: number
+  tierLendario: number
+  /** Vitórias sem drop até o próximo ser garantido. */
+  pity: number
+  /** Máximo de drops por jogador por dia (UTC). */
+  dailyCap: number
+  /** Tiragem máxima de cada item épico/lendário (0 = sem limite). */
+  supplyCap: number
+}
+
 export const DEFAULT_CONFIG: AppConfig = {
   catalog: Object.fromEntries(CATALOG.map((s) => [s.id, { priceCents: s.priceCents, ovos: s.ovos, bonus: s.bonus, active: true }])),
   rewards: { dailyOvos: 6, day7Ovos: 35, arenaHardWinOvos: 2, missionOvosMultiplier: 1 },
@@ -47,6 +67,7 @@ export const DEFAULT_CONFIG: AppConfig = {
   mvp: { on: true, creditCents: 10000 },
   // (não chama `web3`: /api/config já usa `web3: boolean` para dizer se a carteira está ligada)
   deposit: { eggsPerUsdc: 50, minUsdc: 1, dailyCapUsdc: 500 },
+  drops: { on: true, chanceFacil: 6, chanceMedio: 10, chanceDificil: 15, chanceChefao: 22, tierComum: 70, tierRaro: 22, tierEpico: 6.5, tierLendario: 1.5, pity: 15, dailyCap: 3, supplyCap: 500 },
   // Agenda de lutas da casa: uma luta a cada `intervalMin`, apostas fecham `closeSec` antes.
   // Apostas usam 🎟️ fichas (nunca milho/ovos): ganha jogando, não compra, não troca.
   bets: { intervalMin: 10, closeSec: 30, horizonMin: 120, liveSec: 75, minBet: 10, maxBet: 5000, chipsStart: 1000, chipsDaily: 300, chipsArenaWin: 30, chipsFloor: 200 },
@@ -66,6 +87,7 @@ export function mergeConfig(saved: Partial<AppConfig> | null | undefined): AppCo
     maintenance: { ...DEFAULT_CONFIG.maintenance, ...s.maintenance },
     mvp: { ...DEFAULT_CONFIG.mvp, ...s.mvp },
     deposit: { ...DEFAULT_CONFIG.deposit, ...s.deposit },
+    drops: { ...DEFAULT_CONFIG.drops, ...s.drops },
     bets: { ...DEFAULT_CONFIG.bets, ...s.bets },
   }
 }
@@ -88,5 +110,5 @@ export function effectiveSku(id: string): (Sku & { active: boolean }) | undefine
 export const effectiveCatalog = () => CATALOG.map((s) => effectiveSku(s.id)!)
 
 /** Parte da configuração que o navegador precisa conhecer. */
-export const publicConfig = (c: AppConfig) => ({ economy: c.economy, rewards: c.rewards, pvp: c.pvp, announcement: c.announcement, maintenance: c.maintenance, mvp: c.mvp, bets: c.bets })
+export const publicConfig = (c: AppConfig) => ({ economy: c.economy, rewards: c.rewards, pvp: c.pvp, announcement: c.announcement, maintenance: c.maintenance, mvp: c.mvp, bets: c.bets, drops: c.drops })
 export type PublicConfig = ReturnType<typeof publicConfig> & { build?: string | null; web3?: boolean }

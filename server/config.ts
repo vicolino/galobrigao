@@ -60,6 +60,21 @@ export function validateConfig(input: AppConfig): AppConfig {
   c.deposit.eggsPerUsdc = num(c.deposit.eggsPerUsdc, 1, 10_000, t('Ovos por 1 USDC (depósito)'))
   c.deposit.minUsdc = num(c.deposit.minUsdc, 1, 1000, t('Depósito mínimo (USDC)'))
   c.deposit.dailyCapUsdc = num(c.deposit.dailyCapUsdc, c.deposit.minUsdc, 100_000, t('Limite diário de depósito (USDC)'))
+  // 🎁 Drops da Arena
+  const dr = c.drops
+  dr.on = dr.on !== false
+  dr.chanceFacil = num(dr.chanceFacil, 0, 100, t('Chance de drop: Fácil (%)'))
+  dr.chanceMedio = num(dr.chanceMedio, 0, 100, t('Chance de drop: Médio (%)'))
+  dr.chanceDificil = num(dr.chanceDificil, 0, 100, t('Chance de drop: Difícil (%)'))
+  dr.chanceChefao = num(dr.chanceChefao, 0, 100, t('Chance de drop: Chefão (%)'))
+  dr.tierComum = num(dr.tierComum, 0, 100, t('Drop comum (%)'))
+  dr.tierRaro = num(dr.tierRaro, 0, 100, t('Drop raro (%)'))
+  dr.tierEpico = num(dr.tierEpico, 0, 100, t('Drop épico (%)'))
+  dr.tierLendario = num(dr.tierLendario, 0, 100, t('Drop lendário (%)'))
+  if (Math.abs(dr.tierComum + dr.tierRaro + dr.tierEpico + dr.tierLendario - 100) > 0.01) throw new Error(t('As chances dos tiers de drop precisam somar 100%.'))
+  dr.pity = Math.round(num(dr.pity, 1, 1000, t('Drop garantido após (vitórias)')))
+  dr.dailyCap = Math.round(num(dr.dailyCap, 0, 100, t('Máximo de drops por dia')))
+  dr.supplyCap = Math.round(num(dr.supplyCap, 0, 1_000_000, t('Tiragem máxima por item (0 = sem limite)')))
   c.maintenance.on = !!c.maintenance.on
   c.maintenance.message = String(c.maintenance.message ?? '').slice(0, 200)
   return c

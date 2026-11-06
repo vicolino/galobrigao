@@ -11,6 +11,8 @@ import { t, tn, tx } from '../i18n'
 import { RefillButton, tryOffer } from '../components/Ofertas'
 import { api } from '../api'
 import { serverEconomy } from '../game/economia'
+import { DropTicker, PityBar } from './Drops'
+import { dropOdds } from '../game/drops'
 
 type Opp = { d: 0 | 1 | 2 | 3; o: Rooster; tools: string[] }
 
@@ -108,6 +110,13 @@ export function Rinha() {
           </div>
         }
       />
+      {/* 🎁 Drops: garantia e feed dos últimos drops raros */}
+      {server && dropOdds().on && (
+        <div className="arena-drops">
+          <DropTicker />
+          <PityBar />
+        </div>
+      )}
 
       <h2 className="section-title">{t('1. Seu lutador')}</h2>
       <div className="scroller">
@@ -189,6 +198,11 @@ export function Rinha() {
                   {diff.emoji} {diff.label}
                 </span>
                 <span className="tiny muted">{diff.reward}</span>
+                {server && dropOdds().on && (
+                  <a className="drop-chance" href="#/drops" title={t('Chance de drop por vitória')}>
+                    🎁 {Math.round(dropOdds().chance[d] * 1000) / 10}%
+                  </a>
+                )}
               </div>
               <div className="opp-vs">
                 <RoosterSvg breedId={mine.breedId} skin={mine.skin} equipped={mine.equipped} size={90} anim="none" />

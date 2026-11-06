@@ -11,6 +11,8 @@ import { getDb, type UserRow } from './db'
 import { loadSave, writeSave } from './saves'
 import { limited } from './security'
 import { rentalShare } from './aluguel'
+import { arenaDrop } from './drops'
+import type { DropResult } from '../src/game/drops'
 
 export class EconomiaError extends Error {
   constructor(
@@ -92,7 +94,7 @@ export function handleEconomia(path: string, method: string, url: URL, body: Rec
     if (![0, 1, 2, 3].includes(difficulty)) fail(t('Dificuldade inválida'))
     const tools = Array.isArray(body.tools) ? body.tools.map(String) : []
     const d = getDb()
-    let out: { rev: number; state: GameState; match: ReturnType<typeof arenaFight>['match'] }
+    let out: { rev: number; state: GameState; match: ReturnType<typeof arenaFight>['match'] & { drop?: DropResult } }
     d.exec('BEGIN')
     try {
       const cur = loadSave(u.id) ?? fail(t('Sem galinheiro'), 409)
@@ -101,6 +103,11 @@ export function handleEconomia(path: string, method: string, url: URL, body: Rec
       const seed = randomInt(1, 1_000_000_000)
       const r = arenaFight(tick(cur.state), roosterId, opp.o, difficulty, tools, opp.tools, seed, (m) => fail(m))
       out = { rev: cur.rev + 1, state: r.state, match: r.match }
+      // 🎁 Drop raro (só vitória; sorteio no servidor, mesma transação)
+      if (r.match.won) {
+        const dr = arenaDrop(u, out.state, difficulty)
+        out = { ...out, state: dr.state, match: { ...out.match, ...(dr.drop ? { drop: dr.drop } : {}) } }
+      }
       writeSave(u.id, out.state, out.rev)
       // Adversários usados: a próxima visita à Arena gera outros, calibrados pelo nível novo
       db().prepare('DELETE FROM arena_opps WHERE user_id = ? AND rooster_id = ?').run(u.id, roosterId)

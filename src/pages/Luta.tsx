@@ -3,6 +3,7 @@ import { RoosterSvg, type Anim } from '../components/RoosterSvg'
 import { ToolFx } from '../components/ToolFx'
 import { Bar, Empty, StyleTag, go } from '../components/ui'
 import { ShareButton, recordLine } from '../components/Share'
+import { DropModal } from '../components/DropReveal'
 import { MAX_STA, simulate } from '../game/battle'
 import { BREED_BY_ID, TOOL_BY_ID } from '../game/data'
 import { fmt } from '../game/rooster'
@@ -48,6 +49,8 @@ export function Luta() {
   const { match, actions, state } = useGame()
   const result = useMemo(() => (match ? simulate(match.a, match.b, match.seed, match.tools ?? [[], []]) : null), [match])
   const [idx, setIdx] = useState(0)
+  // 🎁 Drop: 0 = ainda não abriu, 1 = aberto, 2 = já viu
+  const [dropOpen, setDropOpen] = useState(0)
   const [speed, setSpeed] = useState(1)
   const [anims, setAnims] = useState<[Anim, Anim]>(['idle', 'idle'])
   const [fx, setFx] = useState<{ key: number; side: 0 | 1; text: string; crit: boolean; miss: boolean } | null>(null)
@@ -387,6 +390,22 @@ export function Luta() {
                 </div>
               )}
               {match.limited && <p className="tiny muted">{t('Você já usou os desafios com prêmio de hoje. Este valeu só pelo recorde.')}</p>}
+              {won && match.drop && (
+                <button className={`btn drop-cta tier-${match.drop.tier} ${dropOpen ? 'seen' : ''}`} onClick={() => setDropOpen(1)}>
+                  {dropOpen ? t('🎁 Ver meu drop de novo') : t('🎁 Você ganhou um DROP! Abrir')}
+                </button>
+              )}
+              {match.drop && dropOpen === 1 && (
+                <DropModal
+                  drop={match.drop}
+                  fallbackRo={shareRo}
+                  onClose={() => setDropOpen(2)}
+                  onGo={(path) => {
+                    actions.clearMatch()
+                    go(path)
+                  }}
+                />
+              )}
               <div className="row-center gap">
                 <button className="btn btn-primary" onClick={back}>
                   {isPvp ? t('⚔️ Novo desafio') : t('⚔️ Lutar de novo')}

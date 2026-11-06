@@ -9,6 +9,7 @@ import type { Currency } from './game/types'
 import type { FeiraAdmin, FeiraData, FeiraKind, FeiraListing, FeiraPlayer } from './game/feira'
 import type { LimitedStock } from './game/ofertas'
 import type { PrizeRow, TorneioDetail, TorneioKind, TorneioNotice, TorneioResult, TorneioStatus, TorneioView } from './game/torneio'
+import type { DropResult, RecentDrop } from './game/drops'
 
 export interface TorneioAdminRow {
   id: string
@@ -123,10 +124,12 @@ export const api = {
   arenaOpponents: (roosterId: string, fresh = false) =>
     call<{ opponents: { d: 0 | 1 | 2 | 3; o: Rooster; tools: string[] }[] }>(`/arena/opponents?roosterId=${encodeURIComponent(roosterId)}${fresh ? '&fresh=1' : ''}`),
   arenaFight: (roosterId: string, difficulty: number, tools: string[]) =>
-    call<{ rev: number; state: GameState; match: { a: Rooster; b: Rooster; seed: number; difficulty: 0 | 1 | 2 | 3; tools: [string[], string[]]; rewards: { milho: number; ovo: number; xp: number; points: number; levels: number; fichas: number } } }>('/arena/fight', {
+    call<{ rev: number; state: GameState; match: { a: Rooster; b: Rooster; seed: number; difficulty: 0 | 1 | 2 | 3; tools: [string[], string[]]; rewards: { milho: number; ovo: number; xp: number; points: number; levels: number; fichas: number }; drop?: DropResult } }>('/arena/fight', {
       method: 'POST',
       body: { roosterId, difficulty, tools },
     }),
+  // 🎁 Drops da Arena (server/drops.ts)
+  dropsRecent: () => call<{ drops: RecentDrop[] }>('/drops/recent'),
   betsSchedule: () =>
     call<{ now: number; closeMs: number; liveMs: number; fights: ScheduledFight[]; mine: BetView[] }>('/bets/schedule').then((r) => ({
       ...r,

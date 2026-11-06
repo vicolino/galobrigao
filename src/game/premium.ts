@@ -119,6 +119,7 @@ export function runShop(s: GameState, o: ShopOp): { state: GameState; value?: un
     }
     case 'buySkin': {
       const sk = SKIN_BY_ID[o.id] ?? fail(t('Skin não existe'))
+      if (sk.drop) fail(t('Essa skin só sai nos Drops da Arena.'))
       if (sk.exclusive) fail(t('Essa skin é exclusiva do Passe da Temporada.'))
       if (s.skins.includes(o.id)) fail(t('Você já tem essa skin.'))
       const price = skinPrice(o.id)

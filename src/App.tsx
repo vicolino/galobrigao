@@ -27,6 +27,7 @@ import { Ranking } from './pages/Ranking'
 import { TorneioAlert, Torneios } from './pages/Torneios'
 import { APP_NAME } from './brand'
 import { t, tx } from './i18n'
+import { Drops } from './pages/Drops'
 
 export default function App() {
   const { state, phase, wallet, user, pubConfig, updateReady } = useGame()
@@ -78,6 +79,7 @@ export default function App() {
     case 'ranking': page = <Ranking />; break
     case 'torneios': page = <Torneios id={param} />; break
     case 'novidades': page = <Novidades />; break
+    case 'drops': page = <Drops />; break
     default: page = <Galinheiro selectedId={param} />
   }
 

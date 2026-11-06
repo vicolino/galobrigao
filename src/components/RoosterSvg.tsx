@@ -42,7 +42,13 @@ type Look = {
   num?: string
   numColor?: string
   stripes?: string
-  aura?: boolean
+  /** Brilho em volta; string = cor do brilho */
+  aura?: boolean | string
+  sparkColor?: string
+  /** Rastro de cometa atrás do galo */
+  trail?: boolean
+  /** Sol eclipsado atrás do galo */
+  eclipse?: boolean
 }
 const LOOKS: Record<string, Look> = {
   fenomeno: { hair: 'careca', chubby: true, num: '9', numColor: '#1f9d4a' },
@@ -52,6 +58,10 @@ const LOOKS: Record<string, Look> = {
   curva: { hair: 'moicano', hairColor: '#f2cf5b', num: '7', numColor: '#c8102e' },
   pulga: { hair: 'curto', hairColor: '#5a3a1e', beard: '#5a3a1e', num: '10', numColor: '#1a1a1a', stripes: '#75aadb' },
   mao: { hair: 'cachos', hairColor: '#1b1410', num: '10', numColor: '#1a1a1a', stripes: '#75aadb' },
+  // 🎁 Coleção Drop
+  cometa: { aura: '#5fd0ff', sparkColor: '#d6f7ff', trail: true },
+  reliquia: { aura: '#ffd23f', crown: true },
+  eclipse: { aura: '#ff6a1f', sparkColor: '#ffb020', eclipse: true },
 }
 
 const GRADIENT_FX: SkinFx[] = ['fogo', 'arcoiris', 'galaxia', 'ouro', 'robo', 'lava', 'gelo']
@@ -114,10 +124,24 @@ export function RoosterSvg({ breedId, skin, equipped = {}, tint, flip, anim = 'i
       <g className={`r-anim r-${anim}`}>
         {fx === 'sombra' || fx === 'fogo' || fx === 'lava' ? <ellipse cx="104" cy="120" rx="80" ry="70" fill={fx === 'sombra' ? '#5b1030' : '#ff6a1f'} opacity="0.18" className="fx-aura" /> : null}
 
+        {look?.eclipse && (
+          <g>
+            <circle cx="46" cy="46" r="30" fill="#ff8a1f" opacity="0.35" className="fx-aura" />
+            <circle cx="46" cy="46" r="23" fill="#ffb020" />
+            <circle cx="52" cy="42" r="22" fill="#0b0712" />
+          </g>
+        )}
+        {look?.trail && (
+          <g opacity="0.85">
+            <path d="M40,120 C10,100 -6,70 -10,40 C8,70 24,92 52,104 Z" fill="#7ff3ff" opacity="0.35" />
+            <path d="M44,138 C8,128 -10,104 -16,80 C6,104 26,118 56,124 Z" fill="#5fa8ff" opacity="0.3" />
+            <path d="M48,104 C26,80 18,56 20,30 C30,58 42,76 60,90 Z" fill="#d6f7ff" opacity="0.3" />
+          </g>
+        )}
         {look?.aura && (
           <g>
-            <ellipse cx="104" cy="118" rx="84" ry="74" fill="#ffd23f" opacity="0.2" className="fx-aura" />
-            <g className="fx-sparkle" fill="#ffe680">
+            <ellipse cx="104" cy="118" rx="84" ry="74" fill={typeof look.aura === 'string' ? look.aura : '#ffd23f'} opacity="0.2" className="fx-aura" />
+            <g className="fx-sparkle" fill={look.sparkColor ?? '#ffe680'}>
               <text x="30" y="96" fontSize="13">✦</text>
               <text x="182" y="118" fontSize="11">✦</text>
               <text x="100" y="40" fontSize="10">✦</text>

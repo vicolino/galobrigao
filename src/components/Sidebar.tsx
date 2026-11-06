@@ -15,6 +15,7 @@ const NAV = [
   { path: '/galinheiro', label: t('Galinheiro'), emoji: '🏠' },
   { path: '/cruzamento', label: t('Cruzamento'), emoji: '🥚' },
   { path: '/rinha', label: t(ARENA), emoji: '⚔️' },
+  { path: '/drops', label: t('Drops'), emoji: '🎁' },
   { path: '/desafios', label: t('Desafios'), emoji: '🤝' },
   { path: '/torneios', label: t('Torneios'), emoji: '🏟️' },
   { path: '/apostas', label: t('Apostas'), emoji: '🎲' },

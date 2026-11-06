@@ -13,6 +13,7 @@ import { applyBetCredit, type BetCredit, type BetView, type ScheduledFight } fro
 import { locale, t, tx } from '../i18n'
 import { storedUtm } from './social'
 
+import type { DropResult } from './drops'
 import {
   checkAchievements,
   genMarket,
@@ -47,6 +48,8 @@ export interface Match {
   tools?: [string[], string[]]
   rewards?: { milho: number; ovo: number; xp: number; points: number; levels: number; fichas?: number }
   myBets?: (Bet & { currency?: 'fichas' | 'milho' })[]
+  /** 🎁 Drop raro ganho nesta vitória (servidor). */
+  drop?: DropResult
 }
 
 type Result<T = undefined> = { ok: true; value?: T } | { ok: false; error: string }
@@ -533,7 +536,7 @@ async function shop<T = unknown>(op: ShopOp, sound?: () => void): Promise<Result
         setHeld(wallet)
         adopt({ rev: r.rev, state: r.state })
         if (checkAchievements(r.state).length) commit(ref.current!)
-        const m: Match = { kind: 'rinha', a: r.match.a, b: r.match.b, seed: r.match.seed, difficulty: r.match.difficulty, tools: r.match.tools, rewards: r.match.rewards }
+        const m: Match = { kind: 'rinha', a: r.match.a, b: r.match.b, seed: r.match.seed, difficulty: r.match.difficulty, tools: r.match.tools, rewards: r.match.rewards, ...(r.match.drop ? { drop: r.match.drop } : {}) }
         setMatch(m)
         return { ok: true, value: m }
       } catch (e) {

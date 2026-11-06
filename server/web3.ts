@@ -362,7 +362,7 @@ export async function handleWeb3(path: string, method: string, body: Record<stri
     const key = typeof body.key === 'string' && /^(acc|skin):[\w-]{1,40}$/.test(body.key) ? body.key : fail(400, t('Item inválido'))
     const [kind, itemId] = key.split(':') as ['acc' | 'skin', string]
     const item = itemOf(kind, itemId)
-    if (!item || item.rarity !== 'lendario') fail(400, t('Só itens lendários viram NFT.'))
+    if (!item || (item.rarity !== 'lendario' && !('drop' in item && item.drop))) fail(400, t('Só itens lendários viram NFT.'))
     const w = walletOf(user.id)
     // 1) consome o crédito de NFT no save
     const debited = mutate(user.id, (s) => {

@@ -237,6 +237,46 @@ export const FOOTBALL_ROOSTERS = [
   { breedId: 'mao', name: t('Mão Divina'), emoji: '🇦🇷' },
 ]
 
+// 🎁 Coleção Drop: galos lendários que só saem em Drops da Arena (nunca na loja; viram NFT).
+BREEDS.push(
+  {
+    id: 'cometa',
+    name: t('Galo Cometa'),
+    desc: t('Caiu do céu numa noite de São João e nunca mais parou de brilhar.'),
+    rarity: 'lendario',
+    pattern: 'dourado',
+    special: true,
+    drop: true,
+    colors: { body: '#2b6fff', wing: '#1a3fb8', tail: '#0b1a5c', tail2: '#7ff3ff', neck: '#5fa8ff', comb: '#ff4fd8', legs: '#ffe14a' },
+    base: { hp: 121, atk: 22, def: 15, spd: 19 },
+    price: 250,
+  },
+  {
+    id: 'reliquia',
+    name: t('Galo Relíquia'),
+    desc: t('Achado num baú do sertão. Penas de ouro velho e esporão de bronze.'),
+    rarity: 'lendario',
+    pattern: 'dourado',
+    special: true,
+    drop: true,
+    colors: { body: '#c9932e', wing: '#8a5a1a', tail: '#4a2a0e', tail2: '#ffd98a', neck: '#e0b25a', comb: '#b3122e', legs: '#cd7f32' },
+    base: { hp: 128, atk: 21, def: 18, spd: 13 },
+    price: 250,
+  },
+  {
+    id: 'eclipse',
+    name: t('Galo Eclipse'),
+    desc: t('Quando ele canta, o sol se esconde. Metade noite, metade fogo.'),
+    rarity: 'lendario',
+    pattern: 'pintado',
+    special: true,
+    drop: true,
+    colors: { body: '#14101f', wing: '#2a1840', tail: '#ff6a1f', tail2: '#ffd23f', neck: '#3b2160', comb: '#ff3b1f', legs: '#ffb020' },
+    base: { hp: 116, atk: 25, def: 13, spd: 18 },
+    price: 250,
+  },
+)
+
 export const BREED_BY_ID: Record<string, Breed> = Object.fromEntries(BREEDS.map((b) => [b.id, b]))
 
 export const STYLES: Record<Style, { label: string; emoji: string; desc: string; special: string; mod: { atk: number; def: number; spd: number } }> = {
@@ -404,7 +444,18 @@ export const SEASON_SKINS: Skin[] = [
 export const TORNEIO_SKINS: Skin[] = [
   { id: 'copa-terreiro', name: t('Taça do Terreiro'), emoji: '🏆', rarity: 'lendario', price: 400, currency: 'ovo', fx: 'ouro', exclusive: true, colors: C('#c9971c', '#a87912', '#fff1a8', '#ffd23f', '#e0b22e', '#d62828', '#ffd23f'), desc: t('Só para quem venceu a Copa do Terreiro.') },
 ]
-export const SKIN_BY_ID: Record<string, Skin> = Object.fromEntries([...SKINS, ...SEASON_SKINS, ...TORNEIO_SKINS].map((s) => [s.id, s]))
+// 🎁 Coleção Drop: skins que só saem em Drops da Arena (nunca na loja; dá para negociar na Feira).
+export const DROP_SKINS: Skin[] = [
+  { id: 'drop-guaiba', name: t('Pôr do Sol no Guaíba'), emoji: '🌇', rarity: 'raro', price: 60, currency: 'ovo', fx: 'arcoiris', exclusive: true, drop: true, colors: C('#ff7a45', '#ff4f6d', '#6a2c91', '#ffb347', '#ff9a5a', '#ffd23f', '#e8b04a'), desc: t('Laranja, rosa e roxo: o fim de tarde mais bonito do Sul.') },
+  { id: 'drop-carnaval', name: t('Carnaval Neon'), emoji: '🎭', rarity: 'raro', price: 60, currency: 'ovo', fx: 'neon', exclusive: true, drop: true, colors: C('#1a0f2e', '#2a1450', '#3dff6a', '#ffe14a', '#22123d', '#ff2fd0', '#3dff6a'), desc: t('Saiu do bloco e foi direto pra arena. Purpurina em tudo.') },
+  { id: 'drop-mandacaru', name: t('Mandacaru'), emoji: '🌵', rarity: 'raro', price: 60, currency: 'ovo', fx: 'camuflado', exclusive: true, drop: true, colors: C('#4f8a3a', '#356b28', '#c98b3a', '#8fcf5a', '#5f9e46', '#ff5a7a', '#d9b44a'), desc: t('Aguenta seca, sol e bicada. Espinho de sobra.') },
+  { id: 'drop-aurora', name: t('Aurora Boreal'), emoji: '🌌', rarity: 'epico', price: 140, currency: 'ovo', fx: 'galaxia', exclusive: true, drop: true, colors: C('#0f2a3a', '#0b1e2e', '#3dffb0', '#7f6bff', '#16384a', '#3dffb0', '#7fd8ff'), desc: t('Luzes do norte dançando nas penas. Raríssimo no terreiro.') },
+  { id: 'drop-obsidiana', name: t('Obsidiana'), emoji: '🖤', rarity: 'epico', price: 140, currency: 'ovo', fx: 'sombra', exclusive: true, drop: true, colors: C('#0d0d12', '#1a1a24', '#05050a', '#6a5aff', '#15151e', '#6a5aff', '#2a2a36'), desc: t('Vidro vulcânico: preto, frio e cortante.') },
+  { id: 'drop-ouro-velho', name: t('Ouro Velho'), emoji: '🏺', rarity: 'epico', price: 160, currency: 'ovo', fx: 'ouro', exclusive: true, drop: true, colors: C('#b8862b', '#8a6220', '#5a3d12', '#e8c46a', '#c99a3a', '#7a1a1a', '#8a6220'), desc: t('Ouro de garimpo antigo, com a pátina do tempo.') },
+  { id: 'drop-sertao', name: t('Relíquia do Sertão'), emoji: '🏜️', rarity: 'epico', price: 180, currency: 'ovo', fx: 'lava', exclusive: true, drop: true, colors: C('#5a2a12', '#7a3a18', '#ffb020', '#ff5a1f', '#6a3216', '#ffd23f', '#c98b3a'), desc: t('Forjado no calor de 50 graus. Brasa viva no peito.') },
+  { id: 'drop-iemanja', name: t('Rainha do Mar'), emoji: '🌊', rarity: 'epico', price: 180, currency: 'ovo', fx: 'gelo', exclusive: true, drop: true, colors: C('#e8fbff', '#9fe3ff', '#1f7ad6', '#ffffff', '#c9f1ff', '#3dd6ff', '#9fe3ff'), desc: t('Branco e azul de 2 de fevereiro. Brilha como espuma de onda.') },
+]
+export const SKIN_BY_ID: Record<string, Skin> = Object.fromEntries([...SKINS, ...SEASON_SKINS, ...TORNEIO_SKINS, ...DROP_SKINS].map((s) => [s.id, s]))
 
 export const SKIN_BUNDLES = [
   { id: 'elementos', name: t('Pacote Elementos'), emoji: '⚡', skins: ['fogo', 'gelo', 'lava'], price: 380, desc: t('Fogo, gelo e magma juntos.') },

@@ -30,6 +30,7 @@ import { handleDeposito } from './deposito'
 import { afterShop, deleteOfferData, firstPurchaseSku, handleOfertas, isFirstPurchase, OfertasError, withStock } from './ofertas'
 import { CriacaoError, handleCriacao } from './criacao'
 import { arenaDeleteUser, EconomiaError, handleEconomia } from './economia'
+import { dropsDeleteUser, handleDrops } from './drops'
 import { economyViolation, serverEconomy } from '../src/game/economia'
 import { currentPass } from '../src/game/pass'
 import { handleTorneios, torneioDeleteUser, TorneioError } from './torneios'
@@ -430,6 +431,7 @@ export async function handle(req: Req, res: Res) {
       db.prepare('DELETE FROM password_resets WHERE user_id = ?').run(u.id)
       deleteOfferData(u.id)
       arenaDeleteUser(u.id)
+      dropsDeleteUser(u.id)
       // Pedidos pagos são mantidos anonimizados por obrigação fiscal; os dados pessoais saem.
       // Web3: carteira, NFTs, web3_tx e deposits ficam (ativos na chain + auditoria; só têm o id, sem dados pessoais).
       // Anúncios do jogador somem do mercado porque a listagem exige a conta existir.
@@ -484,6 +486,8 @@ export async function handle(req: Req, res: Res) {
       incoming.card = cur.state.card
       // Créditos de NFT são do servidor
       incoming.mintable = cur.state.mintable
+      // 🎁 Garantia de drop é do servidor
+      incoming.dropPity = cur.state.dropPity
       // Passe da Temporada: premium e resgates são do servidor; XP limitado por dia
       incoming.pass = locked ? currentPass(cur.state) : mergeClientPass(cur.state, incoming, (gain) => guardDaily(u.id, 'px', gain, PASS_DAILY_XP))
       // Ofertas relâmpago e recargas de energia são do servidor
@@ -590,6 +594,12 @@ export async function handle(req: Req, res: Res) {
     // ----- Ranking de galinheiros e vitrine (server/criacao.ts) -----
     if (path === '/api/ranking' || path.startsWith('/api/players/')) {
       const out = handleCriacao(path, method, needUser(req))
+      if (out) return json(res, out.status ?? 200, out.body)
+    }
+
+    // ----- 🎁 Drops da Arena (server/drops.ts) -----
+    if (path.startsWith('/api/drops/')) {
+      const out = handleDrops(path, method, needUser(req))
       if (out) return json(res, out.status ?? 200, out.body)
     }
 

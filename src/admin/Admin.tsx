@@ -1036,6 +1036,27 @@ function Config() {
             <NumField label={t('Depósito mínimo (USDC)')} value={cfg.deposit.minUsdc} onChange={(v) => set('deposit', { minUsdc: v })} />
             <NumField label={t('Limite diário de depósito (USDC)')} step={50} value={cfg.deposit.dailyCapUsdc} onChange={(v) => set('deposit', { dailyCapUsdc: v })} hint={t('Por jogador, por dia')} />
           </div>
+          <h3>{t('🎁 Drops da Arena')}</h3>
+          <label className="check">
+            <input type="checkbox" checked={cfg.drops.on !== false} onChange={(e) => set('drops', { on: e.target.checked })} /> {t('Drops ligados (prêmio raro grátis nas vitórias da Arena)')}
+          </label>
+          <div className="cfg-grid">
+            <NumField label={t('Chance de drop: Fácil (%)')} step={0.5} value={cfg.drops.chanceFacil} onChange={(v) => set('drops', { chanceFacil: v })} />
+            <NumField label={t('Chance de drop: Médio (%)')} step={0.5} value={cfg.drops.chanceMedio} onChange={(v) => set('drops', { chanceMedio: v })} />
+            <NumField label={t('Chance de drop: Difícil (%)')} step={0.5} value={cfg.drops.chanceDificil} onChange={(v) => set('drops', { chanceDificil: v })} />
+            <NumField label={t('Chance de drop: Chefão (%)')} step={0.5} value={cfg.drops.chanceChefao} onChange={(v) => set('drops', { chanceChefao: v })} />
+            <NumField label={t('Drop comum (%)')} step={0.5} value={cfg.drops.tierComum} onChange={(v) => set('drops', { tierComum: v })} hint={t('Ferramentas comuns/raras')} />
+            <NumField label={t('Drop raro (%)')} step={0.5} value={cfg.drops.tierRaro} onChange={(v) => set('drops', { tierRaro: v })} hint={t('Ferramentas raras ou skin rara')} />
+            <NumField label={t('Drop épico (%)')} step={0.5} value={cfg.drops.tierEpico} onChange={(v) => set('drops', { tierEpico: v })} hint={t('Skin épica numerada (vira NFT)')} />
+            <NumField label={t('Drop lendário (%)')} step={0.1} value={cfg.drops.tierLendario} onChange={(v) => set('drops', { tierLendario: v })} hint={t('Galo lendário numerado (vira NFT)')} />
+            <NumField label={t('Drop garantido após (vitórias)')} value={cfg.drops.pity} onChange={(v) => set('drops', { pity: v })} hint={t('Vitórias seguidas sem drop; a seguinte dá drop com certeza')} />
+            <NumField label={t('Máximo de drops por dia')} value={cfg.drops.dailyCap} onChange={(v) => set('drops', { dailyCap: v })} hint={t('Por jogador (dia UTC)')} />
+            <NumField label={t('Tiragem máxima por item (0 = sem limite)')} step={50} value={cfg.drops.supplyCap} onChange={(v) => set('drops', { supplyCap: v })} hint={t('Cada skin épica / galo lendário')} />
+          </div>
+          {(() => {
+            const sum = cfg.drops.tierComum + cfg.drops.tierRaro + cfg.drops.tierEpico + cfg.drops.tierLendario
+            return Math.abs(sum - 100) > 0.01 ? <p className="tiny neg">{t('⚠️ Os tiers somam {n}%: precisam somar 100% para salvar.', { n: Math.round(sum * 100) / 100 })}</p> : null
+          })()}
           <h3>{t('🛡️ Economia e segurança')}</h3>
           <div className="cfg-grid">
             <NumField label={t('Ovos grátis máximos por dia')} value={cfg.economy.freeOvosPerDay} onChange={(v) => set('economy', { freeOvosPerDay: v })} hint={t('Acima disso o servidor recusa o progresso (anti-trapaça)')} />

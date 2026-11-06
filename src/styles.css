@@ -1349,3 +1349,67 @@ tr.muted td { opacity: 0.55; }
 .web3-item .w3-back { white-space: normal; line-height: 1.25; font-size: 12px; font-weight: 700; color: var(--muted); }
 .web3-item .w3-back:hover:not(:disabled) { color: var(--text, #fff); }
 .web3-item .w3-actions .btn { white-space: normal; line-height: 1.2; padding-left: 8px; padding-right: 8px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-align: center; }
+
+/* ===================== 🎁 Drops da Arena ===================== */
+.tier-comum { --tier: #a8a29e; --tier2: #6fbf73; }
+.tier-raro { --tier: #4fa3ff; --tier2: #2f6fe0; }
+.tier-epico { --tier: #b57bff; --tier2: #ff4fd8; }
+.tier-lendario { --tier: #ffb020; --tier2: #ffe14a; }
+.drop-cta { display: block; width: 100%; max-width: 420px; margin: 12px auto; font-size: 17px; font-weight: 900; color: #1a0f08; border: 2px solid var(--tier); background: linear-gradient(90deg, var(--tier2), var(--tier)); box-shadow: 0 0 18px color-mix(in srgb, var(--tier) 70%, transparent); animation: drop-pulse 1.1s ease-in-out infinite; }
+.drop-cta.seen { animation: none; opacity: 0.9; }
+@keyframes drop-pulse { 0%, 100% { transform: scale(1); box-shadow: 0 0 10px color-mix(in srgb, var(--tier) 50%, transparent); } 50% { transform: scale(1.04); box-shadow: 0 0 28px var(--tier); } }
+.drop-back { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 16px; background: radial-gradient(circle at 50% 45%, rgba(40, 24, 70, 0.92), rgba(3, 6, 10, 0.96)); backdrop-filter: blur(4px); animation: fade 0.2s; overflow-y: auto; }
+.drop-stage { width: 100%; max-width: 760px; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.drop-title { margin: 0; font-family: 'Lilita One', system-ui, sans-serif; letter-spacing: 0.5px; }
+.drop-reel { position: relative; width: 100%; overflow: hidden; padding: 14px 0; border-radius: 14px; border: 1px solid var(--line); background: linear-gradient(180deg, #0b0f14, #121822); box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.8); -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); }
+.drop-strip { display: flex; will-change: transform; }
+.drop-marker { position: absolute; top: 0; bottom: 0; left: 50%; width: 3px; margin-left: -1.5px; background: #ffd23f; box-shadow: 0 0 12px #ffd23f; z-index: 2; }
+.drop-marker::before, .drop-marker::after { content: ''; position: absolute; left: 50%; transform: translateX(-50%); border: 8px solid transparent; }
+.drop-marker::before { top: 0; border-top-color: #ffd23f; }
+.drop-marker::after { bottom: 0; border-bottom-color: #ffd23f; }
+.drop-card { flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: 4px; height: 132px; padding: 8px 6px 6px; border-radius: 10px; background: linear-gradient(180deg, #1a2230, #10151d); border: 2px solid var(--tier); border-bottom-width: 5px; box-shadow: inset 0 -24px 30px -20px var(--tier); }
+.drop-card svg { max-height: 86px; }
+.drop-card-name { font-size: 11px; font-weight: 800; line-height: 1.15; text-align: center; color: #e8e4dc; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.drop-emoji { line-height: 1; display: grid; place-items: center; height: 86px; filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.5)); }
+.drop-reveal { position: relative; overflow: hidden; width: 100%; max-width: 420px; padding: 22px 18px 18px; border-radius: 20px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 8px; background: radial-gradient(circle at 50% 38%, color-mix(in srgb, var(--tier) 35%, #121822), #0d1118 70%); border: 2px solid var(--tier); box-shadow: 0 0 40px color-mix(in srgb, var(--tier) 60%, transparent), inset 0 0 60px color-mix(in srgb, var(--tier) 25%, transparent); animation: drop-pop 0.5s cubic-bezier(0.2, 1.4, 0.4, 1); }
+.drop-reveal > * { position: relative; z-index: 1; }
+@keyframes drop-pop { 0% { transform: scale(0.6); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+.drop-headline { font-family: 'Lilita One', system-ui, sans-serif; font-size: 28px; color: var(--tier); text-shadow: 0 0 18px var(--tier); }
+.drop-art-big { min-height: 160px; display: grid; place-items: center; filter: drop-shadow(0 0 22px var(--tier)); animation: drop-float 2.4s ease-in-out infinite; }
+@keyframes drop-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+.drop-name { font-size: 22px; font-weight: 900; }
+.drop-serial { font-weight: 900; font-size: 13px; padding: 2px 10px; border-radius: 999px; color: #1a0f08; background: linear-gradient(90deg, var(--tier2), var(--tier)); }
+.drop-tools { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.drop-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.drop-rays { position: absolute !important; z-index: 0 !important; left: 50%; top: 38%; width: 900px; height: 900px; margin: -450px 0 0 -450px; background: repeating-conic-gradient(from 0deg, color-mix(in srgb, var(--tier) 30%, transparent) 0deg 9deg, transparent 9deg 22deg); animation: drop-spin 14s linear infinite; opacity: 0.7; }
+@keyframes drop-spin { to { transform: rotate(360deg); } }
+.drop-confetti { position: absolute !important; inset: 0; z-index: 2 !important; pointer-events: none; }
+.drop-confetti i { position: absolute; top: -12px; width: 7px; height: 12px; border-radius: 2px; animation: drop-fall 2.6s ease-in forwards; }
+@keyframes drop-fall { 0% { transform: translateY(0) rotate(0); opacity: 1; } 100% { transform: translateY(560px) rotate(540deg); opacity: 0; } }
+.arena-drops { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+.drop-pity { padding: 10px 12px; border-radius: 12px; background: linear-gradient(90deg, rgba(181, 123, 255, 0.12), rgba(255, 176, 32, 0.1)); border: 1px solid rgba(181, 123, 255, 0.35); display: flex; flex-direction: column; gap: 6px; font-weight: 700; font-size: 14px; }
+.drop-ticker { overflow: hidden; border-radius: 999px; border: 1px solid var(--line); background: #0b120e; padding: 6px 0; -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent); mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent); }
+.drop-ticker-track { display: inline-flex; gap: 28px; white-space: nowrap; animation: drop-marquee 60s linear infinite; padding-left: 16px; }
+.drop-ticker:hover .drop-ticker-track { animation-play-state: paused; }
+.drop-tick-item { font-size: 13px; font-weight: 800; color: var(--tier); }
+@keyframes drop-marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.drop-chance { font-size: 11px; font-weight: 900; padding: 1px 7px; border-radius: 999px; color: #e9d8ff; background: rgba(181, 123, 255, 0.18); border: 1px solid rgba(181, 123, 255, 0.45); text-decoration: none; }
+.drops-odds .table td.num { text-align: right; }
+.drops-rules { margin: 10px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
+.drops-pool { border-left: 4px solid var(--tier); margin-top: 12px; }
+.drops-pool h3 { display: flex; align-items: center; gap: 8px; margin: 0; }
+.drops-items { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; margin-top: 8px; }
+.drops-items .drop-card { height: 124px; }
+.drops-recent { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.drops-recent li { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; font-weight: 700; border-left: 3px solid var(--tier); padding-left: 8px; }
+@media (max-width: 480px) {
+  .drop-headline { font-size: 23px; }
+  .drop-name { font-size: 19px; }
+  .drop-reveal { padding: 18px 12px 14px; }
+  .drop-actions .btn { flex: 1 1 calc(50% - 8px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .drop-cta, .drop-art-big, .drop-rays, .drop-ticker-track { animation: none !important; }
+  .drop-confetti { display: none; }
+  .drop-ticker { overflow-x: auto; }
+}

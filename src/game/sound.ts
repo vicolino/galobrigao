@@ -299,4 +299,30 @@ export const sfx = {
     tone(900, 0.45, 'sawtooth', 0.18, -250, 0.28)
   },
   box: () => [300, 400, 500, 650, 800, 1000].forEach((f, i) => tone(f, 0.1, 'triangle', 0.2, 0, i * 0.07)),
+  /** 🎁 Drop: "tic" de cada card passando na roleta. */
+  dropTick: () => tone(1900, 0.025, 'square', 0.06),
+  /** 🎁 Drop: revelação, mais festa quanto mais raro. */
+  dropReveal: (tier: 'comum' | 'raro' | 'epico' | 'lendario') => {
+    if (tier === 'comum') {
+      ;[659, 988].forEach((f, i) => tone(f, 0.14, 'triangle', 0.18, 0, i * 0.08))
+      return
+    }
+    if (tier === 'raro') {
+      ;[523, 784, 1047, 1319].forEach((f, i) => tone(f, 0.14, 'triangle', 0.18, 0, i * 0.07))
+      hiNoise(0.4, 0.06, 0.25, 6000)
+      return
+    }
+    // Épico/lendário: acorde + brilho; lendário ganha bumbo e fanfarra mais longa
+    const big = tier === 'lendario'
+    if (big) kick(0, 0.9)
+    stab([261.6, 329.6, 392], 0.5, 0, 0.14)
+    ;[523, 659, 784, 1047, 1319, 1568].forEach((f, i) => tone(f, 0.16, 'triangle', 0.16, 0, 0.05 + i * 0.06))
+    hiNoise(0.9, 0.1, 0.3, 5000)
+    if (big) {
+      stab([349.2, 440, 523.3], 0.5, 0.5, 0.14)
+      stab([392, 493.9, 587.3, 784], 1.2, 0.85, 0.16)
+      kick(0.85, 0.8)
+      hiNoise(1.4, 0.18, 0.85, 4000)
+    }
+  },
 }

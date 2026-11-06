@@ -29,6 +29,8 @@ export interface Breed {
   base: Stats
   price: number
   special?: boolean
+  /** 🎁 Só sai em Drops da Arena (nunca na loja). */
+  drop?: boolean
 }
 
 export interface Accessory {
@@ -59,6 +61,8 @@ export interface Skin {
   fx?: SkinFx
   /** Exclusiva (ex.: Passe da Temporada): não é vendida na loja. */
   exclusive?: boolean
+  /** 🎁 Coleção Drop: só sai em Drops da Arena. */
+  drop?: boolean
   colors: Breed['colors']
   desc: string
 }
@@ -291,6 +295,8 @@ export interface GameState {
   vip: { until: number }
   /** Itens lendários comprados com ovos ou dinheiro que ainda podem virar NFT (chave 'acc:id' | 'skin:id'). Só o servidor mexe. */
   mintable?: Record<string, number>
+  /** 🎁 Drops: vitórias seguidas sem drop (garantia). Só o servidor mexe. */
+  dropPity?: number
   /** Ofertas relâmpago (só o servidor cria e marca como compradas). */
   offers?: Offer[]
   /** Recargas de energia com ovos no dia (preço sobe a cada uma). Só o servidor mexe. */

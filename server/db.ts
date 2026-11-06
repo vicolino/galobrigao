@@ -213,6 +213,21 @@ export function getDb() {
       PRIMARY KEY (user_id, rooster_id)
     );
   `)
+  // 🎁 Drops da Arena (server/drops.ts): cada drop sorteado; épico/lendário com nº de série global por item
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS drops (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id TEXT NOT NULL,
+      name TEXT NOT NULL DEFAULT '',
+      item_kind TEXT NOT NULL,
+      item_id TEXT NOT NULL,
+      tier TEXT NOT NULL,
+      serial INTEGER,
+      created_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS drops_user ON drops(user_id, created_at);
+    CREATE INDEX IF NOT EXISTS drops_item ON drops(item_kind, item_id);
+  `)
   return db
 }
 
