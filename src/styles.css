@@ -226,10 +226,14 @@ p { margin: 6px 0; }
 
 .field { display: flex; flex-direction: column; gap: 6px; margin: 12px 0; }
 .field > span { font-weight: 800; font-size: 13px; color: var(--muted); }
-input[type='text'], input[type='number'], input[type='email'], input[type='password'], input:not([type]) {
+input[type='text'], input[type='number'], input[type='email'], input[type='password'], input[type='search'], input[type='datetime-local'], input[type='date'], input[type='time'], input:not([type]) {
   background: var(--bg2); border: 1px solid var(--line); color: var(--text); padding: 10px 12px; border-radius: 10px; font-family: inherit; font-size: 15px; font-weight: 700; width: 100%;
 }
 input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+/* Campo de data/hora: mesma cara dos outros inputs (sem monospace nativo) e picker na cor do tema */
+input[type='datetime-local'], input[type='date'], input[type='time'] { width: auto; min-width: 0; }
+input[type='datetime-local']::-webkit-calendar-picker-indicator, input[type='date']::-webkit-calendar-picker-indicator, input[type='time']::-webkit-calendar-picker-indicator { cursor: pointer; opacity: 0.6; filter: saturate(0); }
+input[type='datetime-local']::-webkit-calendar-picker-indicator:hover { opacity: 1; }
 
 .modal-back { position: fixed; inset: 0; background: rgba(3, 10, 6, 0.75); backdrop-filter: blur(3px); display: grid; place-items: center; z-index: 100; padding: 16px; animation: fade 0.15s; }
 .modal { background: linear-gradient(180deg, var(--panel2), var(--panel)); border: 1px solid var(--line); border-radius: 18px; padding: 20px; width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6); animation: pop 0.2s ease; }
