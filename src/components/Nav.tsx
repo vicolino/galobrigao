@@ -190,6 +190,10 @@ export function Nav({ route }: { route: string }) {
             />
             <LangSwitch compact />
           </div>
+
+          <button className="btn btn-ghost full sheet-logout" onClick={() => actions.logout()}>
+            {t('🚪 Sair da conta')}
+          </button>
         </div>
       </Modal>
 

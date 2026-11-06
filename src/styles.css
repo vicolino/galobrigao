@@ -1629,3 +1629,6 @@ tr.muted td { opacity: 0.55; }
 .bet-line { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 10px; background: var(--bg2); border: 1px solid var(--line); }
 .bet-line.win { border-color: rgba(255, 198, 64, 0.4); }
 .bet-line b { white-space: nowrap; }
+
+.sheet-logout { margin-top: 4px; color: var(--red-dk); border-color: #ffc0c2; }
+.sheet-logout:hover { background: #fff0f0; }
