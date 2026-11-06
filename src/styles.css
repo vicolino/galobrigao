@@ -1011,14 +1011,21 @@ tr.muted td { opacity: 0.55; }
 }
 
 /* Seletor de idioma */
-.lang-switch { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted, #aaa); }
-.lang-switch select { background-color: var(--bg2); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 4px 28px 4px 8px; background-position: right 7px center; font: inherit; font-weight: 700; cursor: pointer; }
-.lang-switch select option { color: #111; }
+.lang-switch { position: relative; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted, #aaa); }
+.lang-btn { display: inline-flex; align-items: center; gap: 8px; background-color: var(--bg2); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 5px 9px; font: inherit; font-weight: 700; font-size: 14px; cursor: pointer; }
+.lang-btn:hover { border-color: var(--accent); }
+.lang-caret { color: var(--text); opacity: 0.6; flex: none; }
+.lang-back { position: fixed; inset: 0; z-index: 60; }
+.lang-menu { position: absolute; top: calc(100% + 6px); right: 0; z-index: 61; min-width: 160px; margin: 0; padding: 6px; list-style: none; background: #fff; border: 1.5px solid var(--line); border-radius: 12px; box-shadow: var(--shadow-lg); animation: fadeUp 0.15s ease; }
+.lang-opt { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; text-align: left; background: none; border: 0; border-radius: 8px; padding: 9px 10px; font: inherit; font-weight: 700; font-size: 14px; color: var(--text); cursor: pointer; }
+.lang-opt:hover { background: var(--bg2); }
+.lang-opt.on { color: var(--accent-dk, var(--accent)); }
+.lang-opt.on span:last-child { color: var(--green, #2e9e5b); font-weight: 900; }
 .lang-switch.compact { font-size: 12px; }
 .side-lang { padding: 0 4px; }
 .side-lang .lang-switch { display: flex; width: 100%; gap: 8px; }
 .side-lang .lang-switch > span { width: 30px; text-align: center; font-size: 16px; }
-.side-lang .lang-switch select { flex: 1; min-width: 0; background-color: var(--bg2); border-color: var(--line); padding: 6px 28px 6px 8px; }
+.side-lang .lang-btn { flex: 1; min-width: 0; justify-content: space-between; padding: 7px 10px; }
 
 /* ---------- Carteira cripto / Mercado (testnet) ---------- */
 .testnet-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 8px; font-size: 11px; font-weight: 900; letter-spacing: 0.6px; color: #14538c; background: #e8f3ff; border: 1.5px dashed #4fa3ff; white-space: nowrap; }
