@@ -1,5 +1,6 @@
 // Traduções para inglês (chave = texto original em português).
 const en: Record<string, string> = {
+  'Mais': 'More',
   // ---------- api.ts ----------
   'Erro de conexão': 'Connection error',
 

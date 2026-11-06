@@ -1,7 +1,6 @@
 import { useState } from 'react'
-import { Sidebar } from './components/Sidebar'
+import { Nav } from './components/Nav'
 import { Toasts, useHashRoute } from './components/ui'
-import { fmt } from './game/rooster'
 import { useGame } from './game/store'
 import { Apostas, BetResult } from './pages/Apostas'
 import { Galinheiro } from './pages/Galinheiro'
@@ -25,12 +24,11 @@ import { Feira } from './pages/Feira'
 import { Cruzamento } from './pages/Cruzamento'
 import { Ranking } from './pages/Ranking'
 import { TorneioAlert, Torneios } from './pages/Torneios'
-import { APP_NAME } from './brand'
 import { t, tx } from './i18n'
 import { Drops } from './pages/Drops'
 
 export default function App() {
-  const { state, phase, wallet, user, pubConfig, updateReady } = useGame()
+  const { state, phase, user, pubConfig, updateReady } = useGame()
   const [hidden, setHidden] = useState(() => {
     try {
       return localStorage.getItem('aviso-fechado') ?? ''
@@ -39,7 +37,6 @@ export default function App() {
     }
   })
   const route = useHashRoute()
-  const [menu, setMenu] = useState(false)
 
   const publicPath = route.split('?')[0]
   if (publicPath === '/termos' || publicPath === '/privacidade') return <Legal doc={publicPath === '/termos' ? 'termos' : 'privacidade'} />
@@ -85,12 +82,7 @@ export default function App() {
 
   return (
     <div className="layout">
-      <header className="mobile-bar">
-        <button className="icon-btn" onClick={() => setMenu(true)} aria-label={t('Menu')}>☰</button>
-        <b>🐓 {APP_NAME}</b>
-        <span className="tiny">🌽 {fmt(wallet!.milho)} · 🥚 {fmt(wallet!.ovos)}</span>
-      </header>
-      <Sidebar route={route} open={menu} onClose={() => setMenu(false)} />
+      <Nav route={route} />
       <main className="main">
         {updateReady && (
           <div className="announce announce-promo">

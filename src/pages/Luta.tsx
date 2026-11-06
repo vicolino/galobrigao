@@ -226,16 +226,15 @@ export function Luta() {
         <span className="pill">{isTorneio ? t('🏟️ Torneio') : isPvp ? t('🤝 Desafio entre jogadores') : isRinha ? t('⚔️ Arena') : t('🏟️ Luta da casa')}</span>
       </div>
 
-      <div className="hud">
-        <FighterHud side={0} tools={match.tools?.[0]} pulse={procs?.list.filter((p) => p.side === 0).map((p) => p.tool)} pulseKey={procs?.key} name={match.a.name} sub={t('{dono} · Nv {nivel}', { dono: match.a.owner, nivel: match.a.level })} style={match.a.style} hp={hp[0]} maxHp={result.maxHp[0]} sta={sta[0]} hurt={anims[0] === 'hit'} />
-        <div className="hud-round">
-          {t('Round {n}/3', { n: round })}
-          {bets.length > 0 && <span className="tiny muted">{tp('{n} aposta', '{n} apostas', bets.length)}</span>}
-        </div>
-        <FighterHud side={1} tools={match.tools?.[1]} pulse={procs?.list.filter((p) => p.side === 1).map((p) => p.tool)} pulseKey={procs?.key} name={match.b.name} sub={t('{dono} · Nv {nivel}', { dono: match.b.owner, nivel: match.b.level })} style={match.b.style} hp={hp[1]} maxHp={result.maxHp[1]} sta={sta[1]} hurt={anims[1] === 'hit'} />
-      </div>
-
       <div className={`arena ${shake ? 'shake' : ''}`}>
+        <div className="arena-hud">
+          <FighterHud side={0} tools={match.tools?.[0]} pulse={procs?.list.filter((p) => p.side === 0).map((p) => p.tool)} pulseKey={procs?.key} name={match.a.name} sub={t('{dono} · Nv {nivel}', { dono: match.a.owner, nivel: match.a.level })} style={match.a.style} hp={hp[0]} maxHp={result.maxHp[0]} sta={sta[0]} hurt={anims[0] === 'hit'} />
+          <div className="hud-round">
+            <span className="hud-round-n">{t('Round {n}/3', { n: round })}</span>
+            {bets.length > 0 && <span className="tiny">{tp('{n} aposta', '{n} apostas', bets.length)}</span>}
+          </div>
+          <FighterHud side={1} tools={match.tools?.[1]} pulse={procs?.list.filter((p) => p.side === 1).map((p) => p.tool)} pulseKey={procs?.key} name={match.b.name} sub={t('{dono} · Nv {nivel}', { dono: match.b.owner, nivel: match.b.level })} style={match.b.style} hp={hp[1]} maxHp={result.maxHp[1]} sta={sta[1]} hurt={anims[1] === 'hit'} />
+        </div>
         <div className="arena-bg">
           <div className="lamp l1" />
           <div className="lamp l2" />
@@ -472,7 +471,7 @@ export function Luta() {
 
 function FighterHud({ side, name, sub, style, hp, maxHp, sta, hurt, tools, pulse, pulseKey }: { tools?: string[]; pulse?: string[]; pulseKey?: number; side: 0 | 1; name: string; sub: string; style: Parameters<typeof StyleTag>[0]['style']; hp: number; maxHp: number; sta: number; hurt: boolean }) {
   return (
-    <div className={`card hud-card side-${side} ${hp <= 0 ? 'down' : ''} ${hurt ? 'hurt' : ''}`}>
+    <div className={`hud-card side-${side} ${hp <= 0 ? 'down' : ''} ${hurt ? 'hurt' : ''}`}>
       <b className="hud-name">{name}</b>
       <span className="tiny muted">{sub}</span>
       <div className="hud-tags">
