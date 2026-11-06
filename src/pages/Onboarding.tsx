@@ -13,9 +13,9 @@ import { locale, t, tn, tx } from '../i18n'
 
 // ---------------- Cadastro / Login ----------------
 
-export function AuthScreen() {
+export function AuthScreen({ initialMode = 'login' }: { initialMode?: 'cadastro' | 'login' } = {}) {
   const { actions } = useGame()
-  const [mode, setMode] = useState<'cadastro' | 'login' | 'esqueci'>('login')
+  const [mode, setMode] = useState<'cadastro' | 'login' | 'esqueci'>(initialMode)
   const [sent, setSent] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -44,7 +44,10 @@ export function AuthScreen() {
   return (
     <div className="onboarding">
       <div className="ob-card">
-        <div style={{ alignSelf: 'flex-end' }}>
+        <div className="row-between" style={{ width: '100%' }}>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={() => { window.location.hash = '/' }}>
+            {t('← Início')}
+          </button>
           <LangSwitch compact />
         </div>
         <div className="ob-hero">

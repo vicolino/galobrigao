@@ -10,6 +10,7 @@ import { Luta } from './pages/Luta'
 import { Missoes } from './pages/Missoes'
 import { Passe } from './pages/Passe'
 import { AuthScreen, ResetScreen, StarterScreen } from './pages/Onboarding'
+import { Landing } from './pages/Landing'
 import { Legal } from './pages/Legal'
 import { ChallengeAlert, ChallengeDeclined, Desafios } from './pages/Desafios'
 import { OfferCenter } from './components/Ofertas'
@@ -42,7 +43,11 @@ export default function App() {
   if (publicPath === '/termos' || publicPath === '/privacidade') return <Legal doc={publicPath === '/termos' ? 'termos' : 'privacidade'} />
   if (publicPath === '/redefinir') return <ResetScreen />
   if (phase === 'carregando') return <div className="onboarding"><div className="spinner big" /></div>
-  if (phase === 'login') return (<><AuthScreen /><Toasts /></>)
+  if (phase === 'login') {
+    if (publicPath === '/entrar') return (<><AuthScreen initialMode="login" /><Toasts /></>)
+    if (publicPath === '/criar') return (<><AuthScreen initialMode="cadastro" /><Toasts /></>)
+    return (<><Landing /><Toasts /></>)
+  }
   if (publicPath.startsWith('/admin')) return (<><Admin tab={publicPath.split('/')[2]} /><Toasts /></>)
   if (pubConfig?.maintenance.on && !user?.isAdmin)
     return (
