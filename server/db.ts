@@ -230,8 +230,24 @@ export function getDb() {
     );
     CREATE INDEX IF NOT EXISTS drops_user ON drops(user_id, created_at);
     CREATE INDEX IF NOT EXISTS drops_item ON drops(item_kind, item_id);
+    CREATE TABLE IF NOT EXISTS daily_counters (
+      day TEXT NOT NULL,
+      key TEXT NOT NULL,
+      n INTEGER NOT NULL DEFAULT 0,
+      PRIMARY KEY (day, key)
+    );
   `)
   return db
+}
+
+/** Soma 1 (ou n) num contador diário (ex.: lutas da Arena por dia). Nunca derruba o fluxo do jogo. */
+export function bumpDaily(key: string, n = 1) {
+  try {
+    const day = new Date().toISOString().slice(0, 10)
+    getDb().prepare('INSERT INTO daily_counters (day, key, n) VALUES (?, ?, ?) ON CONFLICT(day, key) DO UPDATE SET n = n + excluded.n').run(day, key, n)
+  } catch {
+    /* métrica é best-effort */
+  }
 }
 
 export interface UserRow {

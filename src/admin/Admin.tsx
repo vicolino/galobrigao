@@ -1,5 +1,5 @@
 import { Fragment, useCallback, useEffect, useState } from 'react'
-import { api, type AdminWeb3, type KycStatus, type AdminLogRow, type AdminOrderRow, type AdminOverview, type AdminUserDetail, type AdminUserRow } from '../api'
+import { api, type AdminActivity, type AdminWeb3, type KycStatus, type AdminLogRow, type AdminOrderRow, type AdminOverview, type AdminUserDetail, type AdminUserRow } from '../api'
 import { APP_NAME } from '../brand'
 import { Modal } from '../components/ui'
 import { CATALOG, brl } from '../game/catalog'
@@ -12,10 +12,11 @@ import { C1, C2, DailyBars, HBars, Kpi, SplitBar } from './Charts'
 import type { FeiraAdmin } from '../game/feira'
 import { TorneiosAdmin } from './TorneiosAdmin'
 
-type Tab = 'geral' | 'jogadores' | 'pedidos' | 'config' | 'auditoria' | 'cripto' | 'feira' | 'torneios'
+type Tab = 'geral' | 'atividade' | 'jogadores' | 'pedidos' | 'config' | 'auditoria' | 'cripto' | 'feira' | 'torneios'
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'geral', label: t('📈 Visão geral') },
+  { id: 'atividade', label: t('📊 Atividade') },
   { id: 'jogadores', label: t('👥 Jogadores') },
   { id: 'pedidos', label: t('💳 Pedidos') },
   { id: 'config', label: t('⚙️ Configurações') },
@@ -70,6 +71,7 @@ export function Admin({ tab: tabParam }: { tab?: string }) {
       </header>
       <main className="admin-main">
         {tab === 'geral' && <Overview />}
+        {tab === 'atividade' && <Activity />}
         {tab === 'jogadores' && <Users />}
         {tab === 'pedidos' && <Orders />}
         {tab === 'config' && <Config />}
@@ -229,6 +231,99 @@ function Origins({ rows }: { rows: NonNullable<AdminOverview['origins']> }) {
         </tbody>
       </table>
     </div>
+  )
+}
+
+// ---------------- Atividade ----------------
+
+function Activity() {
+  const [days, setDays] = useState(30)
+  const [d, setD] = useState<AdminActivity | null>(null)
+  const [err, setErr] = useState('')
+  useEffect(() => {
+    setD(null)
+    api.admin
+      .activity(days)
+      .then(setD)
+      .catch((e) => setErr(tx(e.message)))
+  }, [days])
+
+  return (
+    <>
+      <div className="row-between admin-filters">
+        <h1>{t('Atividade')}</h1>
+        <div className="tabs compact">
+          {[7, 30, 90].map((v) => (
+            <button key={v} className={`tab ${days === v ? 'active' : ''}`} onClick={() => setDays(v)}>
+              {t('{n} dias', { n: v })}
+            </button>
+          ))}
+        </div>
+      </div>
+      <p className="tiny muted">{t('Quem jogou e o que rolou por dia. "Lutas" = Arena + desafios entre jogadores. Horário do servidor (UTC).')}</p>
+      {err && <p className="neg">{err}</p>}
+      {!d ? (
+        <p className="muted">
+          <span className="spinner" /> {t('Carregando...')}
+        </p>
+      ) : (
+        <>
+          <div className="kpi-grid">
+            <Kpi label={t('Online agora')} value={n(d.kpis.online)} />
+            <Kpi label={t('Jogaram hoje')} value={n(d.kpis.dauToday)} hint={t('Contas que abriram o jogo hoje')} />
+            <Kpi label={t('Jogaram na semana')} value={n(d.kpis.wau)} />
+            <Kpi label={t('Jogaram no mês')} value={n(d.kpis.mau)} />
+            <Kpi label={t('Lutas hoje')} value={n(d.kpis.fightsToday)} hint={t('Arena + desafios entre jogadores')} />
+            <Kpi label={t('Lutas ({n} dias)', { n: days })} value={n(d.kpis.fightsAll)} />
+            <Kpi label={t('Novas contas hoje')} value={n(d.kpis.signupsToday)} />
+            <Kpi label={t('Novas contas ({n} dias)', { n: days })} value={n(d.kpis.signupsAll)} />
+          </div>
+
+          <div className="admin-two">
+            <DailyBars title={t('Jogadores ativos por dia')} data={d.series.map((s) => ({ day: s.day, value: s.active }))} format={n} color={C2} />
+            <DailyBars title={t('Lutas por dia (Arena + desafios)')} data={d.series.map((s) => ({ day: s.day, value: s.arena + s.pvp }))} format={n} />
+            <DailyBars title={t('Novas contas por dia')} data={d.series.map((s) => ({ day: s.day, value: s.signups }))} format={n} color={C2} />
+            <DailyBars title={t('Apostas por dia')} data={d.series.map((s) => ({ day: s.day, value: s.bets }))} format={n} />
+          </div>
+
+          <div className="card">
+            <h3>{t('Resumo por dia')}</h3>
+            <div className="table-wrap">
+              <table className="table admin-table">
+                <thead>
+                  <tr>
+                    <th>{t('Dia')}</th>
+                    <th className="num">{t('Jogaram')}</th>
+                    <th className="num">{t('Novas contas')}</th>
+                    <th className="num">{t('Lutas')}</th>
+                    <th className="num">{t('Arena')}</th>
+                    <th className="num">{t('Desafios')}</th>
+                    <th className="num">{t('Apostas')}</th>
+                    <th className="num">{t('Drops')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...d.series].reverse().map((s) => (
+                    <tr key={s.day}>
+                      <td>{new Date(s.day + 'T12:00:00').toLocaleDateString(locale(), { day: '2-digit', month: 'short', weekday: 'short' })}</td>
+                      <td className="num">{n(s.active)}</td>
+                      <td className="num">{n(s.signups)}</td>
+                      <td className="num">
+                        <b>{n(s.arena + s.pvp)}</b>
+                      </td>
+                      <td className="num">{n(s.arena)}</td>
+                      <td className="num">{n(s.pvp)}</td>
+                      <td className="num">{n(s.bets)}</td>
+                      <td className="num">{n(s.drops)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      )}
+    </>
   )
 }
 

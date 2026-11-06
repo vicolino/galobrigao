@@ -1649,3 +1649,7 @@ tr.muted td { opacity: 0.55; }
 /* ---------- Tela de entrada: espaço entre botões empilhados (sombra 3D não invade) ---------- */
 .onboarding form .btn.full { margin-top: 10px; }
 .onboarding form .btn.full + .btn.full { margin-top: 12px; }
+
+/* Tabela com rolagem horizontal (resumo diário do admin no mobile) */
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.table-wrap .table { min-width: 560px; }

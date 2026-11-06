@@ -158,6 +158,69 @@ function origins(now: number) {
     .all(now - 7 * DAY, now - 30 * DAY) as { source: string | null; campaign: string | null; d7: number; d30: number; total: number }[]
 }
 
+/** Atividade do jogo: engajamento diário (jogadores, lutas, apostas, drops, cadastros). */
+function activity(days: number) {
+  const now = Date.now()
+  const todayStart = new Date(dayKey(now)).getTime()
+  const start = todayStart - (days - 1) * DAY
+  const keys = Array.from({ length: days }, (_, i) => dayKey(start + i * DAY))
+  const idx = new Map(keys.map((k, i) => [k, i]))
+  const series = keys.map((k) => ({ day: k, active: 0, signups: 0, arena: 0, pvp: 0, bets: 0, drops: 0 }))
+
+  const put = (k: string, field: 'active' | 'signups' | 'arena' | 'pvp' | 'bets' | 'drops', n = 1) => {
+    const i = idx.get(k)
+    if (i !== undefined) series[i][field] += n
+  }
+
+  // Jogadores ativos por dia (tabela activity: 1 linha por usuário/dia)
+  for (const a of db().prepare('SELECT day, COUNT(*) AS n FROM activity WHERE day >= ? GROUP BY day').all(keys[0]) as { day: string; n: number }[]) put(a.day, 'active', a.n)
+  // Novos cadastros
+  for (const u of db().prepare('SELECT created_at FROM users WHERE created_at >= ?').all(start) as { created_at: number }[]) put(dayKey(u.created_at), 'signups')
+  // Lutas da Arena (contador diário)
+  for (const c of db().prepare("SELECT day, n FROM daily_counters WHERE key = 'arena' AND day >= ?").all(keys[0]) as { day: string; n: number }[]) put(c.day, 'arena', c.n)
+  // Lutas PvP (desafios aceitos e resolvidos)
+  for (const c of db().prepare("SELECT resolved_at FROM challenges WHERE status = 'aceito' AND resolved_at >= ?").all(start) as { resolved_at: number }[]) put(dayKey(c.resolved_at), 'pvp')
+  // Apostas na casa
+  for (const b of db().prepare('SELECT created_at FROM house_bets WHERE created_at >= ?').all(start) as { created_at: number }[]) put(dayKey(b.created_at), 'bets')
+  // Drops raros
+  for (const d of db().prepare('SELECT created_at FROM drops WHERE created_at >= ?').all(start) as { created_at: number }[]) put(dayKey(d.created_at), 'drops')
+
+  const online = (db().prepare('SELECT COUNT(*) AS n FROM presence WHERE last_seen > ?').get(now - 45_000) as { n: number }).n
+  const totalUsers = (db().prepare('SELECT COUNT(*) AS n FROM users').get() as { n: number }).n
+  const mau = (db().prepare('SELECT COUNT(DISTINCT user_id) AS n FROM activity WHERE day >= ?').get(dayKey(todayStart - 29 * DAY)) as { n: number }).n
+  const wau = (db().prepare('SELECT COUNT(DISTINCT user_id) AS n FROM activity WHERE day >= ?').get(dayKey(todayStart - 6 * DAY)) as { n: number }).n
+
+  const today = series[series.length - 1]
+  const last7 = series.slice(-7)
+  const sum = (f: 'arena' | 'pvp' | 'bets' | 'drops' | 'signups') => series.reduce((s, d) => s + d[f], 0)
+  const sum7 = (f: 'arena' | 'pvp' | 'bets' | 'drops' | 'signups') => last7.reduce((s, d) => s + d[f], 0)
+
+  return {
+    days,
+    series,
+    kpis: {
+      online,
+      totalUsers,
+      dauToday: today.active,
+      wau,
+      mau,
+      signupsToday: today.signups,
+      signups7: sum7('signups'),
+      fightsToday: today.arena + today.pvp,
+      fights7: sum7('arena') + sum7('pvp'),
+      fightsAll: sum('arena') + sum('pvp'),
+      arenaAll: sum('arena'),
+      pvpAll: sum('pvp'),
+      betsToday: today.bets,
+      bets7: sum7('bets'),
+      dropsToday: today.drops,
+      drops7: sum7('drops'),
+      dropsAll: sum('drops'),
+      signupsAll: sum('signups'),
+    },
+  }
+}
+
 // ---------- Rotas ----------
 
 export async function handleAdmin(path: string, method: string, url: URL, body: Record<string, unknown>, admin: UserRow, deps: Deps): Promise<unknown | null> {
@@ -167,6 +230,11 @@ export async function handleAdmin(path: string, method: string, url: URL, body: 
   if (path === '/api/admin/overview' && method === 'GET') {
     const days = [7, 30, 90].includes(Number(url.searchParams.get('days'))) ? Number(url.searchParams.get('days')) : 30
     return overview(days)
+  }
+
+  if (path === '/api/admin/activity' && method === 'GET') {
+    const days = [7, 30, 90].includes(Number(url.searchParams.get('days'))) ? Number(url.searchParams.get('days')) : 30
+    return activity(days)
   }
 
   // Web3 (carteiras, NFTs, fila de KYC)

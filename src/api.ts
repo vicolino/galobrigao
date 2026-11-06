@@ -178,6 +178,7 @@ export const api = {
   config: () => call<PublicConfig>('/config'),
   admin: {
     overview: (days: number) => call<AdminOverview>(`/admin/overview?days=${days}`),
+    activity: (days: number) => call<AdminActivity>(`/admin/activity?days=${days}`),
     users: (q: string, filter: string, page = 1) =>
       call<{ users: AdminUserRow[]; total: number; page: number; pages: number; pageSize: number }>(`/admin/users?q=${encodeURIComponent(q)}&filter=${filter}&page=${page}`),
     user: (id: string) => call<AdminUserDetail>(`/admin/users/${id}`),
@@ -310,6 +311,39 @@ export interface AdminOverview {
   byMethod: Record<string, { count: number; cents: number }>
   /** Origem dos cadastros por fonte/campanha (UTM). null = acesso direto. */
   origins?: { source: string | null; campaign: string | null; d7: number; d30: number; total: number }[]
+}
+export interface AdminActivityDay {
+  day: string
+  active: number
+  signups: number
+  arena: number
+  pvp: number
+  bets: number
+  drops: number
+}
+export interface AdminActivity {
+  days: number
+  series: AdminActivityDay[]
+  kpis: {
+    online: number
+    totalUsers: number
+    dauToday: number
+    wau: number
+    mau: number
+    signupsToday: number
+    signups7: number
+    fightsToday: number
+    fights7: number
+    fightsAll: number
+    arenaAll: number
+    pvpAll: number
+    betsToday: number
+    bets7: number
+    dropsToday: number
+    drops7: number
+    dropsAll: number
+    signupsAll: number
+  }
 }
 export interface AdminUserRow {
   id: string

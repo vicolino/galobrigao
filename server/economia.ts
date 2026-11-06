@@ -7,7 +7,7 @@ import { npcOwners } from '../src/game/data'
 import { pick } from '../src/game/rooster'
 import type { GameState } from '../src/game/types'
 import { t, withLang, type Lang } from '../src/i18n'
-import { getDb, type UserRow } from './db'
+import { bumpDaily, getDb, type UserRow } from './db'
 import { loadSave, writeSave } from './saves'
 import { limited } from './security'
 import { rentalShare } from './aluguel'
@@ -116,6 +116,7 @@ export function handleEconomia(path: string, method: string, url: URL, body: Rec
       d.exec('ROLLBACK')
       throw e
     }
+    bumpDaily('arena') // 📊 conta a luta da Arena do dia (métrica do backoffice)
     // 🔑 Galo alugado: parte do milho vai para o dono (server/aluguel.ts). Mexe no save → relê.
     if (out.state.roosters.find((x) => x.id === roosterId)?.rental && out.match.rewards.milho > 0) {
       try {
