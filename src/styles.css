@@ -702,8 +702,11 @@ select {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23173753' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
   background-repeat: no-repeat; background-position: right 11px center;
   border: 1px solid var(--line); color: var(--text); padding: 9px 34px 9px 12px; border-radius: 10px; font-family: inherit; font-weight: 700; font-size: 14px; cursor: pointer;
+  color-scheme: light; /* lista nativa sempre no tema claro, mesmo com o sistema no escuro */
 }
 select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+/* Opções do menu nativo: fundo claro e texto escuro (evita menu preto no macOS dark) */
+option { background-color: #fff; color: var(--text); }
 .starter-page { width: 100%; max-width: 1100px; display: flex; flex-direction: column; gap: 16px; }
 .starter-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
 .starter-card { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; position: relative; padding-top: 22px; }
