@@ -347,7 +347,9 @@ input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 .scroller-item { width: 190px; flex-shrink: 0; }
 .opponents { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
 .opp { display: flex; flex-direction: column; gap: 4px; }
-.opp-head { display: flex; justify-content: space-between; align-items: center; }
+.opp-head { display: flex; align-items: center; gap: 6px; flex-wrap: nowrap; }
+.opp-reward { flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.opp-head .diff-tag { flex: none; }
 .diff-tag { font-weight: 900; padding: 3px 10px; border-radius: 8px; font-size: 13px; }
 .diff-tag.easy { background: #e7f9ee; color: #1f9e5a; border: 1.5px solid #bfe9cf; }
 .diff-tag.medium { background: #fff4d6; color: #a67900; border: 1.5px solid #ffdf99; }
@@ -1487,7 +1489,8 @@ tr.muted td { opacity: 0.55; }
 .drop-ticker:hover .drop-ticker-track { animation-play-state: paused; }
 .drop-tick-item { font-size: 13px; font-weight: 800; color: var(--tier); }
 @keyframes drop-marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-.drop-chance { font-size: 11px; font-weight: 900; padding: 1px 7px; border-radius: 999px; color: #e9d8ff; background: rgba(181, 123, 255, 0.18); border: 1px solid rgba(181, 123, 255, 0.45); text-decoration: none; }
+.drop-chance { flex: none; white-space: nowrap; font-size: 11px; font-weight: 900; padding: 2px 8px; border-radius: 999px; color: #7a3ec8; background: #f3e9ff; border: 1.5px solid #d6b8ff; text-decoration: none; }
+.drop-chance:hover { border-color: #b57bff; }
 .drops-odds .table td.num { text-align: right; }
 .drops-rules { margin: 10px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
 .drops-pool { border-left: 4px solid var(--tier); margin-top: 12px; }

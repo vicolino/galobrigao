@@ -19,8 +19,8 @@ type Opp = { d: 0 | 1 | 2 | 3; o: Rooster; tools: string[] }
 const DIFFS = [
   { label: t('Fácil'), emoji: '🐣', cls: 'easy', reward: t('Pouco milho') },
   { label: t('Médio'), emoji: '🐔', cls: 'medium', reward: t('Bom prêmio') },
-  { label: t('Difícil'), emoji: '🦅', cls: 'hard', reward: t('Prêmio alto + 🥚') },
-  { label: t('Chefão'), emoji: '👑', cls: 'boss', reward: t('Prêmio máximo + 🥚🥚') },
+  { label: t('Difícil'), emoji: '🦅', cls: 'hard', reward: t('Prêmio alto 🥚') },
+  { label: t('Chefão'), emoji: '👑', cls: 'boss', reward: t('Prêmio máximo 🥚🥚') },
 ] as const
 
 export function Rinha() {
@@ -197,7 +197,7 @@ export function Rinha() {
                 <span className={`diff-tag ${diff.cls}`}>
                   {diff.emoji} {diff.label}
                 </span>
-                <span className="tiny muted">{diff.reward}</span>
+                <span className="tiny muted opp-reward">{diff.reward}</span>
                 {server && dropOdds().on && (
                   <a className="drop-chance" href="#/drops" title={t('Chance de drop por vitória')}>
                     🎁 {Math.round(dropOdds().chance[d] * 1000) / 10}%
