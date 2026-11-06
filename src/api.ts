@@ -179,8 +179,8 @@ export const api = {
   admin: {
     overview: (days: number) => call<AdminOverview>(`/admin/overview?days=${days}`),
     activity: (days: number) => call<AdminActivity>(`/admin/activity?days=${days}`),
-    users: (q: string, filter: string, page = 1) =>
-      call<{ users: AdminUserRow[]; total: number; page: number; pages: number; pageSize: number }>(`/admin/users?q=${encodeURIComponent(q)}&filter=${filter}&page=${page}`),
+    users: (q: string, filter: string, page = 1, sort = 'cadastro', dir: 'asc' | 'desc' = 'desc') =>
+      call<{ users: AdminUserRow[]; total: number; page: number; pages: number; pageSize: number }>(`/admin/users?q=${encodeURIComponent(q)}&filter=${filter}&page=${page}&sort=${sort}&dir=${dir}`),
     user: (id: string) => call<AdminUserDetail>(`/admin/users/${id}`),
     grant: (id: string, ovos: number, milho: number, reason: string, creditCents = 0) => call<{ ok: true; ovos: number; milho: number }>(`/admin/users/${id}/grant`, { method: 'POST', body: { ovos, milho, reason, creditCents } }),
     ban: (id: string, banned: boolean, reason: string) => call(`/admin/users/${id}/ban`, { method: 'POST', body: { banned, reason } }),

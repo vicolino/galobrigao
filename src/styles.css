@@ -817,6 +817,14 @@ option { background-color: #fff; color: var(--text); }
 .admin-table td { vertical-align: middle; }
 /* Colunas numéricas: título e valor centralizados juntos */
 .admin-table th.right, .admin-table td.right { text-align: center; }
+/* Cabeçalhos ordenáveis */
+.sort-th { padding: 0 !important; }
+.sort-btn { display: inline-flex; align-items: center; gap: 5px; width: 100%; padding: 8px; background: none; border: 0; cursor: pointer; font: inherit; color: inherit; text-transform: inherit; letter-spacing: inherit; }
+.admin-table th.right .sort-btn.num { justify-content: center; }
+.sort-btn:hover { color: var(--text); }
+.sort-caret { font-size: 9px; opacity: 0.4; line-height: 1; }
+.sort-th.on { color: var(--text); }
+.sort-th.on .sort-caret { opacity: 1; color: var(--accent-dk); }
 .clickable-row { cursor: pointer; }
 .clickable-row:hover td { background: rgba(232, 243, 234, 0.04); }
 .mono { font-family: ui-monospace, monospace; }

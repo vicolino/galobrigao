@@ -329,23 +329,42 @@ function Activity() {
 
 // ---------------- Jogadores ----------------
 
+// Cabeçalho de coluna clicável para ordenar. Mostra ▲/▼ na coluna ativa.
+function SortTh({ label, col, sort, onSort, cls = '', num = false }: { label: string; col: string; sort: { key: string; dir: 'asc' | 'desc' }; onSort: (k: string) => void; cls?: string; num?: boolean }) {
+  const active = sort.key === col
+  return (
+    <th className={`sort-th ${cls} ${active ? 'on' : ''}`} aria-sort={active ? (sort.dir === 'asc' ? 'ascending' : 'descending') : 'none'}>
+      <button type="button" className={`sort-btn ${num ? 'num' : ''}`} onClick={() => onSort(col)}>
+        <span>{label}</span>
+        <span className="sort-caret" aria-hidden>{active ? (sort.dir === 'asc' ? '▲' : '▼') : '↕'}</span>
+      </button>
+    </th>
+  )
+}
+
 function Users() {
   const [q, setQ] = useState('')
   const [filter, setFilter] = useState('todos')
   const [rows, setRows] = useState<AdminUserRow[]>([])
   const [open, setOpen] = useState<string | null>(null)
   const [page, setPage] = useState(1)
+  const [sort, setSort] = useState<{ key: string; dir: 'asc' | 'desc' }>({ key: 'cadastro', dir: 'desc' })
   const [meta, setMeta] = useState({ total: 0, pages: 1, pageSize: 25 })
   const load = useCallback(() => {
     api.admin
-      .users(q, filter, page)
+      .users(q, filter, page, sort.key, sort.dir)
       .then((r) => {
         setRows(r.users)
         setMeta({ total: r.total, pages: r.pages, pageSize: r.pageSize })
         if (r.page !== page) setPage(r.page)
       })
       .catch(() => null)
-  }, [q, filter, page])
+  }, [q, filter, page, sort])
+  // Clicar numa coluna ordena por ela; clicar de novo inverte. Volta para a 1ª página.
+  const toggleSort = (key: string) => {
+    setPage(1)
+    setSort((s) => (s.key === key ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: key === 'jogador' || key === 'origem' ? 'asc' : 'desc' }))
+  }
   useEffect(() => {
     const h = setTimeout(load, 250)
     return () => clearTimeout(h)
@@ -376,14 +395,14 @@ function Users() {
         <table className="table admin-table">
           <thead>
             <tr>
-              <th>{t('Jogador')}</th>
-              <th className="hide-m">{t('Cadastro')}</th>
-              <th className="hide-m">{t('Origem')}</th>
-              <th>{t('Último acesso')}</th>
-              <th className="right hide-m">{t('Galos')}</th>
-              <th className="right hide-m">{t('Nível máx.')}</th>
-              <th className="right">{t('Ovos')}</th>
-              <th className="right">{t('Gastou')}</th>
+              <SortTh label={t('Jogador')} col="jogador" sort={sort} onSort={toggleSort} />
+              <SortTh label={t('Cadastro')} col="cadastro" sort={sort} onSort={toggleSort} cls="hide-m" />
+              <SortTh label={t('Origem')} col="origem" sort={sort} onSort={toggleSort} cls="hide-m" />
+              <SortTh label={t('Último acesso')} col="acesso" sort={sort} onSort={toggleSort} />
+              <SortTh label={t('Galos')} col="galos" sort={sort} onSort={toggleSort} cls="right hide-m" num />
+              <SortTh label={t('Nível máx.')} col="nivel" sort={sort} onSort={toggleSort} cls="right hide-m" num />
+              <SortTh label={t('Ovos')} col="ovos" sort={sort} onSort={toggleSort} cls="right" num />
+              <SortTh label={t('Gastou')} col="gastou" sort={sort} onSort={toggleSort} cls="right" num />
               <th></th>
             </tr>
           </thead>

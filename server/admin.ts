@@ -262,23 +262,40 @@ export async function handleAdmin(path: string, method: string, url: URL, body: 
     const total = (db().prepare(`SELECT COUNT(*) AS n ${from}`).get(q, q) as { n: number }).n
     const pages = Math.max(1, Math.ceil(total / pageSize))
     const page = Math.min(pages, Math.max(1, Math.floor(Number(url.searchParams.get('page')) || 1)))
-    const rows = db()
-      .prepare(
-        `SELECT u.id, u.email, u.name, u.created_at, u.banned_at, u.utm_source, u.utm_campaign, p.last_seen, COALESCE(o.spent, 0) AS spent, COALESCE(o.n, 0) AS orders
-         ${from}
-         ORDER BY u.created_at DESC LIMIT ? OFFSET ?`,
-      )
-      .all(q, q, pageSize, (page - 1) * pageSize) as Record<string, unknown>[]
-    return {
-      total,
-      page,
-      pages,
-      pageSize,
-      users: rows.map((r) => {
-        const save = loadSave(String(r.id))
-        return { ...r, roosters: save?.state.roosters.length ?? 0, maxLevel: save ? Math.max(...save.state.roosters.map((x) => x.level)) : 0, ovos: save?.state.ovos ?? 0, milho: save?.state.milho ?? 0 }
-      }),
+    // Ordenação por coluna. Colunas em SQL vão direto no ORDER BY; as derivadas do save (galos/nível/ovos)
+    // são calculadas para todo o conjunto filtrado e ordenadas em memória (base de jogadores pequena, uso só do admin).
+    const dir = url.searchParams.get('dir') === 'asc' ? 'ASC' : 'DESC'
+    const sort = url.searchParams.get('sort') ?? 'cadastro'
+    const SQL_SORT: Record<string, string> = {
+      jogador: 'lower(u.name)',
+      cadastro: 'u.created_at',
+      origem: 'lower(u.utm_source) IS NULL, lower(u.utm_source)',
+      acesso: 'COALESCE(p.last_seen, 0)',
+      gastou: 'COALESCE(o.spent, 0)',
     }
+    const SAVE_SORT: Record<string, (r: { roosters: number; maxLevel: number; ovos: number }) => number> = {
+      galos: (r) => r.roosters,
+      nivel: (r) => r.maxLevel,
+      ovos: (r) => r.ovos,
+    }
+    const cols = `u.id, u.email, u.name, u.created_at, u.banned_at, u.utm_source, u.utm_campaign, p.last_seen, COALESCE(o.spent, 0) AS spent, COALESCE(o.n, 0) AS orders`
+    const enrich = (r: Record<string, unknown>) => {
+      const save = loadSave(String(r.id))
+      const levels = save?.state.roosters.map((x) => x.level) ?? []
+      return { ...r, roosters: save?.state.roosters.length ?? 0, maxLevel: levels.length ? Math.max(...levels) : 0, ovos: save?.state.ovos ?? 0, milho: save?.state.milho ?? 0 }
+    }
+    const saveSort = SAVE_SORT[sort]
+    if (saveSort) {
+      const all = db().prepare(`SELECT ${cols} ${from} ORDER BY u.created_at DESC`).all(q, q) as Record<string, unknown>[]
+      const enriched = all.map(enrich)
+      enriched.sort((a, b) => (dir === 'ASC' ? saveSort(a) - saveSort(b) : saveSort(b) - saveSort(a)))
+      return { total, page, pages, pageSize, users: enriched.slice((page - 1) * pageSize, (page - 1) * pageSize + pageSize) }
+    }
+    const orderBy = SQL_SORT[sort] ?? SQL_SORT.cadastro
+    const rows = db()
+      .prepare(`SELECT ${cols} ${from} ORDER BY ${orderBy} ${dir} LIMIT ? OFFSET ?`)
+      .all(q, q, pageSize, (page - 1) * pageSize) as Record<string, unknown>[]
+    return { total, page, pages, pageSize, users: rows.map(enrich) }
   }
 
   const userMatch = path.match(/^\/api\/admin\/users\/([\w-]+)(\/grant|\/ban|\/kyc)?$/)
