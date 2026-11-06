@@ -141,7 +141,21 @@ function overview(days: number) {
       .map(([id, v]) => ({ id, ...v }))
       .sort((a, b) => b.cents - a.cents),
     byMethod,
+    origins: origins(now),
   }
+}
+
+/** Origem dos cadastros (UTM): contas por fonte e campanha nos últimos 7 / 30 dias e no total. */
+function origins(now: number) {
+  return db()
+    .prepare(
+      `SELECT utm_source AS source, utm_campaign AS campaign,
+         SUM(CASE WHEN created_at >= ? THEN 1 ELSE 0 END) AS d7,
+         SUM(CASE WHEN created_at >= ? THEN 1 ELSE 0 END) AS d30,
+         COUNT(*) AS total
+       FROM users GROUP BY utm_source, utm_campaign ORDER BY total DESC LIMIT 100`,
+    )
+    .all(now - 7 * DAY, now - 30 * DAY) as { source: string | null; campaign: string | null; d7: number; d30: number; total: number }[]
 }
 
 // ---------- Rotas ----------
@@ -176,7 +190,7 @@ export async function handleAdmin(path: string, method: string, url: URL, body: 
     const page = Math.min(pages, Math.max(1, Math.floor(Number(url.searchParams.get('page')) || 1)))
     const rows = db()
       .prepare(
-        `SELECT u.id, u.email, u.name, u.created_at, u.banned_at, p.last_seen, COALESCE(o.spent, 0) AS spent, COALESCE(o.n, 0) AS orders
+        `SELECT u.id, u.email, u.name, u.created_at, u.banned_at, u.utm_source, u.utm_campaign, p.last_seen, COALESCE(o.spent, 0) AS spent, COALESCE(o.n, 0) AS orders
          ${from}
          ORDER BY u.created_at DESC LIMIT ? OFFSET ?`,
       )

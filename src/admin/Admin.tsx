@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { Fragment, useCallback, useEffect, useState } from 'react'
 import { api, type AdminWeb3, type KycStatus, type AdminLogRow, type AdminOrderRow, type AdminOverview, type AdminUserDetail, type AdminUserRow } from '../api'
 import { APP_NAME } from '../brand'
 import { Modal } from '../components/ui'
@@ -168,10 +168,67 @@ function Overview() {
             <Kpi label={t('Contas bloqueadas')} value={n(d.kpis.banned)} />
             <Kpi label={t('Gasto com crédito MVP ({n} dias)', { n: days })} value={brl(d.kpis.creditSpentCents)} hint={t('Compras pagas com crédito de teste — não entram na receita')} />
           </div>
+          {d.origins && <Origins rows={d.origins} />}
           <OfertasAdmin days={days} />
         </>
       )}
     </>
+  )
+}
+
+// Origem dos cadastros (UTM): fonte e, abaixo, as campanhas dela
+function Origins({ rows }: { rows: NonNullable<AdminOverview['origins']> }) {
+  const bySource = new Map<string, { d7: number; d30: number; total: number; campaigns: typeof rows }>()
+  for (const r of rows) {
+    const k = r.source ?? ''
+    const g = bySource.get(k) ?? { d7: 0, d30: 0, total: 0, campaigns: [] }
+    g.d7 += r.d7
+    g.d30 += r.d30
+    g.total += r.total
+    if (r.campaign) g.campaigns.push(r)
+    bySource.set(k, g)
+  }
+  const list = [...bySource.entries()].sort((a, b) => b[1].total - a[1].total)
+  const all = list.reduce((s, [, g]) => s + g.total, 0)
+  return (
+    <div className="card" style={{ marginBottom: 14 }}>
+      <h3>
+        {t('Origem dos cadastros')} <span className="count-badge">{n(all)}</span>
+      </h3>
+      <p className="tiny muted">{t('Pelos links com utm_source / utm_campaign do primeiro acesso. "Direto" = sem UTM.')}</p>
+      <table className="table admin-table">
+        <thead>
+          <tr>
+            <th>{t('Fonte')}</th>
+            <th className="right">{t('7 dias')}</th>
+            <th className="right">{t('30 dias')}</th>
+            <th className="right">{t('Total')}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {list.map(([src, g]) => (
+            <Fragment key={src || '-'}>
+              <tr>
+                <td>
+                  <b>{src || t('Direto')}</b>
+                </td>
+                <td className="right">{n(g.d7)}</td>
+                <td className="right">{n(g.d30)}</td>
+                <td className="right">{n(g.total)}</td>
+              </tr>
+              {g.campaigns.map((c) => (
+                <tr key={`${src}:${c.campaign}`}>
+                  <td className="tiny muted">↳ {c.campaign}</td>
+                  <td className="right tiny">{n(c.d7)}</td>
+                  <td className="right tiny">{n(c.d30)}</td>
+                  <td className="right tiny">{n(c.total)}</td>
+                </tr>
+              ))}
+            </Fragment>
+          ))}
+        </tbody>
+      </table>
+    </div>
   )
 }
 
@@ -226,6 +283,7 @@ function Users() {
             <tr>
               <th>{t('Jogador')}</th>
               <th className="hide-m">{t('Cadastro')}</th>
+              <th className="hide-m">{t('Origem')}</th>
               <th>{t('Último acesso')}</th>
               <th className="right hide-m">{t('Galos')}</th>
               <th className="right hide-m">{t('Nível máx.')}</th>
@@ -242,6 +300,7 @@ function Users() {
                   <div className="tiny muted">{r.email}</div>
                 </td>
                 <td className="tiny hide-m">{dt(r.created_at)}</td>
+                <td className="tiny hide-m">{r.utm_source ? <span className="utm-tag" title={r.utm_campaign ?? ''}>{r.utm_source}</span> : <span className="muted">—</span>}</td>
                 <td className="tiny">{ago(r.last_seen)}</td>
                 <td className="right hide-m">{r.roosters}</td>
                 <td className="right hide-m">{r.maxLevel || '—'}</td>

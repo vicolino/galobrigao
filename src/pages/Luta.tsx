@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { RoosterSvg, type Anim } from '../components/RoosterSvg'
 import { ToolFx } from '../components/ToolFx'
 import { Bar, Empty, StyleTag, go } from '../components/ui'
+import { ShareButton, recordLine } from '../components/Share'
 import { MAX_STA, simulate } from '../game/battle'
 import { BREED_BY_ID, TOOL_BY_ID } from '../game/data'
 import { fmt } from '../game/rooster'
@@ -44,7 +45,7 @@ function procLabel(tool: Tool) {
 }
 
 export function Luta() {
-  const { match, actions } = useGame()
+  const { match, actions, state } = useGame()
   const result = useMemo(() => (match ? simulate(match.a, match.b, match.seed, match.tools ?? [[], []]) : null), [match])
   const [idx, setIdx] = useState(0)
   const [speed, setSpeed] = useState(1)
@@ -204,6 +205,9 @@ export function Luta() {
     go(to)
   }
   const won = isRinha && result.winner === mySide
+  // Card de Story: usa o galo já atualizado no galinheiro (cartel com esta vitória)
+  const shareRo = state?.roosters.find((r) => r.id === myRooster.id) ?? myRooster
+  const winHeadline = result.method === 'ko' ? t('🏆 VITÓRIA POR K.O.!') : t('🏆 VITÓRIA POR DECISÃO!')
   const bets = match.myBets ?? []
   const betTotal = bets.reduce((a, b) => a + b.payout, 0)
   const betStake = bets.reduce((a, b) => a + b.amount, 0)
@@ -356,6 +360,7 @@ export function Luta() {
                 <button className="btn btn-primary" onClick={back}>
                   {t('🏟️ Voltar ao torneio')}
                 </button>
+                {match.mySide !== undefined && result.winner === mySide && <ShareButton card={{ ro: shareRo, headline: t('🏟️ VITÓRIA NO TORNEIO!'), stat: recordLine(shareRo) }} />}
               </div>
             </>
           ) : isRinha ? (
@@ -395,6 +400,7 @@ export function Luta() {
                 >
                   {t('🏠 Ver galo')}
                 </button>
+                {won && <ShareButton card={{ ro: shareRo, headline: winHeadline, stat: recordLine(shareRo) }} />}
               </div>
             </>
           ) : (

@@ -336,6 +336,10 @@ export async function handle(req: Req, res: Res) {
       const id = randomUUID()
       const now = Date.now()
       db.prepare('INSERT INTO users (id, email, name, pass_hash, salt, created_at, adult_confirmed_at, terms_accepted_at, monthly_limit_cents, lang) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(id, email, name, hash, salt, now, now, now, live.economy.defaultSpendLimitCents, reqLang(req))
+      // Origem do cadastro (UTM): minúsculas, [a-z0-9_-], até 40 caracteres
+      const utm = (v: unknown) => String(v ?? '').toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 40) || null
+      const o = (b.utm ?? {}) as Record<string, unknown>
+      db.prepare('UPDATE users SET utm_source = ?, utm_medium = ?, utm_campaign = ?, ref = ? WHERE id = ?').run(utm(o.source), utm(o.medium), utm(o.campaign), utm(o.ref), id)
       const user = grantMvp(db.prepare('SELECT * FROM users WHERE id = ?').get(id) as unknown as UserRow)
       return json(res, 201, { user: publicUser(user) }, { 'Set-Cookie': sessionCookie(createSession(id), secure) })
     }

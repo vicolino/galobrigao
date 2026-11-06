@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { api } from '../api'
 import { RoosterSvg } from '../components/RoosterSvg'
 import { Empty, Modal, PageHead, RoosterCard, Tabs, go } from '../components/ui'
+import { ShareButton, recordLine } from '../components/Share'
 import { SKIN_BY_ID } from '../game/data'
 import { fmt, power } from '../game/rooster'
 import { sfx } from '../game/sound'
@@ -348,6 +349,7 @@ function TorneioPage({ id }: { id: string }) {
         <div className="card center tz-result">
           <h2>{placeLabel(d.mine.place)}</h2>
           <p className="muted">{t('{galo} terminou em {lugar}º lugar.', { galo: d.mine.rooster.name, lugar: d.mine.place })}</p>
+          {d.mine.place === 1 && <ShareButton className="btn btn-gold" card={{ ro: d.mine.rooster, headline: t('🏆 CAMPEÃO DO TORNEIO!'), stat: recordLine(d.mine.rooster) }} />}
         </div>
       )}
       {d.champion && (

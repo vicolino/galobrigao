@@ -97,7 +97,7 @@ const localRooster = <R extends { name: string; owner?: string }>(r: R): R => ({
 
 export const api = {
   me: () => call<{ user: ApiUser | null; provider: string; paymentsLive?: boolean }>('/me'),
-  signup: (b: { email: string; password: string; name: string; adult: boolean; terms: boolean }) => call<{ user: ApiUser }>('/auth/signup', { method: 'POST', body: b }),
+  signup: (b: { email: string; password: string; name: string; adult: boolean; terms: boolean; utm?: Record<string, string | undefined> }) => call<{ user: ApiUser }>('/auth/signup', { method: 'POST', body: b }),
   login: (email: string, password: string) => call<{ user: ApiUser }>('/auth/login', { method: 'POST', body: { email, password } }),
   changePassword: (current: string, next: string) => call('/auth/password', { method: 'POST', body: { current, next } }),
   forgot: (email: string) => call('/auth/forgot', { method: 'POST', body: { email } }),
@@ -305,6 +305,8 @@ export interface AdminOverview {
   series: AdminSeriesDay[]
   bySku: { id: string; name: string; count: number; cents: number }[]
   byMethod: Record<string, { count: number; cents: number }>
+  /** Origem dos cadastros por fonte/campanha (UTM). null = acesso direto. */
+  origins?: { source: string | null; campaign: string | null; d7: number; d30: number; total: number }[]
 }
 export interface AdminUserRow {
   id: string
@@ -319,6 +321,8 @@ export interface AdminUserRow {
   maxLevel: number
   ovos: number
   milho: number
+  utm_source?: string | null
+  utm_campaign?: string | null
 }
 export interface AdminUserDetail {
   user: { id: string; email: string; name: string; mvpCreditCents: number; createdAt: number; bannedAt: number | null; banReason: string | null; monthlyLimitCents: number; lastSeen: number | null }

@@ -9,6 +9,7 @@ import type { Rooster } from '../game/types'
 import { locale, t, tx } from '../i18n'
 import { BREED_MULT, MAX_BREEDS, breedsOf } from '../game/galonft'
 import { BreedBadge } from '../components/BreedBadge'
+import { ShareButton } from '../components/Share'
 
 const pct = (x: number) => `${Math.round(x * 100)}%`
 const clock = (ms: number) => {
@@ -204,6 +205,7 @@ export function Cruzamento() {
                   <button className="btn btn-primary" onClick={() => go(`/galinheiro/${born.chick.id}`)}>
                     {t('Ver no galinheiro')}
                   </button>
+                  <ShareButton card={{ ro: born.chick, headline: t('🐣 NASCEU MEU PINTINHO!'), stat: born.rareColor ? t('🌈 Pelagem rara! Só ele tem essas cores.') : born.chick.parents ? t('Filho de {a} com {b}', { a: born.chick.parents[0], b: born.chick.parents[1] }) : undefined }} />
                   <button className="btn" onClick={() => setBorn(null)}>
                     {t('Fechar')}
                   </button>

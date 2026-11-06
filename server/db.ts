@@ -149,6 +149,8 @@ export function getDb() {
   if (!cols.includes('role')) db.exec("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'player'")
   if (!cols.includes('lang')) db.exec("ALTER TABLE users ADD COLUMN lang TEXT NOT NULL DEFAULT 'pt'")
   if (!cols.includes('kyc_status')) db.exec("ALTER TABLE users ADD COLUMN kyc_status TEXT NOT NULL DEFAULT 'none'")
+  // Origem do cadastro (UTM do primeiro acesso)
+  for (const c of ['utm_source', 'utm_medium', 'utm_campaign', 'ref']) if (!cols.includes(c)) db.exec(`ALTER TABLE users ADD COLUMN ${c} TEXT`)
   // Web3: carteiras custodiais, NFTs de itens e registro de todas as operações na chain
   db.exec(`
     CREATE TABLE IF NOT EXISTS wallets (
@@ -233,6 +235,11 @@ export interface UserRow {
   ban_reason?: string | null
   /** Verificação de identidade para envios externos: 'none' | 'pending' | 'verified' | 'rejected'. */
   kyc_status?: string
+  /** Origem do cadastro (UTM do primeiro acesso), já higienizada. */
+  utm_source?: string | null
+  utm_medium?: string | null
+  utm_campaign?: string | null
+  ref?: string | null
 }
 
 export interface OrderRow {

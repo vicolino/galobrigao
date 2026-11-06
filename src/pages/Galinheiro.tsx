@@ -7,6 +7,7 @@ import { FEED_COOLDOWN, STAR_COST, useGame } from '../game/store'
 import type { Slot, Style } from '../game/types'
 import { OVO_EM_MILHO, coopWorth, roosterValue, trackWorth } from '../game/worth'
 import { RefillButton } from '../components/Ofertas'
+import { ShareButton, recordLine } from '../components/Share'
 import { locale, t, tn, tp, tx } from '../i18n'
 import { BreedBadge, NftBadge } from '../components/BreedBadge'
 import { LentCard, RentBadge, leftShort } from './FeiraAluguel'
@@ -355,6 +356,7 @@ function RoosterDetail({ id }: { id: string }) {
             <button className="btn" onClick={() => setStyleOpen(true)}>
               {t('🎭 Estilo')}
             </button>
+            <ShareButton card={{ ro, headline: t('🐓 MEU GALO'), stat: `${t('💰 Vale 🌽 {n}', { n: fmt(roosterValue(ro)) })} · ${recordLine(ro)}` }} />
             {ro.rental ? (
               <div className="alu-detail tiny">
                 {t('🔑 Alugado de {nome}: volta em {t}. Não dá para vender, dar, cruzar nem anunciar. Nome e estilo voltam ao original.', { nome: ro.rental.ownerName, t: leftShort(ro.rental.until) })}
