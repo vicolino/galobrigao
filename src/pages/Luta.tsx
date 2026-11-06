@@ -12,6 +12,23 @@ import { useGame } from '../game/store'
 import type { BattleEvent, Rooster, Tool, ToolProc } from '../game/types'
 import { t, tn, tp, tx } from '../i18n'
 
+/** Nome engraçado da arena, estável por luta (escolhido pela semente). */
+const ARENA_NAMES = [
+  t('Coliseu do Terreiro'),
+  t('Ringue da Galinhada'),
+  t('Arena Poeira Brava'),
+  t('Caldeirão do Milho'),
+  t('Estádio Pena Dura'),
+  t('Arena Bico de Ouro'),
+  t('Coliseu Cacarejo'),
+  t('Arena do Seu Zé'),
+  t('Ringue Asa Quebrada'),
+  t('Arena Esporão de Aço'),
+  t('Caldeirão Caipira'),
+  t('Arena Cocoricó'),
+]
+const arenaName = (seed: number) => ARENA_NAMES[Math.abs(Math.floor(seed)) % ARENA_NAMES.length]
+
 const BASE_MS = 1150
 /** Duração da entrada dos lutadores (acompanha a vinheta de 6 tempos a 128 BPM). */
 const INTRO_MS = 2900
@@ -222,8 +239,9 @@ export function Luta() {
       <button className="btn btn-ghost back" onClick={back}>
         {isTorneio ? t('← Voltar ao torneio') : isPvp ? t('← Voltar aos desafios') : isRinha ? t('← Voltar à arena') : t('← Voltar às lutas')}
       </button>
-      <div className="center">
-        <span className="pill">{isTorneio ? t('🏟️ Torneio') : isPvp ? t('🤝 Desafio entre jogadores') : isRinha ? t('⚔️ Arena') : t('🏟️ Luta da casa')}</span>
+      <div className="arena-title">
+        <span className="arena-kind">{isTorneio ? t('🏟️ Torneio') : isPvp ? t('🤝 Desafio entre jogadores') : isRinha ? t('⚔️ Arena') : t('🏟️ Luta da casa')}</span>
+        <b className="arena-name">{arenaName(match.seed)}</b>
       </div>
 
       <div className={`arena ${shake ? 'shake' : ''}`}>
