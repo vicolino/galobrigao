@@ -874,12 +874,34 @@ function Orders() {
 
 // ---------------- Configurações ----------------
 
+type CfgGroup = Exclude<keyof AppConfig, 'catalog' | 'announcement' | 'maintenance'>
+type CfgSection = 'geral' | 'loja' | 'recompensas' | 'desafios' | 'apostas' | 'drops' | 'deposito' | 'economia'
+
+/** Grupos de configuração de cada aba (para contar alterações). */
+const CFG_SECTIONS: { id: CfgSection; label: string; groups: (keyof AppConfig)[] }[] = [
+  { id: 'geral', label: t('📢 Geral'), groups: ['announcement', 'mvp', 'maintenance'] },
+  { id: 'loja', label: t('💎 Loja e preços'), groups: ['catalog'] },
+  { id: 'recompensas', label: t('🎁 Recompensas'), groups: ['rewards'] },
+  { id: 'desafios', label: t('🤝 Desafios'), groups: ['pvp'] },
+  { id: 'apostas', label: t('🎲 Apostas'), groups: ['bets'] },
+  { id: 'drops', label: t('🎁 Drops da Arena'), groups: ['drops'] },
+  { id: 'deposito', label: t('💵 Depósito USDC'), groups: ['deposit'] },
+  { id: 'economia', label: t('🛡️ Economia e segurança'), groups: ['economy'] },
+]
+
 function Config() {
   const { toast } = useGame()
   const [cfg, setCfg] = useState<AppConfig | null>(null)
   const [defaults, setDefaults] = useState<AppConfig | null>(null)
   const [meta, setMeta] = useState<{ at: number | null; by: string | null }>({ at: null, by: null })
   const [saved, setSaved] = useState('')
+  const [tab, setTab] = useState<CfgSection>(() => {
+    try {
+      return (localStorage.getItem('gb.admin.cfgTab') as CfgSection) || 'geral'
+    } catch {
+      return 'geral'
+    }
+  })
   const load = () =>
     api.admin.getConfig().then((r) => {
       setCfg(r.config)
@@ -891,9 +913,48 @@ function Config() {
     void load()
   }, [])
   if (!cfg || !defaults) return <p className="muted">{t('Carregando...')}</p>
+  const base = JSON.parse(saved) as AppConfig
   const dirty = JSON.stringify(cfg) !== saved
   const set = <K extends keyof AppConfig>(k: K, v: Partial<AppConfig[K]>) => setCfg({ ...cfg, [k]: { ...cfg[k], ...v } })
   const setSku = (id: string, v: Partial<AppConfig['catalog'][string]>) => setCfg({ ...cfg, catalog: { ...cfg.catalog, [id]: { ...cfg.catalog[id], ...v } } })
+  const go = (id: CfgSection) => {
+    setTab(id)
+    try {
+      localStorage.setItem('gb.admin.cfgTab', id)
+    } catch {
+      /* sem storage */
+    }
+  }
+
+  // Quantos campos mudaram (não salvos) em cada grupo
+  const diffCount = (g: keyof AppConfig) => {
+    const a = cfg[g] as unknown as Record<string, unknown>
+    const b = base[g] as unknown as Record<string, unknown>
+    return Object.keys({ ...a, ...b }).filter((k) => JSON.stringify(a?.[k]) !== JSON.stringify(b?.[k])).length
+  }
+  const sectionDiff = (sec: (typeof CFG_SECTIONS)[number]) => sec.groups.reduce((n, g) => n + diffCount(g), 0)
+  const totalDiff = CFG_SECTIONS.reduce((n, sec) => n + sectionDiff(sec), 0)
+
+  /** Campo numérico de um grupo: mostra unidade, padrão e se mudou. `scale` converte (ex.: centavos → R$). */
+  const num = <G extends CfgGroup>(g: G, key: keyof AppConfig[G] & string, label: string, o: { unit?: string; step?: number; hint?: string; scale?: number } = {}) => {
+    const sc = o.scale ?? 1
+    const read = (c: AppConfig) => Number((c[g] as Record<string, unknown>)[key] ?? 0) / sc
+    const v = read(cfg)
+    const d = read(defaults)
+    return (
+      <CfgNum
+        key={`${g}.${key}`}
+        label={label}
+        value={v}
+        def={d}
+        changed={v !== read(base)}
+        unit={o.unit}
+        step={o.step}
+        hint={o.hint}
+        onChange={(x) => set(g, { [key]: sc === 1 ? x : Math.round(x * sc) } as Partial<AppConfig[G]>)}
+      />
+    )
+  }
 
   const save = async () => {
     try {
@@ -905,192 +966,319 @@ function Config() {
     }
   }
 
+  const sum = cfg.drops.tierComum + cfg.drops.tierRaro + cfg.drops.tierEpico + cfg.drops.tierLendario
+  const sumOk = Math.abs(sum - 100) <= 0.01
+
   return (
     <>
-      <div className="row-between admin-filters">
-        <div>
-          <h1>{t('Configurações')}</h1>
-          <p className="tiny muted">
-            {t('Alterações valem na hora para todos os jogadores, sem publicar de novo.')}
-            {meta.at && ' ' + t('Última alteração: {data} por {quem}.', { data: dt(meta.at), quem: meta.by ?? '—' })}
-          </p>
+      <div className="admin-filters">
+        <h1>{t('Configurações')}</h1>
+        <p className="tiny muted">
+          {t('Alterações valem na hora para todos os jogadores, sem publicar de novo.')}
+          {meta.at && ' ' + t('Última alteração: {data} por {quem}.', { data: dt(meta.at), quem: meta.by ?? '—' })}
+        </p>
+      </div>
+
+      <div className="cfg-layout">
+        <nav className="cfg-nav card">
+          {CFG_SECTIONS.map((sec) => {
+            const n = sectionDiff(sec)
+            return (
+              <button key={sec.id} className={`cfg-tab ${tab === sec.id ? 'on' : ''}`} onClick={() => go(sec.id)}>
+                <span>{sec.label}</span>
+                {n > 0 && <span className="cfg-dot">{n}</span>}
+                {sec.id === 'drops' && !sumOk && <span className="cfg-dot err">!</span>}
+              </button>
+            )
+          })}
+          <button
+            className="btn btn-sm btn-ghost cfg-reset-all"
+            onClick={() => {
+              setCfg(defaults)
+              toast(t('Valores padrão carregados. Clique em Salvar para aplicar.'), 'info')
+            }}
+          >
+            {t('↺ Restaurar todos os padrões')}
+          </button>
+        </nav>
+
+        <div className="cfg-body">
+          {tab === 'geral' && (
+            <>
+              <div className="card cfg-section">
+                <h3>{t('📢 Aviso para todos os jogadores')}</h3>
+                <p className="tiny muted cfg-desc">{t('Faixa no topo do jogo. Deixe vazio para não mostrar nada.')}</p>
+                <div className="cfg-row">
+                  <label className="field grow">
+                    <span>{t('Texto (vazio = sem aviso)')}</span>
+                    <input value={cfg.announcement.text} maxLength={200} onChange={(e) => set('announcement', { text: e.target.value })} placeholder={t('Ex.: Fim de semana com 50% de bônus nos ovos!')} />
+                  </label>
+                  <label className="field">
+                    <span>{t('Tipo')}</span>
+                    <select value={cfg.announcement.kind} onChange={(e) => set('announcement', { kind: e.target.value as AppConfig['announcement']['kind'] })}>
+                      <option value="info">{t('ℹ️ Informação')}</option>
+                      <option value="promo">{t('🎉 Promoção')}</option>
+                      <option value="alerta">{t('⚠️ Alerta')}</option>
+                    </select>
+                  </label>
+                </div>
+                {cfg.announcement.text && <div className={`announce announce-${cfg.announcement.kind}`}>{cfg.announcement.text}</div>}
+              </div>
+
+              <div className="card cfg-section">
+                <h3>{t('🎁 Modo MVP (crédito de teste)')}</h3>
+                <CfgSwitch on={cfg.mvp.on} onChange={(v) => set('mvp', { on: v })} label={t('Ligado — cada conta recebe o crédito uma única vez (no cadastro ou no próximo acesso) e pode gastar na loja sem pagar')} />
+                <div className="cfg-grid">{num('mvp', 'creditCents', t('Crédito por conta'), { unit: 'R$', step: 10, scale: 100 })}</div>
+                <p className="tiny muted">{t('Compras com crédito não contam como receita. Mudar o valor vale só para quem ainda não recebeu.')}</p>
+              </div>
+
+              <div className={`card cfg-section ${cfg.maintenance.on ? 'danger-box' : ''}`}>
+                <h3>{t('🚧 Modo manutenção')}</h3>
+                <CfgSwitch on={cfg.maintenance.on} onChange={(v) => set('maintenance', { on: v })} label={t('Ligado — jogadores veem a mensagem abaixo e não conseguem jogar nem comprar (administradores continuam entrando)')} />
+                <label className="field">
+                  <span>{t('Mensagem')}</span>
+                  <input value={cfg.maintenance.message} maxLength={200} onChange={(e) => set('maintenance', { message: e.target.value })} />
+                </label>
+              </div>
+            </>
+          )}
+
+          {tab === 'loja' && (
+            <div className="card cfg-section">
+              <h3>{t('💎 Produtos e preços')}</h3>
+              <p className="tiny muted cfg-desc">{t('Pacotes vendidos com dinheiro. Desmarque "À venda" para tirar da loja.')}</p>
+              <div className="table-scroll">
+                <table className="table cfg-table">
+                  <thead>
+                    <tr>
+                      <th>{t('Produto')}</th>
+                      <th className="right">{t('Preço (R$)')}</th>
+                      <th className="right">{t('Ovos')}</th>
+                      <th className="right">{t('Bônus')}</th>
+                      <th className="right">{t('À venda')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {CATALOG.map((sk) => {
+                      const o = cfg.catalog[sk.id]
+                      const changed = JSON.stringify(o) !== JSON.stringify(base.catalog[sk.id])
+                      const custom = JSON.stringify(o) !== JSON.stringify(defaults.catalog[sk.id])
+                      return (
+                        <tr key={sk.id} className={`${o.active ? '' : 'muted'} ${changed ? 'cfg-changed-row' : ''}`}>
+                          <td>
+                            {sk.emoji} {sk.name} {custom && <span className="tiny muted">· {t('fora do padrão')}</span>}
+                          </td>
+                          <td className="right">
+                            <input className="cfg-num" type="number" step="0.01" value={(o.priceCents / 100).toFixed(2)} onChange={(e) => setSku(sk.id, { priceCents: Math.round(Number(e.target.value) * 100) })} />
+                          </td>
+                          <td className="right">{o.ovos !== undefined ? <input className="cfg-num" type="number" value={o.ovos} onChange={(e) => setSku(sk.id, { ovos: Number(e.target.value) })} /> : '—'}</td>
+                          <td className="right">{o.bonus !== undefined ? <input className="cfg-num" type="number" value={o.bonus} onChange={(e) => setSku(sk.id, { bonus: Number(e.target.value) })} /> : '—'}</td>
+                          <td className="right">
+                            <input type="checkbox" checked={o.active} onChange={(e) => setSku(sk.id, { active: e.target.checked })} />
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {tab === 'recompensas' && (
+            <div className="card cfg-section">
+              <h3>{t('🎁 Ovos grátis')}</h3>
+              <p className="tiny muted cfg-desc">{t('Ovos de ouro que o jogo dá sem compra.')}</p>
+              <div className="cfg-grid">
+                {num('rewards', 'dailyOvos', t('Bônus diário (dias 1 a 6)'), { unit: '🥚' })}
+                {num('rewards', 'day7Ovos', t('Bônus do 7º dia'), { unit: '🥚' })}
+                {num('rewards', 'arenaHardWinOvos', t('Vitória difícil na Arena'), { unit: '🥚' })}
+                {num('rewards', 'missionOvosMultiplier', t('Multiplicador das missões'), { unit: '×', step: 0.1, hint: t('1 = normal, 2 = dobro (vale para as missões do dia seguinte)') })}
+              </div>
+            </div>
+          )}
+
+          {tab === 'desafios' && (
+            <>
+              <div className="card cfg-section">
+                <h3>{t('💰 Aposta entre jogadores')}</h3>
+                <p className="tiny muted cfg-desc">{t('Cada um bota o mesmo valor em milho; quem vence leva o total menos a taxa.')}</p>
+                <div className="cfg-grid">
+                  {num('pvp', 'feePct', t('Taxa do desafio (%)'), { unit: '%', step: 0.5, hint: t('Sobre o total apostado pelos dois') })}
+                  {num('pvp', 'minStake', t('Aposta mínima do desafio (milho)'), { unit: '🌽', step: 50 })}
+                  {num('pvp', 'maxStake', t('Aposta máxima do desafio (milho)'), { unit: '🌽', step: 1000 })}
+                </div>
+              </div>
+              <div className="card cfg-section">
+                <h3>{t('⏱️ Regras do desafio')}</h3>
+                <div className="cfg-grid">
+                  {num('pvp', 'challengeTtlSec', t('Tempo para aceitar (segundos)'), { unit: 's', step: 5 })}
+                  {num('pvp', 'dailyRewards', t('Desafios com prêmio por dia'), { unit: '×', hint: t('XP e pontos de liga; depois disso só a aposta vale') })}
+                </div>
+              </div>
+            </>
+          )}
+
+          {tab === 'apostas' && (
+            <>
+              <div className="card cfg-section">
+                <h3>{t('🗓️ Agenda das lutas da casa')}</h3>
+                <div className="cfg-grid">
+                  {num('bets', 'intervalMin', t('Uma luta a cada (minutos)'), { unit: 'min', hint: t('Vale para as lutas que ainda vão ser criadas') })}
+                  {num('bets', 'closeSec', t('Apostas fecham antes (segundos)'), { unit: 's' })}
+                  {num('bets', 'horizonMin', t('Agenda à frente (minutos)'), { unit: 'min', step: 30 })}
+                  {num('bets', 'liveSec', t('Tempo AO VIVO (segundos)'), { unit: 's' })}
+                </div>
+              </div>
+              <div className="card cfg-section">
+                <h3>{t('🎟️ Fichas')}</h3>
+                <div className="cfg-grid">
+                  {num('bets', 'minBet', t('Aposta mínima (fichas)'), { unit: '🎟️' })}
+                  {num('bets', 'maxBet', t('Aposta máxima (fichas)'), { unit: '🎟️', step: 1000 })}
+                  {num('bets', 'chipsStart', t('Fichas iniciais'), { unit: '🎟️', step: 100, hint: t('Só para quem ainda não tem fichas') })}
+                  {num('bets', 'chipsDaily', t('Fichas do bônus diário'), { unit: '🎟️', step: 50 })}
+                  {num('bets', 'chipsArenaWin', t('Fichas por vitória na Arena'), { unit: '🎟️' })}
+                  {num('bets', 'chipsFloor', t('Piso de fichas no bônus diário'), { unit: '🎟️', step: 50, hint: t('O bônus diário completa até esse valor') })}
+                </div>
+              </div>
+            </>
+          )}
+
+          {tab === 'drops' && (
+            <>
+              <div className="card cfg-section">
+                <h3>{t('🎁 Drops da Arena')}</h3>
+                <CfgSwitch on={cfg.drops.on !== false} onChange={(v) => set('drops', { on: v })} label={t('Drops ligados (prêmio raro grátis nas vitórias da Arena)')} />
+              </div>
+              <div className="card cfg-section">
+                <h3>{t('🎯 Chance de cair um drop')}</h3>
+                <p className="tiny muted cfg-desc">{t('Por vitória, conforme a dificuldade do adversário.')}</p>
+                <div className="cfg-grid cfg-grid-4">
+                  {num('drops', 'chanceFacil', t('Fácil'), { unit: '%', step: 0.5 })}
+                  {num('drops', 'chanceMedio', t('Médio'), { unit: '%', step: 0.5 })}
+                  {num('drops', 'chanceDificil', t('Difícil'), { unit: '%', step: 0.5 })}
+                  {num('drops', 'chanceChefao', t('Chefão'), { unit: '%', step: 0.5 })}
+                </div>
+              </div>
+              <div className={`card cfg-section ${sumOk ? '' : 'danger-box'}`}>
+                <h3>{t('💎 Raridade do drop')}</h3>
+                <p className="tiny muted cfg-desc">{t('Quando cai um drop, a chance de cada raridade. Precisa somar 100%.')}</p>
+                <div className="cfg-grid cfg-grid-4">
+                  {num('drops', 'tierComum', t('Comum'), { unit: '%', step: 0.5, hint: t('Ferramentas comuns/raras') })}
+                  {num('drops', 'tierRaro', t('Raro'), { unit: '%', step: 0.5, hint: t('Ferramentas raras ou skin rara') })}
+                  {num('drops', 'tierEpico', t('Épico'), { unit: '%', step: 0.5, hint: t('Skin épica numerada (vira NFT)') })}
+                  {num('drops', 'tierLendario', t('Lendário'), { unit: '%', step: 0.1, hint: t('Galo lendário numerado (vira NFT)') })}
+                </div>
+                <div className="cfg-sum">
+                  <div className="cfg-sum-bar">
+                    {(['tierComum', 'tierRaro', 'tierEpico', 'tierLendario'] as const).map((k) => (
+                      <i key={k} className={`s-${k}`} style={{ width: `${Math.max(0, cfg.drops[k])}%` }} />
+                    ))}
+                  </div>
+                  <b className={sumOk ? 'pos' : 'neg'}>{t('Soma: {n}%', { n: Math.round(sum * 100) / 100 })}</b>
+                </div>
+                {!sumOk && <p className="tiny neg">{t('⚠️ Os tiers somam {n}%: precisam somar 100% para salvar.', { n: Math.round(sum * 100) / 100 })}</p>}
+              </div>
+              <div className="card cfg-section">
+                <h3>{t('🧮 Limites')}</h3>
+                <div className="cfg-grid">
+                  {num('drops', 'pity', t('Drop garantido após (vitórias)'), { unit: '×', hint: t('Vitórias seguidas sem drop; a seguinte dá drop com certeza') })}
+                  {num('drops', 'dailyCap', t('Máximo de drops por dia'), { unit: '×', hint: t('Por jogador (dia UTC)') })}
+                  {num('drops', 'supplyCap', t('Tiragem máxima por item (0 = sem limite)'), { unit: 'un', step: 50, hint: t('Cada skin épica / galo lendário') })}
+                </div>
+              </div>
+            </>
+          )}
+
+          {tab === 'deposito' && (
+            <div className="card cfg-section">
+              <h3>{t('💵 Depósito USDC → ovos')}</h3>
+              <p className="tiny muted cfg-desc">{t('Só ida: ovos não voltam a ser USDC')}</p>
+              <div className="cfg-grid">
+                {num('deposit', 'eggsPerUsdc', t('Ovos por 1 USDC (depósito)'), { unit: '🥚' })}
+                {num('deposit', 'minUsdc', t('Depósito mínimo (USDC)'), { unit: 'USDC' })}
+                {num('deposit', 'dailyCapUsdc', t('Limite diário de depósito (USDC)'), { unit: 'USDC', step: 50, hint: t('Por jogador, por dia') })}
+              </div>
+            </div>
+          )}
+
+          {tab === 'economia' && (
+            <>
+              <div className="card cfg-section">
+                <h3>{t('🛡️ Limites anti-trapaça')}</h3>
+                <div className="cfg-grid">
+                  {num('economy', 'freeOvosPerDay', t('Ovos grátis máximos por dia'), { unit: '🥚', hint: t('Acima disso o servidor recusa o progresso (anti-trapaça)') })}
+                  {num('economy', 'freeMilhoPerDay', t('Milho ganho por dia (limite)'), { unit: '🌽', step: 100000, hint: t('Acima disso o servidor recusa o progresso') })}
+                  {num('economy', 'defaultSpendLimitCents', t('Limite de gasto padrão (R$)'), { unit: 'R$', step: 10, scale: 100, hint: t('Vale para contas novas') })}
+                </div>
+              </div>
+              <div className="card cfg-section">
+                <h3>{t('🌽 Economia no servidor')}</h3>
+                <CfgSwitch on={cfg.economy.serverAuthoritative !== false} onChange={(v) => set('economy', { serverAuthoritative: v })} label={t('🌽 Economia no servidor — Arena, bônus, missões, liga, treino e comida rodam no servidor e o save do navegador não pode aumentar milho, ovos ou XP (desligue só se algo quebrar)')} />
+              </div>
+            </>
+          )}
         </div>
-        <div className="row gap">
-          <button className="btn btn-sm" disabled={!dirty} onClick={() => setCfg(JSON.parse(saved))}>
+      </div>
+
+      {dirty && (
+        <div className="cfg-savebar">
+          <span>{tp('{n} alteração não salva', '{n} alterações não salvas', totalDiff)}</span>
+          <span className="grow" />
+          <button className="btn btn-sm" onClick={() => setCfg(base)}>
             {t('Descartar')}
           </button>
-          <button className="btn btn-primary" disabled={!dirty} onClick={save}>
+          <button className="btn btn-primary" disabled={!sumOk} onClick={save}>
             {t('💾 Salvar alterações')}
           </button>
         </div>
-      </div>
-
-      <div className="card cfg-section">
-        <h3>{t('📢 Aviso para todos os jogadores')}</h3>
-        <div className="row gap wrap">
-          <label className="field grow">
-            <span>{t('Texto (vazio = sem aviso)')}</span>
-            <input value={cfg.announcement.text} maxLength={200} onChange={(e) => set('announcement', { text: e.target.value })} placeholder={t('Ex.: Fim de semana com 50% de bônus nos ovos!')} />
-          </label>
-          <label className="field">
-            <span>{t('Tipo')}</span>
-            <select value={cfg.announcement.kind} onChange={(e) => set('announcement', { kind: e.target.value as AppConfig['announcement']['kind'] })}>
-              <option value="info">{t('ℹ️ Informação')}</option>
-              <option value="promo">{t('🎉 Promoção')}</option>
-              <option value="alerta">{t('⚠️ Alerta')}</option>
-            </select>
-          </label>
-        </div>
-        {cfg.announcement.text && <div className={`announce announce-${cfg.announcement.kind}`}>{cfg.announcement.text}</div>}
-      </div>
-
-      <div className="card cfg-section">
-        <h3>{t('🎁 Modo MVP (crédito de teste)')}</h3>
-        <label className="check">
-          <input type="checkbox" checked={cfg.mvp.on} onChange={(e) => set('mvp', { on: e.target.checked })} /> {t('Ligado — cada conta recebe o crédito uma única vez (no cadastro ou no próximo acesso) e pode gastar na loja sem pagar')}
-        </label>
-        <NumField label={t('Crédito por conta (R$)')} step={10} value={cfg.mvp.creditCents / 100} onChange={(v) => set('mvp', { creditCents: Math.round(v * 100) })} />
-        <p className="tiny muted">{t('Compras com crédito não contam como receita. Mudar o valor vale só para quem ainda não recebeu.')}</p>
-      </div>
-
-      <div className={`card cfg-section ${cfg.maintenance.on ? 'danger-box' : ''}`}>
-        <h3>{t('🚧 Modo manutenção')}</h3>
-        <label className="check">
-          <input type="checkbox" checked={cfg.maintenance.on} onChange={(e) => set('maintenance', { on: e.target.checked })} /> {t('Ligado — jogadores veem a mensagem abaixo e não conseguem jogar nem comprar (administradores continuam entrando)')}
-        </label>
-        <label className="field">
-          <span>{t('Mensagem')}</span>
-          <input value={cfg.maintenance.message} maxLength={200} onChange={(e) => set('maintenance', { message: e.target.value })} />
-        </label>
-      </div>
-
-      <div className="card cfg-section">
-        <h3>{t('💎 Produtos e preços')}</h3>
-        <table className="table">
-          <thead>
-            <tr>
-              <th>{t('Produto')}</th>
-              <th>{t('Preço (R$)')}</th>
-              <th>{t('Ovos')}</th>
-              <th>{t('Bônus')}</th>
-              <th>{t('À venda')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {CATALOG.map((s) => {
-              const o = cfg.catalog[s.id]
-              const changed = JSON.stringify(o) !== JSON.stringify(defaults.catalog[s.id])
-              return (
-                <tr key={s.id} className={o.active ? '' : 'muted'}>
-                  <td>
-                    {s.emoji} {s.name} {changed && <span className="tiny pos">· {t('alterado')}</span>}
-                  </td>
-                  <td>
-                    <input className="cfg-num" type="number" step="0.01" value={(o.priceCents / 100).toFixed(2)} onChange={(e) => setSku(s.id, { priceCents: Math.round(Number(e.target.value) * 100) })} />
-                  </td>
-                  <td>{o.ovos !== undefined ? <input className="cfg-num" type="number" value={o.ovos} onChange={(e) => setSku(s.id, { ovos: Number(e.target.value) })} /> : '—'}</td>
-                  <td>{o.bonus !== undefined ? <input className="cfg-num" type="number" value={o.bonus} onChange={(e) => setSku(s.id, { bonus: Number(e.target.value) })} /> : '—'}</td>
-                  <td>
-                    <input type="checkbox" checked={o.active} onChange={(e) => setSku(s.id, { active: e.target.checked })} />
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-      </div>
-
-      <div className="admin-two">
-        <div className="card cfg-section">
-          <h3>{t('🎁 Ovos grátis')}</h3>
-          <div className="cfg-grid">
-            <NumField label={t('Bônus diário (dias 1 a 6)')} value={cfg.rewards.dailyOvos} onChange={(v) => set('rewards', { dailyOvos: v })} />
-            <NumField label={t('Bônus do 7º dia')} value={cfg.rewards.day7Ovos} onChange={(v) => set('rewards', { day7Ovos: v })} />
-            <NumField label={t('Vitória difícil na Arena')} value={cfg.rewards.arenaHardWinOvos} onChange={(v) => set('rewards', { arenaHardWinOvos: v })} />
-            <NumField label={t('Multiplicador das missões')} step={0.1} value={cfg.rewards.missionOvosMultiplier} onChange={(v) => set('rewards', { missionOvosMultiplier: v })} hint={t('1 = normal, 2 = dobro (vale para as missões do dia seguinte)')} />
-          </div>
-        </div>
-        <div className="card cfg-section">
-          <h3>{t('🤝 Desafios entre jogadores')}</h3>
-          <div className="cfg-grid">
-            <NumField label={t('Desafios com prêmio por dia')} value={cfg.pvp.dailyRewards} onChange={(v) => set('pvp', { dailyRewards: v })} />
-            <NumField label={t('Tempo para aceitar (segundos)')} value={cfg.pvp.challengeTtlSec} onChange={(v) => set('pvp', { challengeTtlSec: v })} />
-            <NumField label={t('Taxa do desafio (%)')} value={cfg.pvp.feePct} onChange={(v) => set('pvp', { feePct: v })} />
-            <NumField label={t('Aposta mínima do desafio (milho)')} value={cfg.pvp.minStake} onChange={(v) => set('pvp', { minStake: v })} />
-            <NumField label={t('Aposta máxima do desafio (milho)')} value={cfg.pvp.maxStake} onChange={(v) => set('pvp', { maxStake: v })} />
-          </div>
-          <h3>{t('🎲 Agenda de apostas')}</h3>
-          <div className="cfg-grid">
-            <NumField label={t('Uma luta a cada (minutos)')} value={cfg.bets.intervalMin} onChange={(v) => set('bets', { intervalMin: v })} hint={t('Vale para as lutas que ainda vão ser criadas')} />
-            <NumField label={t('Apostas fecham antes (segundos)')} value={cfg.bets.closeSec} onChange={(v) => set('bets', { closeSec: v })} />
-            <NumField label={t('Agenda à frente (minutos)')} step={30} value={cfg.bets.horizonMin} onChange={(v) => set('bets', { horizonMin: v })} />
-            <NumField label={t('Tempo AO VIVO (segundos)')} value={cfg.bets.liveSec} onChange={(v) => set('bets', { liveSec: v })} />
-            <NumField label={t('Aposta mínima (fichas)')} value={cfg.bets.minBet} onChange={(v) => set('bets', { minBet: v })} />
-            <NumField label={t('Aposta máxima (fichas)')} step={1000} value={cfg.bets.maxBet} onChange={(v) => set('bets', { maxBet: v })} />
-            <NumField label={t('Fichas iniciais')} step={100} value={cfg.bets.chipsStart} onChange={(v) => set('bets', { chipsStart: v })} hint={t('Só para quem ainda não tem fichas')} />
-            <NumField label={t('Fichas do bônus diário')} step={50} value={cfg.bets.chipsDaily} onChange={(v) => set('bets', { chipsDaily: v })} />
-            <NumField label={t('Fichas por vitória na Arena')} value={cfg.bets.chipsArenaWin} onChange={(v) => set('bets', { chipsArenaWin: v })} />
-            <NumField label={t('Piso de fichas no bônus diário')} step={50} value={cfg.bets.chipsFloor} onChange={(v) => set('bets', { chipsFloor: v })} hint={t('O bônus diário completa até esse valor')} />
-          </div>
-          <h3>{t('💵 Depósito USDC → ovos')}</h3>
-          <div className="cfg-grid">
-            <NumField label={t('Ovos por 1 USDC (depósito)')} value={cfg.deposit.eggsPerUsdc} onChange={(v) => set('deposit', { eggsPerUsdc: v })} hint={t('Só ida: ovos não voltam a ser USDC')} />
-            <NumField label={t('Depósito mínimo (USDC)')} value={cfg.deposit.minUsdc} onChange={(v) => set('deposit', { minUsdc: v })} />
-            <NumField label={t('Limite diário de depósito (USDC)')} step={50} value={cfg.deposit.dailyCapUsdc} onChange={(v) => set('deposit', { dailyCapUsdc: v })} hint={t('Por jogador, por dia')} />
-          </div>
-          <h3>{t('🎁 Drops da Arena')}</h3>
-          <label className="check">
-            <input type="checkbox" checked={cfg.drops.on !== false} onChange={(e) => set('drops', { on: e.target.checked })} /> {t('Drops ligados (prêmio raro grátis nas vitórias da Arena)')}
-          </label>
-          <div className="cfg-grid">
-            <NumField label={t('Chance de drop: Fácil (%)')} step={0.5} value={cfg.drops.chanceFacil} onChange={(v) => set('drops', { chanceFacil: v })} />
-            <NumField label={t('Chance de drop: Médio (%)')} step={0.5} value={cfg.drops.chanceMedio} onChange={(v) => set('drops', { chanceMedio: v })} />
-            <NumField label={t('Chance de drop: Difícil (%)')} step={0.5} value={cfg.drops.chanceDificil} onChange={(v) => set('drops', { chanceDificil: v })} />
-            <NumField label={t('Chance de drop: Chefão (%)')} step={0.5} value={cfg.drops.chanceChefao} onChange={(v) => set('drops', { chanceChefao: v })} />
-            <NumField label={t('Drop comum (%)')} step={0.5} value={cfg.drops.tierComum} onChange={(v) => set('drops', { tierComum: v })} hint={t('Ferramentas comuns/raras')} />
-            <NumField label={t('Drop raro (%)')} step={0.5} value={cfg.drops.tierRaro} onChange={(v) => set('drops', { tierRaro: v })} hint={t('Ferramentas raras ou skin rara')} />
-            <NumField label={t('Drop épico (%)')} step={0.5} value={cfg.drops.tierEpico} onChange={(v) => set('drops', { tierEpico: v })} hint={t('Skin épica numerada (vira NFT)')} />
-            <NumField label={t('Drop lendário (%)')} step={0.1} value={cfg.drops.tierLendario} onChange={(v) => set('drops', { tierLendario: v })} hint={t('Galo lendário numerado (vira NFT)')} />
-            <NumField label={t('Drop garantido após (vitórias)')} value={cfg.drops.pity} onChange={(v) => set('drops', { pity: v })} hint={t('Vitórias seguidas sem drop; a seguinte dá drop com certeza')} />
-            <NumField label={t('Máximo de drops por dia')} value={cfg.drops.dailyCap} onChange={(v) => set('drops', { dailyCap: v })} hint={t('Por jogador (dia UTC)')} />
-            <NumField label={t('Tiragem máxima por item (0 = sem limite)')} step={50} value={cfg.drops.supplyCap} onChange={(v) => set('drops', { supplyCap: v })} hint={t('Cada skin épica / galo lendário')} />
-          </div>
-          {(() => {
-            const sum = cfg.drops.tierComum + cfg.drops.tierRaro + cfg.drops.tierEpico + cfg.drops.tierLendario
-            return Math.abs(sum - 100) > 0.01 ? <p className="tiny neg">{t('⚠️ Os tiers somam {n}%: precisam somar 100% para salvar.', { n: Math.round(sum * 100) / 100 })}</p> : null
-          })()}
-          <h3>{t('🛡️ Economia e segurança')}</h3>
-          <div className="cfg-grid">
-            <NumField label={t('Ovos grátis máximos por dia')} value={cfg.economy.freeOvosPerDay} onChange={(v) => set('economy', { freeOvosPerDay: v })} hint={t('Acima disso o servidor recusa o progresso (anti-trapaça)')} />
-            <NumField label={t('Milho ganho por dia (limite)')} step={100000} value={cfg.economy.freeMilhoPerDay} onChange={(v) => set('economy', { freeMilhoPerDay: v })} hint={t('Acima disso o servidor recusa o progresso')} />
-            <NumField label={t('Limite de gasto padrão (R$)')} step={10} value={cfg.economy.defaultSpendLimitCents / 100} onChange={(v) => set('economy', { defaultSpendLimitCents: Math.round(v * 100) })} hint={t('Vale para contas novas')} />
-          </div>
-          <label className="check">
-            <input type="checkbox" checked={cfg.economy.serverAuthoritative !== false} onChange={(e) => set('economy', { serverAuthoritative: e.target.checked })} /> {t('🌽 Economia no servidor — Arena, bônus, missões, liga, treino e comida rodam no servidor e o save do navegador não pode aumentar milho, ovos ou XP (desligue só se algo quebrar)')}
-          </label>
-        </div>
-      </div>
-      <div className="center">
-        <button
-          className="btn btn-sm btn-ghost"
-          onClick={() => {
-            setCfg(defaults)
-            toast(t('Valores padrão carregados. Clique em Salvar para aplicar.'), 'info')
-          }}
-        >
-          {t('↺ Restaurar todos os padrões')}
-        </button>
-      </div>
+      )}
     </>
   )
 }
 
-function NumField({ label, value, onChange, step = 1, hint }: { label: string; value: number; onChange: (v: number) => void; step?: number; hint?: string }) {
+/** Campo numérico da configuração: unidade dentro da caixa, padrão embaixo e destaque quando muda. */
+function CfgNum({ label, value, def, changed, unit, step = 1, hint, onChange }: { label: string; value: number; def: number; changed: boolean; unit?: string; step?: number; hint?: string; onChange: (v: number) => void }) {
+  const fmtN = (n: number) => n.toLocaleString(locale(), { maximumFractionDigits: 2 })
   return (
-    <label className="field">
-      <span>{label}</span>
-      <input type="number" step={step} value={value} onChange={(e) => onChange(Number(e.target.value))} />
-      {hint && <small className="tiny muted">{hint}</small>}
+    <label className={`cfg-field ${changed ? 'changed' : ''}`}>
+      <span className="cfg-label">{label}</span>
+      <span className="cfg-input">
+        <input type="number" step={step} value={value} onChange={(e) => onChange(Number(e.target.value))} />
+        {unit && <i>{unit}</i>}
+      </span>
+      <small className="tiny muted">
+        {value !== def ? (
+          <>
+            {t('Padrão: {v}', { v: fmtN(def) })}{' '}
+            <button
+              type="button"
+              className="link-btn"
+              onClick={(e) => {
+                e.preventDefault()
+                onChange(def)
+              }}
+            >
+              {t('↺ voltar')}
+            </button>
+          </>
+        ) : (
+          t('Padrão')
+        )}
+        {hint && <> · {hint}</>}
+      </small>
+    </label>
+  )
+}
+
+function CfgSwitch({ on, onChange, label }: { on: boolean; onChange: (v: boolean) => void; label: string }) {
+  return (
+    <label className={`cfg-switch ${on ? 'on' : ''}`}>
+      <input type="checkbox" checked={on} onChange={(e) => onChange(e.target.checked)} />
+      <span className="cfg-knob" aria-hidden />
+      <span>
+        <b>{on ? t('Ligado') : t('Desligado')}</b> <span className="tiny muted">{label}</span>
+      </span>
     </label>
   )
 }
