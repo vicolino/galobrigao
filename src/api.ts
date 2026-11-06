@@ -337,6 +337,9 @@ export interface AdminActivity {
     fightsAll: number
     arenaAll: number
     pvpAll: number
+    fightsAllTime: number
+    arenaAllTime: number
+    pvpAllTime: number
     betsToday: number
     bets7: number
     dropsToday: number

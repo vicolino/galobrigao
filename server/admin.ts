@@ -185,6 +185,9 @@ function activity(days: number) {
   // Drops raros
   for (const d of db().prepare('SELECT created_at FROM drops WHERE created_at >= ?').all(start) as { created_at: number }[]) put(dayKey(d.created_at), 'drops')
 
+  // Total de lutas desde o começo: Arena (acumulado em stats.fights de cada conta) + PvP (desafios aceitos).
+  const arenaAllTime = (db().prepare("SELECT COALESCE(SUM(json_extract(data, '$.stats.fights')), 0) AS n FROM saves").get() as { n: number }).n
+  const pvpAllTime = (db().prepare("SELECT COUNT(*) AS n FROM challenges WHERE status = 'aceito'").get() as { n: number }).n
   const online = (db().prepare('SELECT COUNT(*) AS n FROM presence WHERE last_seen > ?').get(now - 45_000) as { n: number }).n
   const totalUsers = (db().prepare('SELECT COUNT(*) AS n FROM users').get() as { n: number }).n
   const mau = (db().prepare('SELECT COUNT(DISTINCT user_id) AS n FROM activity WHERE day >= ?').get(dayKey(todayStart - 29 * DAY)) as { n: number }).n
@@ -211,6 +214,9 @@ function activity(days: number) {
       fightsAll: sum('arena') + sum('pvp'),
       arenaAll: sum('arena'),
       pvpAll: sum('pvp'),
+      fightsAllTime: arenaAllTime + pvpAllTime,
+      arenaAllTime,
+      pvpAllTime,
       betsToday: today.bets,
       bets7: sum7('bets'),
       dropsToday: today.drops,

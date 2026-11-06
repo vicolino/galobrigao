@@ -274,7 +274,7 @@ function Activity() {
             <Kpi label={t('Jogaram na semana')} value={n(d.kpis.wau)} />
             <Kpi label={t('Jogaram no mês')} value={n(d.kpis.mau)} />
             <Kpi label={t('Lutas hoje')} value={n(d.kpis.fightsToday)} hint={t('Arena + desafios entre jogadores')} />
-            <Kpi label={t('Lutas ({n} dias)', { n: days })} value={n(d.kpis.fightsAll)} />
+            <Kpi label={t('Lutas no total (desde o começo)')} value={n(d.kpis.fightsAllTime)} hint={t('Todas as lutas de Arena ({a}) + desafios ({p}) já disputadas. A Arena vem do acumulado de cada conta.', { a: n(d.kpis.arenaAllTime), p: n(d.kpis.pvpAllTime) })} />
             <Kpi label={t('Novas contas hoje')} value={n(d.kpis.signupsToday)} />
             <Kpi label={t('Novas contas ({n} dias)', { n: days })} value={n(d.kpis.signupsAll)} />
           </div>

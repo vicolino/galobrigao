@@ -70,6 +70,8 @@ const en: Record<string, string> = {
   'Lutas hoje': 'Fights today',
   'Arena + desafios entre jogadores': 'Arena + player challenges',
   'Lutas ({n} dias)': 'Fights ({n} days)',
+  'Lutas no total (desde o começo)': 'Total fights (all time)',
+  'Todas as lutas de Arena ({a}) + desafios ({p}) já disputadas. A Arena vem do acumulado de cada conta.': 'All Arena fights ({a}) + challenges ({p}) ever played. Arena comes from each account’s lifetime total.',
   'Novas contas hoje': 'New accounts today',
   'Lutas por dia (Arena + desafios)': 'Fights per day (Arena + challenges)',
   'Apostas por dia': 'Bets per day',
