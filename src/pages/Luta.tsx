@@ -378,7 +378,7 @@ export function Luta() {
               </p>
               {match.rewards && (
                 <div className="rewards">
-                  <span>🌽 +{fmt(match.rewards.milho)}</span>
+                  {(match.kind !== 'pvp' || match.rewards.milho !== 0) && <span className={match.rewards.milho < 0 ? 'neg' : ''}>🌽 {match.rewards.milho < 0 ? '−' : '+'}{fmt(Math.abs(match.rewards.milho))}</span>}
                   {match.rewards.ovo > 0 && <span>🥚 +{match.rewards.ovo}</span>}
                   {(match.rewards.fichas ?? 0) > 0 && <span title={t('Fichas são só para apostar: você ganha jogando, não dá para comprar nem trocar.')}>🎟️ +{fmt(match.rewards.fichas!)}</span>}
                   <span>✨ +{match.rewards.xp} XP</span>

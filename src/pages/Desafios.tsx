@@ -3,8 +3,8 @@ import { api } from '../api'
 import { RoosterSvg } from '../components/RoosterSvg'
 import { Empty, Modal, PageHead, RoosterCard, go } from '../components/ui'
 import { BREED_BY_ID, LEAGUE_TIERS } from '../game/data'
-import { PVP_ENERGY, type ChallengeView, type LobbyPlayer, type LobbyRooster } from '../game/pvp'
-import { currentEnergy } from '../game/rooster'
+import { PVP_ENERGY, pvpFeePct, stakeLimits, stakePrize, type ChallengeView, type LobbyPlayer, type LobbyRooster } from '../game/pvp'
+import { currentEnergy, fmt } from '../game/rooster'
 import { sfx } from '../game/sound'
 import { useGame } from '../game/store'
 import { t, tn, tp, tx } from '../i18n'
@@ -30,6 +30,9 @@ export function Desafios() {
   const [history, setHistory] = useState<ChallengeView[]>([])
   const [openId, setOpenId] = useState<string | null>(null)
   const [q, setQ] = useState('')
+  const lim = stakeLimits()
+  const [stake, setStake] = useState(() => Math.min(Math.max(lim.min, 500), lim.max))
+  const stakeOk = stake >= lim.min && stake <= lim.max && stake <= s.milho
   const outgoing = pvp?.outgoing ?? null
   const left = useCountdown(outgoing?.expiresAt)
 
@@ -62,7 +65,7 @@ export function Desafios() {
   const open = shown.find((p) => p.userId === openId) ?? null
 
   const challenge = async (p: LobbyPlayer, ro: LobbyRooster) => {
-    const r = await actions.pvpChallenge(mine.id, p.userId, ro.id)
+    const r = await actions.pvpChallenge(mine.id, p.userId, ro.id, stake)
     if (r.ok) toast(t('Desafio enviado para {nome}! Esperando resposta...', { nome: p.name }), 'ok')
     else toast(tx(r.error), 'erro')
   }
@@ -91,6 +94,7 @@ export function Desafios() {
             <div className="tiny muted">
               {t('{a} (Nv {na}) x {b} (Nv {nb}) · expira em {s}s', { a: outgoing.a.name, na: outgoing.a.level, b: outgoing.b.name, nb: outgoing.b.level, s: left })}
             </div>
+            {outgoing.stake > 0 && <div className="tiny stake-line">{t('💰 Valendo 🌽 {n} de cada um', { n: fmt(outgoing.stake) })}</div>}
           </div>
           <button className="btn btn-sm" onClick={() => actions.pvpCancel(outgoing.id)}>
             {t('Cancelar')}
@@ -112,9 +116,28 @@ export function Desafios() {
         </div>
       )}
 
+      <h2 className="section-title">{t('2. Quanto vale a luta')}</h2>
+      <div className="card stake-card">
+        <div className="row gap wrap stake-row">
+          {[100, 500, 1000, 5000, 10000]
+            .filter((v) => v >= lim.min && v <= lim.max)
+            .map((v) => (
+              <button key={v} className={`btn btn-sm ${stake === v ? 'btn-primary' : ''}`} onClick={() => setStake(v)}>
+                🌽 {fmt(v)}
+              </button>
+            ))}
+          <input className="input stake-input" type="number" min={lim.min} max={Math.min(lim.max, s.milho)} value={stake} onChange={(e) => setStake(Math.floor(Number(e.target.value) || 0))} />
+        </div>
+        <p className="tiny">
+          {tn('Cada um bota {v}. Quem vencer leva {p} (taxa de {f}% do sistema). Quem perder, perde a aposta.', { v: <b>🌽 {fmt(stake)}</b>, p: <b className="pos">🌽 {fmt(stakePrize(stake))}</b>, f: pvpFeePct() })}
+        </p>
+        {stake > s.milho && <p className="tiny neg">{t('Você só tem 🌽 {n}.', { n: fmt(s.milho) })}</p>}
+        {(stake < lim.min || stake > lim.max) && <p className="tiny neg">{t('A aposta tem que ser entre 🌽 {min} e 🌽 {max}.', { min: fmt(lim.min), max: fmt(lim.max) })}</p>}
+      </div>
+
       <div className="row-between lobby-head">
         <h2 className="section-title">
-          {t('2. Jogadores online')} <span className="count-badge">{players.length}</span>
+          {t('3. Jogadores online')} <span className="count-badge">{players.length}</span>
         </h2>
         <input className="input lobby-search" placeholder={t('Buscar jogador...')} value={q} onChange={(e) => setQ(e.target.value)} />
       </div>
@@ -189,7 +212,7 @@ export function Desafios() {
                             <span className={`lvl-diff ${diff === 0 ? 'same' : diff > 0 ? 'up' : 'down'}`}>{diff === 0 ? t('Mesmo nível') : diff > 0 ? tp('{d} nível acima', '{d} níveis acima', diff, { d: `+${diff}` }) : tp('{d} nível abaixo', '{d} níveis abaixo', -diff, { d: diff })}</span>
                           </div>
                         </div>
-                        <button className="btn btn-primary btn-sm" disabled={!!outgoing || lowEnergy || !!why} title={why ?? undefined} onClick={() => challenge(open, ro)}>
+                        <button className="btn btn-primary btn-sm" disabled={!!outgoing || lowEnergy || !!why || !stakeOk} title={why ?? undefined} onClick={() => challenge(open, ro)}>
                           {why ?? t('🤝 Desafiar')}
                         </button>
                       </div>
@@ -220,7 +243,10 @@ export function Desafios() {
                         <b>{me.name}</b> x {them.name} <span className="tiny muted">({h.mine === 'from' ? h.toName : h.fromName})</span>
                       </td>
                       <td className="tiny">{h.result?.method === 'ko' ? 'K.O.' : t('Decisão')}</td>
-                      <td className={`right ${won ? 'pos' : 'neg'}`}>🌽 +{h.result?.rewards.milho ?? 0}</td>
+                      <td className={`right ${won ? 'pos' : 'neg'}`}>{(() => {
+                        const m = h.result?.rewards.milho ?? 0
+                        return `🌽 ${m < 0 ? '−' : '+'}${fmt(Math.abs(m))}`
+                      })()}</td>
                       <td className="right">
                         <button
                           className="btn btn-sm"
@@ -246,7 +272,7 @@ export function Desafios() {
 
 /** Aviso de desafio recebido: aparece em qualquer tela do jogo. */
 export function ChallengeAlert() {
-  const { pvp, actions, toast } = useGame()
+  const { pvp, actions, toast, state } = useGame()
   const c = pvp?.incoming[0] ?? null
   const left = useCountdown(c?.expiresAt)
   const [busy, setBusy] = useState(false)
@@ -261,6 +287,8 @@ export function ChallengeAlert() {
 
   // Quem desafia é o lado A; o meu galo é o B
   const gap = c ? c.a.level - c.b.level : 0
+  const myMilho = state?.milho ?? 0
+  const noMoney = !!c && c.stake > myMilho
 
   if (!c || left <= 0) return null
 
@@ -303,7 +331,14 @@ export function ChallengeAlert() {
               ? tp('⚠️ O galo dele é {d} nível acima do seu', '⚠️ O galo dele é {d} níveis acima do seu', gap, { d: gap })
               : tp('💪 O galo dele é {d} nível abaixo do seu', '💪 O galo dele é {d} níveis abaixo do seu', -gap, { d: -gap })}
         </p>
-        <p className="tiny muted">{t('Gasta {n} de energia. Quem vencer leva milho, XP e pontos de liga.', { n: PVP_ENERGY })}</p>
+        {c.stake > 0 && (
+          <div className="stake-box">
+            <b>{t('💰 Valendo 🌽 {n} de cada um', { n: fmt(c.stake) })}</b>
+            <span className="tiny">{t('Quem vencer leva 🌽 {p} (taxa de {f}%). Quem perder, perde 🌽 {n}.', { p: fmt(stakePrize(c.stake)), f: pvpFeePct(), n: fmt(c.stake) })}</span>
+            {noMoney && <span className="tiny neg">{t('Você só tem 🌽 {n}: não dá para aceitar.', { n: fmt(myMilho) })}</span>}
+          </div>
+        )}
+        <p className="tiny muted">{t('Gasta {n} de energia. Quem vencer também ganha XP e pontos de liga.', { n: PVP_ENERGY })}</p>
         <div className="timer-bar">
           <div style={{ width: `${Math.min(100, (left / Math.max(1, Math.round((c.expiresAt - c.createdAt) / 1000))) * 100)}%` }} />
         </div>
@@ -312,7 +347,7 @@ export function ChallengeAlert() {
           <button className="btn" disabled={busy} onClick={() => respond(false)}>
             {t('Recusar')}
           </button>
-          <button className="btn btn-primary btn-lg" disabled={busy} onClick={() => respond(true)}>
+          <button className="btn btn-primary btn-lg" disabled={busy || noMoney} onClick={() => respond(true)}>
             {t('⚔️ Aceitar desafio')}
           </button>
         </div>

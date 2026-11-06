@@ -1015,6 +1015,9 @@ function Config() {
           <div className="cfg-grid">
             <NumField label={t('Desafios com prêmio por dia')} value={cfg.pvp.dailyRewards} onChange={(v) => set('pvp', { dailyRewards: v })} />
             <NumField label={t('Tempo para aceitar (segundos)')} value={cfg.pvp.challengeTtlSec} onChange={(v) => set('pvp', { challengeTtlSec: v })} />
+            <NumField label={t('Taxa do desafio (%)')} value={cfg.pvp.feePct} onChange={(v) => set('pvp', { feePct: v })} />
+            <NumField label={t('Aposta mínima do desafio (milho)')} value={cfg.pvp.minStake} onChange={(v) => set('pvp', { minStake: v })} />
+            <NumField label={t('Aposta máxima do desafio (milho)')} value={cfg.pvp.maxStake} onChange={(v) => set('pvp', { maxStake: v })} />
           </div>
           <h3>{t('🎲 Agenda de apostas')}</h3>
           <div className="cfg-grid">

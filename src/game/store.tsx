@@ -626,10 +626,10 @@ async function shop<T = unknown>(op: ShopOp, sound?: () => void): Promise<Result
     },
 
     // ----- Desafios entre jogadores -----
-    async pvpChallenge(roosterId: string, toUserId: string, toRoosterId: string): Promise<Result> {
+    async pvpChallenge(roosterId: string, toUserId: string, toRoosterId: string, stake: number): Promise<Result> {
       try {
         await flush()
-        await api.pvpChallenge(roosterId, toUserId, toRoosterId)
+        await api.pvpChallenge(roosterId, toUserId, toRoosterId, stake)
         setPvp(await api.pvpPoll())
         sfx.bell()
         return { ok: true }

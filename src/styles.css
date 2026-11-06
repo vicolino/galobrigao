@@ -1453,3 +1453,11 @@ tr.muted td { opacity: 0.55; }
   .lobby-ro .btn { width: 100%; }
 }
 .declined-them { opacity: 0.6; filter: grayscale(0.4); }
+
+/* ---------- Desafio valendo milho ---------- */
+.stake-card { display: flex; flex-direction: column; gap: 8px; }
+.stake-row { align-items: center; }
+.stake-input { width: 130px; }
+.stake-line { color: var(--gold); font-weight: 800; margin-top: 2px; }
+.stake-box { display: flex; flex-direction: column; gap: 3px; padding: 10px 12px; border-radius: 12px; background: rgba(255, 198, 64, 0.1); border: 1px solid rgba(255, 198, 64, 0.45); margin: 8px 0; }
+.stake-box b { color: var(--gold); font-size: 16px; }

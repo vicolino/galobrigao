@@ -239,6 +239,22 @@ const en: Record<string, string> = {
   '{nome} recusou seu desafio.': '{nome} declined your challenge.',
   'Nenhuma energia foi gasta. Escolha outro adversário e tente de novo.': 'No energy was spent. Pick another opponent and try again.',
   '🤝 Desafiar outro': '🤝 Challenge someone else',
+  '💰 Valendo 🌽 {n} de cada um': '💰 Worth 🌽 {n} from each player',
+  '2. Quanto vale a luta': "2. What's the fight worth",
+  '3. Jogadores online': '3. Players online',
+  'A aposta tem que ser entre 🌽 {min} e 🌽 {max}.': 'The stake must be between 🌽 {min} and 🌽 {max}.',
+  'Aposta máxima do desafio (milho)': 'Max challenge stake (corn)',
+  'Aposta mínima do desafio (milho)': 'Min challenge stake (corn)',
+  'Cada um bota {v}. Quem vencer leva {p} (taxa de {f}% do sistema). Quem perder, perde a aposta.': 'Each player puts in {v}. The winner takes {p} ({f}% system fee). The loser loses the stake.',
+  'Esse jogador não tem milho suficiente para essa aposta. Tente um valor menor.': "That player doesn't have enough corn for this stake. Try a smaller amount.",
+  'Gasta {n} de energia. Quem vencer também ganha XP e pontos de liga.': 'Costs {n} energy. The winner also gets XP and league points.',
+  'Quem desafiou não tem mais o milho da aposta.': 'The challenger no longer has the corn for the stake.',
+  'Quem vencer leva 🌽 {p} (taxa de {f}%). Quem perder, perde 🌽 {n}.': 'The winner takes 🌽 {p} ({f}% fee). The loser loses 🌽 {n}.',
+  'Taxa do desafio (%)': 'Challenge fee (%)',
+  'Você não tem 🌽 {n} de milho para aceitar.': "You don't have 🌽 {n} corn to accept.",
+  'Você não tem 🌽 {n} de milho para essa aposta.': "You don't have 🌽 {n} corn for this stake.",
+  'Você só tem 🌽 {n}.': 'You only have 🌽 {n}.',
+  'Você só tem 🌽 {n}: não dá para aceitar.': "You only have 🌽 {n}: you can't accept.",
 }
 
 export default en
