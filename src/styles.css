@@ -1213,3 +1213,113 @@ tr.muted td { opacity: 0.55; }
 .wb-delta.neg { color: #ff6b6b; }
 .wb-delta.pos { color: var(--green); }
 @keyframes wbIn { 0% { opacity: 0; transform: translateY(6px); } 15% { opacity: 1; transform: none; } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(-6px); } }
+
+/* ---------- Animações de cada ferramenta na luta ---------- */
+.ro-fx { --gc: #ffc640; }
+.ro-fx[class*='fx-'] { animation: roGlow var(--fxd) ease both; }
+.ro-fx.fx-energetico { --gc: #ff7a1a; animation-name: roGlow, roJitter; }
+.ro-fx.fx-escudo { --gc: #6fd3ff; }
+.ro-fx.fx-apito { --gc: #8ff0ff; }
+.ro-fx.fx-curativo { --gc: #5cff8a; }
+.ro-fx.fx-espelho { --gc: #d9b8ff; animation-name: roGlow, roSway; }
+.ro-fx.fx-pimenta { --gc: #ff3b1f; animation-name: roGlow, roJitter; }
+.ro-fx.fx-amuleto { --gc: #3d8bff; }
+.ro-fx.fx-banda { --gc: #ffd84a; animation-name: roGlow, roBounce; }
+.ro-fx.fx-fenix { --gc: #ffb020; animation-name: roGlow, roRise; }
+@keyframes roGlow { 20%, 65% { filter: drop-shadow(0 0 10px var(--gc)) drop-shadow(0 0 22px var(--gc)) brightness(1.15) saturate(1.2); } }
+@keyframes roJitter { 10%, 30%, 50% { transform: translateX(-2px) rotate(-1deg); } 20%, 40%, 60% { transform: translateX(2px) rotate(1deg); } }
+@keyframes roSway { 25% { transform: translateX(-10%) skewX(-6deg); opacity: 0.55; } 50% { transform: translateX(8%) skewX(5deg); opacity: 0.7; } }
+@keyframes roBounce { 20%, 60% { transform: translateY(-6%) scale(1.03); } 40%, 80% { transform: none; } }
+@keyframes roRise { 0% { transform: translateY(12%) scale(0.9); } 45% { transform: translateY(-8%) scale(1.08); } }
+
+.tfx { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
+.tfx > * { position: absolute; display: block; font-style: normal; line-height: 1; animation-duration: var(--fxd); animation-timing-function: ease-out; animation-fill-mode: both; }
+
+/* 🥤 Energético: raios saindo do galo + latinha */
+.tfx-spark { left: 50%; top: 52%; font-size: clamp(14px, 2.4vw, 24px); animation-name: tfxSpark; filter: drop-shadow(0 0 6px #ffb020); }
+@keyframes tfxSpark { 0% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--a)) translateY(0) scale(0.3); } 25% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--a)) translateY(-150%) translateY(-60px) scale(1.1); } }
+.tfx-can { left: 50%; top: 4%; font-size: clamp(26px, 4.5vw, 46px); animation-name: tfxCan; }
+@keyframes tfxCan { 0% { opacity: 0; transform: translate(-50%, 30px) scale(0.4); } 25% { opacity: 1; transform: translate(-50%, 0) scale(1.2) rotate(-10deg); } 55% { transform: translate(-50%, 0) rotate(-120deg); } 85% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -20px) rotate(-120deg) scale(0.8); } }
+
+/* 🛡️ Escudo: bolha de proteção no lado do adversário */
+.tfx-shield { top: 12%; bottom: 6%; width: 38%; border-radius: 50%; border: 3px solid rgba(140, 220, 255, 0.95); background: radial-gradient(ellipse at 30% 50%, rgba(140, 220, 255, 0.05), rgba(110, 200, 255, 0.4) 70%, rgba(200, 240, 255, 0.7)); box-shadow: 0 0 20px rgba(110, 200, 255, 0.8), inset 0 0 18px rgba(200, 240, 255, 0.6); display: flex; align-items: center; justify-content: center; font-size: clamp(22px, 4vw, 40px); animation-name: tfxShield; }
+.tfx.side-0 .tfx-shield { right: -12%; }
+.tfx.side-1 .tfx-shield { left: -12%; }
+@keyframes tfxShield { 0% { opacity: 0; transform: scaleX(0.1) scaleY(0.6); } 20% { opacity: 1; transform: scale(1.08); } 35% { transform: scale(0.96); } 70% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1.15); } }
+.tfx-ripple { top: 30%; width: 30%; aspect-ratio: 1; border-radius: 50%; border: 3px solid #bfeaff; animation-name: tfxRipple; animation-delay: calc(var(--fxd) * 0.2); }
+.tfx.side-0 .tfx-ripple { right: -6%; }
+.tfx.side-1 .tfx-ripple { left: -6%; }
+@keyframes tfxRipple { 0% { opacity: 0.9; transform: scale(0.3); } 100% { opacity: 0; transform: scale(2.4); } }
+
+/* 📯 Apito: corneta, ondas de som e sopro de fôlego */
+.tfx-horn { top: 2%; font-size: clamp(22px, 4vw, 40px); animation-name: tfxHorn; }
+.tfx.side-0 .tfx-horn { left: -6%; }
+.tfx.side-1 .tfx-horn { right: -6%; transform: scaleX(-1); }
+@keyframes tfxHorn { 0% { opacity: 0; scale: 0.4; } 15% { opacity: 1; scale: 1.2; } 25%, 45%, 65% { rotate: -10deg; } 35%, 55% { rotate: 10deg; } 85% { opacity: 1; } 100% { opacity: 0; } }
+.tfx-wave { top: 2%; width: 26%; aspect-ratio: 1; border-radius: 50%; border: 3px solid transparent; border-right-color: #9ff3ff; animation-name: tfxWave; }
+.tfx.side-0 .tfx-wave { left: 4%; }
+.tfx.side-1 .tfx-wave { right: 4%; rotate: 180deg; }
+@keyframes tfxWave { 0% { opacity: 0; transform: scale(0.3); } 30% { opacity: 1; } 100% { opacity: 0; transform: scale(2.2); } }
+.tfx-puff { top: calc(30% + var(--i) * 10%); font-size: clamp(14px, 2.4vw, 24px); animation-name: tfxPuff; }
+.tfx.side-0 .tfx-puff { left: -10%; }
+.tfx.side-1 .tfx-puff { right: -10%; --dir: -1; }
+@keyframes tfxPuff { 0% { opacity: 0; transform: translateX(0) scaleX(var(--dir, 1)); } 30% { opacity: 1; } 100% { opacity: 0; transform: translateX(calc(var(--dir, 1) * 80px)) scaleX(var(--dir, 1)) scale(1.4); } }
+
+/* 🩹 Curativo: cruzes verdes subindo e o band-aid colando */
+.tfx-cross { left: var(--x); bottom: 8%; color: #5cff8a; font-weight: 900; font-size: clamp(16px, 2.8vw, 28px); text-shadow: 0 0 8px #1fd65c, 0 2px 2px rgba(0, 0, 0, 0.6); animation-name: tfxRiseUp; }
+@keyframes tfxRiseUp { 0% { opacity: 0; transform: translateY(0) scale(0.4); } 25% { opacity: 1; transform: translateY(-20px) scale(1.1); } 100% { opacity: 0; transform: translateY(-140px) scale(0.8); } }
+.tfx-aid { left: 46%; top: 34%; font-size: clamp(26px, 4.6vw, 46px); animation-name: tfxSlap; }
+@keyframes tfxSlap { 0% { opacity: 0; transform: scale(3) rotate(-40deg); } 25% { opacity: 1; transform: scale(0.9) rotate(15deg); } 35% { transform: scale(1.05) rotate(15deg); } 80% { opacity: 1; } 100% { opacity: 0; } }
+.tfx-ring { left: 10%; right: 10%; bottom: 0; height: 18%; border-radius: 50%; border: 3px solid #5cff8a; box-shadow: 0 0 16px #5cff8a; animation-name: tfxGroundRing; }
+@keyframes tfxGroundRing { 0% { opacity: 0; transform: scale(0.4); } 30% { opacity: 1; } 100% { opacity: 0; transform: scale(1.6); } }
+
+/* 🪞 Espelho: cópias do galo confundem o adversário */
+.tfx-ghost { inset: 0; opacity: 0; filter: hue-rotate(200deg) saturate(1.6) brightness(1.3); mix-blend-mode: screen; animation-name: tfxGhost1; animation-timing-function: ease-in-out; }
+.tfx-ghost.g2 { animation-name: tfxGhost2; }
+@keyframes tfxGhost1 { 0% { opacity: 0; transform: none; } 30%, 60% { opacity: 0.55; transform: translateX(-38%); } 100% { opacity: 0; transform: none; } }
+@keyframes tfxGhost2 { 0% { opacity: 0; transform: none; } 30%, 60% { opacity: 0.55; transform: translateX(38%); } 100% { opacity: 0; transform: none; } }
+.tfx-mirror { left: 50%; top: 0; font-size: clamp(22px, 4vw, 40px); animation-name: tfxMirror; }
+@keyframes tfxMirror { 0% { opacity: 0; transform: translateX(-50%) rotateY(0) scale(0.4); } 30% { opacity: 1; transform: translateX(-50%) rotateY(360deg) scale(1.15); } 80% { opacity: 1; } 100% { opacity: 0; transform: translateX(-50%) rotateY(720deg); } }
+.tfx-twinkle { left: var(--x); top: calc(15% + var(--i) * 11%); font-size: clamp(12px, 2vw, 20px); animation-name: tfxTwinkle; }
+@keyframes tfxTwinkle { 0%, 100% { opacity: 0; transform: scale(0) rotate(0); } 40% { opacity: 1; transform: scale(1.3) rotate(90deg); } }
+
+/* 🌶️ Pimenta: fogo nos pés, fumaça na cabeça */
+.tfx-flame { left: var(--x); bottom: 2%; font-size: clamp(16px, 3vw, 30px); animation-name: tfxFlame; transform-origin: bottom center; }
+@keyframes tfxFlame { 0% { opacity: 0; transform: translateY(10px) scale(0.3); } 25% { opacity: 1; transform: translateY(0) scale(1.2); } 50% { transform: translateY(-14px) scale(0.9) rotate(-8deg); } 75% { opacity: 1; transform: translateY(-26px) scale(1.05) rotate(8deg); } 100% { opacity: 0; transform: translateY(-50px) scale(0.5); } }
+.tfx-steam { top: 8%; font-size: clamp(14px, 2.4vw, 24px); filter: sepia(1) saturate(6) hue-rotate(-40deg); animation-name: tfxSteam; }
+.tfx.side-0 .tfx-steam { left: calc(52% + var(--i) * 8%); }
+.tfx.side-1 .tfx-steam { right: calc(52% + var(--i) * 8%); }
+@keyframes tfxSteam { 0% { opacity: 0; transform: translateY(10px) scale(0.5); } 30% { opacity: 1; } 100% { opacity: 0; transform: translateY(-50px) scale(1.5); } }
+.tfx-chili { left: 50%; top: -6%; font-size: clamp(24px, 4.4vw, 44px); animation-name: tfxChili; }
+@keyframes tfxChili { 0% { opacity: 0; transform: translateX(-50%) scale(0.3) rotate(0); } 25% { opacity: 1; transform: translateX(-50%) scale(1.3) rotate(-20deg); } 50% { transform: translateX(-50%) scale(1) rotate(20deg); } 80% { opacity: 1; } 100% { opacity: 0; transform: translateX(-50%) translateY(-20px) rotate(380deg) scale(0.6); } }
+
+/* 🧿 Amuleto: o olho grego abre e solta raios — golpe crítico */
+.tfx-rays { left: 50%; top: 42%; width: 90%; aspect-ratio: 1; border-radius: 50%; background: repeating-conic-gradient(rgba(80, 150, 255, 0.55) 0 10deg, transparent 10deg 30deg); mask: radial-gradient(circle, transparent 18%, #000 30%, transparent 70%); -webkit-mask: radial-gradient(circle, transparent 18%, #000 30%, transparent 70%); animation-name: tfxRays; animation-timing-function: linear; }
+@keyframes tfxRays { 0% { opacity: 0; transform: translate(-50%, -50%) scale(0.4) rotate(0); } 25% { opacity: 1; } 75% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.2) rotate(120deg); } }
+.tfx-eye { left: 50%; top: 42%; font-size: clamp(30px, 5.4vw, 56px); filter: drop-shadow(0 0 12px #3d8bff); animation-name: tfxEye; }
+@keyframes tfxEye { 0% { opacity: 0; transform: translate(-50%, -50%) scaleY(0.05) scale(0.6); } 20% { opacity: 1; transform: translate(-50%, -50%) scaleY(1) scale(1.4); } 30% { transform: translate(-50%, -50%) scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); } }
+.tfx-flash { inset: -20% -40%; border-radius: 50%; background: radial-gradient(circle, rgba(170, 210, 255, 0.7), transparent 60%); animation-name: tfxFlash; animation-delay: calc(var(--fxd) * 0.15); }
+@keyframes tfxFlash { 0% { opacity: 0; } 15% { opacity: 1; } 100% { opacity: 0; } }
+
+/* 🥁 Banda: notas musicais vindo da arquibancada + confete */
+.tfx-note { top: calc(10% + var(--i) * 9%); font-size: clamp(14px, 2.6vw, 26px); filter: drop-shadow(0 0 4px #ffd84a); animation-name: tfxNote; animation-timing-function: ease-in-out; }
+.tfx.side-0 .tfx-note { left: -30%; --dir: 1; }
+.tfx.side-1 .tfx-note { right: -30%; --dir: -1; }
+@keyframes tfxNote { 0% { opacity: 0; transform: translate(0, 0) rotate(0); } 25% { opacity: 1; } 50% { transform: translate(calc(var(--dir) * 50px), -18px) rotate(-15deg); } 100% { opacity: 0; transform: translate(calc(var(--dir) * 110px), -40px) rotate(15deg); } }
+.tfx-confetti { left: var(--x); top: -10%; width: 7px; height: 11px; border-radius: 2px; animation-name: tfxConfetti; animation-timing-function: linear; }
+@keyframes tfxConfetti { 0% { opacity: 0; transform: translateY(0) rotate(0); } 10% { opacity: 1; } 100% { opacity: 0; transform: translateY(240%) translateY(120px) rotate(calc(var(--a) * 2)); } }
+
+/* 🪶 Fênix: explosão de fogo, asas e brasas subindo */
+.tfx-burst { left: 50%; bottom: 0; width: 140%; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle, rgba(255, 240, 160, 0.95), rgba(255, 150, 30, 0.7) 30%, rgba(255, 60, 0, 0.25) 55%, transparent 70%); animation-name: tfxBurst; }
+@keyframes tfxBurst { 0% { opacity: 0; transform: translate(-50%, 50%) scale(0.1); } 20% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, 40%) scale(1.3); } }
+.tfx-wing { top: 18%; font-size: clamp(40px, 8vw, 84px); filter: sepia(1) saturate(8) hue-rotate(-20deg) drop-shadow(0 0 10px #ff9a1a); animation-name: tfxWingL; transform-origin: bottom center; }
+.tfx-wing.w1 { left: -14%; }
+.tfx-wing.w2 { right: -14%; animation-name: tfxWingR; }
+@keyframes tfxWingL { 0% { opacity: 0; transform: rotate(40deg) scale(0.3); } 30% { opacity: 1; transform: rotate(-25deg) scale(1.1); } 50% { transform: rotate(-5deg); } 70% { opacity: 1; transform: rotate(-25deg); } 100% { opacity: 0; transform: rotate(-5deg) translateY(-30px); } }
+@keyframes tfxWingR { 0% { opacity: 0; transform: scaleX(-1) rotate(40deg) scale(0.3); } 30% { opacity: 1; transform: scaleX(-1) rotate(-25deg) scale(1.1); } 50% { transform: scaleX(-1) rotate(-5deg); } 70% { opacity: 1; transform: scaleX(-1) rotate(-25deg); } 100% { opacity: 0; transform: scaleX(-1) rotate(-5deg) translateY(-30px); } }
+.tfx-ember { left: var(--x); bottom: 4%; color: #ffd27a; font-size: clamp(10px, 2vw, 22px); text-shadow: 0 0 6px #ff8a00; animation-name: tfxRiseUp; }
+
+@media (prefers-reduced-motion: reduce) {
+  .tfx { display: none; }
+  .ro-fx[class*='fx-'] { animation-name: roGlow; }
+}

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { RoosterSvg, type Anim } from '../components/RoosterSvg'
+import { ToolFx } from '../components/ToolFx'
 import { Bar, Empty, StyleTag, go } from '../components/ui'
 import { MAX_STA, simulate } from '../game/battle'
 import { BREED_BY_ID, TOOL_BY_ID } from '../game/data'
@@ -54,7 +55,7 @@ export function Luta() {
   const logRef = useRef<HTMLOListElement>(null)
   const [intro, setIntro] = useState(true)
   const [toolCard, setToolCard] = useState<{ key: number; side: 0 | 1; id: string; text: string } | null>(null)
-  const [procs, setProcs] = useState<{ key: number; list: ToolProc[] } | null>(null)
+  const [procs, setProcs] = useState<{ key: number; list: ToolProc[]; big?: boolean } | null>(null)
 
   // Entrada estilo UFC antes de cada luta
   useEffect(() => {
@@ -117,6 +118,8 @@ export function Luta() {
       a[ev.side] = 'special'
       setAnims(a)
       setFx({ key: idx, side: ev.side, text: ev.move, crit: false, miss: false })
+      // A pimenta turbina o golpe especial
+      if (match?.tools?.[ev.side]?.includes('pimenta')) setProcs({ key: idx, list: [{ side: ev.side, tool: 'pimenta' }], big: true })
       sfx.special()
       reset()
     } else if (ev.t === 'tool') {
@@ -125,7 +128,7 @@ export function Luta() {
       setAnims(a)
       const id = Object.values(TOOL_BY_ID).find((t) => t.emoji === ev.emoji)?.id ?? ''
       setToolCard({ key: idx, side: ev.side, id, text: ev.text })
-      setProcs({ key: idx, list: id ? [{ side: ev.side, tool: id }] : [] })
+      setProcs({ key: idx, list: id ? [{ side: ev.side, tool: id }] : [], big: true })
       setTimeout(() => setToolCard((c) => (c?.key === idx ? null : c)), (BASE_MS * (holdFor(events, idx - 1) - 0.1)) / speed)
       if (ev.emoji === '🥁') sfx.charanga(isRoundBanda(events, idx - 1))
       else sfx.powerup()
@@ -287,7 +290,28 @@ export function Luta() {
                   ))}
               </div>
             )}
-            <RoosterSvg breedId={side === 0 ? match.a.breedId : match.b.breedId} skin={side === 0 ? match.a.skin : match.b.skin} equipped={side === 0 ? match.a.equipped : match.b.equipped} tint={side === 0 ? match.a.tint : match.b.tint} flip={side === 1} anim={anims[side]} size="100%" />
+            {(() => {
+              const ro = side === 0 ? match.a : match.b
+              const mine = !intro && procs ? procs.list.filter((p) => p.side === side && TOOL_BY_ID[p.tool]) : []
+              const ms = Math.round((procs?.big ? 1500 : 950) / speed)
+              return (
+                <>
+                  <div key={mine.length ? `ro${procs!.key}` : 'ro'} className={`ro-fx ${mine.length ? `fx-${mine[mine.length - 1].tool}` : ''}`} style={{ ['--fxd' as string]: `${ms}ms` }}>
+                    <RoosterSvg breedId={ro.breedId} skin={ro.skin} equipped={ro.equipped} tint={ro.tint} flip={side === 1} anim={anims[side]} size="100%" />
+                  </div>
+                  {mine.map((p) => (
+                    <ToolFx
+                      key={`${p.tool}${procs!.key}`}
+                      tool={p.tool}
+                      side={side as 0 | 1}
+                      big={procs!.big}
+                      ms={ms}
+                      ghost={p.tool === 'espelho' ? <RoosterSvg breedId={ro.breedId} skin={ro.skin} equipped={ro.equipped} tint={ro.tint} flip={side === 1} size="100%" /> : undefined}
+                    />
+                  ))}
+                </>
+              )
+            })()}
             {fx && fx.side === side && (
               <div key={fx.key} className={`dmg ${fx.crit ? 'crit' : ''} ${fx.miss ? 'miss' : ''}`}>
                 {fx.text}
