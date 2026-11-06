@@ -688,6 +688,33 @@ function HeadAcc({ kind }: { kind?: string }) {
           <circle cx="163" cy="37" r="2" fill="#16a34a" />
         </g>
       )
+    case 'drag-elmo': // 🐲 Elmo do Dragão — casco vermelho com chifres e crista
+      return (
+        <g>
+          <path d="M136,40 C122,34 116,24 120,16 C124,26 130,32 140,36 Z" fill="#fbbf24" stroke="#92400e" strokeWidth="1.5" />
+          <path d="M168,40 C182,34 188,24 184,16 C180,26 174,32 164,36 Z" fill="#fbbf24" stroke="#92400e" strokeWidth="1.5" />
+          <path d="M133,44 C131,24 173,24 171,44 Z" fill="#991b1b" stroke="#450a0a" strokeWidth="2" />
+          <path d="M146,26 L152,13 L158,26 Z" fill="#ef4444" stroke="#7f1d1d" strokeWidth="1.5" strokeLinejoin="round" />
+          <path d="M133,42 L171,42" stroke="#450a0a" strokeWidth="3" />
+        </g>
+      )
+    case 'ferro-capacete': // 🪖 Capacete de Ferro — aço com rebites
+      return (
+        <g>
+          <path d="M132,46 C130,22 174,22 172,46 Z" fill="#9ca3af" stroke="#4b5563" strokeWidth="2.5" />
+          <path d="M132,44 L172,44" stroke="#6b7280" strokeWidth="5" />
+          <path d="M152,22 L152,44" stroke="#6b7280" strokeWidth="2.5" />
+          <circle cx="139" cy="40" r="1.6" fill="#4b5563" />
+          <circle cx="165" cy="40" r="1.6" fill="#4b5563" />
+        </g>
+      )
+    case 'raio-viseira': // ⚡ Viseira Relâmpago — banda ciano com raio
+      return (
+        <g>
+          <path d="M132,41 C140,31 164,31 172,41 L170,48 C160,41 144,41 134,48 Z" fill="#0891b2" stroke="#155e75" strokeWidth="2" />
+          <path d="M153,31 L147,40 L152,40 L149,48 L160,37 L154,37 L157,31 Z" fill="#facc15" stroke="#a16207" strokeWidth="0.8" strokeLinejoin="round" />
+        </g>
+      )
     default:
       return null
   }
@@ -727,6 +754,29 @@ function FaceAcc({ kind }: { kind?: string }) {
       )
     case 'bigode':
       return <path d="M164,68 C170,62 176,64 178,70 C182,66 188,68 188,74 C182,72 178,76 172,72 C168,76 162,74 164,68 Z" fill="#3b2208" />
+    case 'drag-presas': // 🦷 Presas do Dragão — presas brancas saindo do bico
+      return (
+        <g>
+          <path d="M168,62 L171,72 L174,62 Z" fill="#fff" stroke="#9ca3af" strokeWidth="0.8" strokeLinejoin="round" />
+          <path d="M176,62 L179,71 L182,62 Z" fill="#fff" stroke="#9ca3af" strokeWidth="0.8" strokeLinejoin="round" />
+        </g>
+      )
+    case 'ferro-mascara': // 🎭 Máscara de Ferro — placa de aço sobre o rosto
+      return (
+        <g>
+          <path d="M138,46 L175,46 L173,60 L140,62 Z" fill="#9ca3af" opacity="0.96" stroke="#4b5563" strokeWidth="2" strokeLinejoin="round" />
+          <rect x="150" y="50" width="13" height="4" rx="2" fill="#374151" />
+          <circle cx="143" cy="52" r="1.3" fill="#4b5563" />
+          <circle cx="170" cy="52" r="1.3" fill="#4b5563" />
+        </g>
+      )
+    case 'raio-lente': // 🔆 Lente Relâmpago — lente brilhante com raio
+      return (
+        <g>
+          <circle cx="158" cy="52" r="8" fill="#22d3ee" opacity="0.55" stroke="#0e7490" strokeWidth="2" />
+          <path d="M159,46 L155,53 L159,53 L156,59 L164,51 L159,51 Z" fill="#facc15" stroke="#a16207" strokeWidth="0.6" strokeLinejoin="round" />
+        </g>
+      )
     default:
       return null
   }
@@ -765,6 +815,35 @@ function BodyAcc({ kind, clip }: { kind?: string; clip: string }) {
         <g>
           <path d="M150,116 L138,108 L138,124 Z M150,116 L162,108 L162,124 Z" fill="#db2777" stroke="#831843" strokeWidth="1.5" />
           <circle cx="150" cy="116" r="3.5" fill="#be185d" />
+        </g>
+      )
+    case 'drag-couraca': // 🐉 Couraça do Dragão — armadura de escamas verdes
+      return (
+        <g clipPath={clip}>
+          <rect x="62" y="104" width="110" height="96" fill="#15803d" />
+          {[0, 1, 2, 3, 4].flatMap((row) => [70, 94, 118, 142].map((bx) => ({ x: bx + (row % 2 ? 12 : 0), y: 110 + row * 17, k: `${row}-${bx}` }))).map(({ x, y, k }) => (
+            <path key={k} d={`M${x},${y} a9,7 0 0 1 18,0`} fill="none" stroke="#14532d" strokeWidth="1.6" />
+          ))}
+          <path d="M117,104 L117,200" stroke="#166534" strokeWidth="2" opacity="0.6" />
+        </g>
+      )
+    case 'ferro-peitoral': // 🛡️ Peitoral de Ferro — placa de aço com rebites
+      return (
+        <g clipPath={clip}>
+          <rect x="62" y="104" width="110" height="96" fill="#9ca3af" opacity="0.96" />
+          <path d="M117,104 L117,200" stroke="#6b7280" strokeWidth="3" />
+          <path d="M62,138 L172,138" stroke="#6b7280" strokeWidth="3" />
+          {[[86, 122], [148, 122], [86, 170], [148, 170]].map(([x, y]) => (
+            <circle key={`${x}-${y}`} cx={x} cy={y} r="2.4" fill="#4b5563" />
+          ))}
+        </g>
+      )
+    case 'raio-colete': // ⚡ Colete Relâmpago — colete ciano com raio amarelo
+      return (
+        <g clipPath={clip}>
+          <rect x="62" y="104" width="110" height="96" fill="#0891b2" opacity="0.92" />
+          <path d="M118,104 L118,200" stroke="#155e75" strokeWidth="3" />
+          <path d="M124,128 L104,160 L120,160 L110,186 L144,150 L124,150 L136,128 Z" fill="#facc15" stroke="#a16207" strokeWidth="1.5" strokeLinejoin="round" />
         </g>
       )
     default:
@@ -813,6 +892,40 @@ function Feet({ kind }: { kind?: string }) {
             <g key={x}>
               <ellipse cx={x + 2} cy={203} rx="15" ry="3.5" fill="#22c55e" stroke="#14532d" strokeWidth="1.2" />
               <path d={`M${x - 4},202 L${x + 2},196 L${x + 8},202`} stroke="#facc15" strokeWidth="2.5" fill="none" />
+            </g>
+          ))}
+        </g>
+      )
+    case 'drag-garras': // 🦖 Garras do Dragão — garras douradas e couro verde
+      return (
+        <g>
+          {xs.map((x) => (
+            <g key={x}>
+              <path d={`M${x - 10},197 L${x + 14},197 L${x + 14},204 L${x - 10},204 Z`} fill="#166534" stroke="#052e16" strokeWidth="1.2" />
+              <path d={`M${x - 10},204 l-3,6 M${x - 2},205 l-2,7 M${x + 6},205 l0,7 M${x + 14},204 l3,6`} stroke="#fde047" strokeWidth="2" strokeLinecap="round" fill="none" />
+            </g>
+          ))}
+        </g>
+      )
+    case 'ferro-grevas': // 🦿 Grevas de Ferro — botas de aço com rebites
+      return (
+        <g>
+          {xs.map((x) => (
+            <g key={x}>
+              <path d={`M${x - 8},176 L${x + 6},176 L${x + 6},196 L${x + 16},200 L${x + 16},205 L${x - 10},205 Z`} fill="#9ca3af" stroke="#4b5563" strokeWidth="1.5" strokeLinejoin="round" />
+              <circle cx={x - 2} cy={182} r="1.4" fill="#4b5563" />
+              <circle cx={x - 2} cy={190} r="1.4" fill="#4b5563" />
+            </g>
+          ))}
+        </g>
+      )
+    case 'raio-esporas': // 🌩️ Esporas Relâmpago — botina ciano com espora amarela
+      return (
+        <g>
+          {xs.map((x) => (
+            <g key={x}>
+              <path d={`M${x - 9},196 L${x + 6},196 L${x + 6},201 L${x + 15},203 L${x + 15},205 L${x - 9},205 Z`} fill="#0891b2" stroke="#155e75" strokeWidth="1.5" strokeLinejoin="round" />
+              <path d={`M${x - 9},201 l-7,3 l7,2 Z`} fill="#facc15" stroke="#a16207" strokeWidth="1" strokeLinejoin="round" />
             </g>
           ))}
         </g>
