@@ -43,13 +43,17 @@ export function GaloNftPanel({ busy, run, okTx }: Omit<PanelProps, 'info'> & { i
                 <RoosterSvg breedId={r.breedId} skin={r.skin} equipped={r.equipped} tint={r.tint} size={96} anim="none" />
               </div>
               <b>{r.name}</b>
-              <span className="tiny muted">
-                {t('Nv {n}', { n: r.level })} · <Stars n={r.stars} />
-              </span>
-              <BreedBadge ro={r} />
-              <button className="btn btn-gold full" disabled={busy} onClick={() => setPick(r)}>
-                ✨ {t('Transformar em NFT')}
-              </button>
+              <div className="row gap wrap w3-meta">
+                <span className="tiny muted">
+                  {t('Nv {n}', { n: r.level })} · <Stars n={r.stars} />
+                </span>
+                <BreedBadge ro={r} />
+              </div>
+              <div className="w3-actions">
+                <button className="btn btn-gold full" disabled={busy} onClick={() => setPick(r)}>
+                  ✨ {t('Transformar em NFT')}
+                </button>
+              </div>
             </div>
           ))}
         </div>

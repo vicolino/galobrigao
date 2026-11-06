@@ -481,9 +481,11 @@ function MyItems({ info, busy, run, okTx, feeBps }: PanelProps & { feeBps: numbe
               m.itemId,
               <>
                 {m.count > 1 && <span className="tiny muted">{t('{n} disponíveis para NFT', { n: m.count })}</span>}
-                <button className="btn btn-gold full" disabled={busy} onClick={() => setMintKey(m.key)}>
-                  ✨ {t('Transformar em NFT')}
-                </button>
+                <div className="w3-actions">
+                  <button className="btn btn-gold full" disabled={busy} onClick={() => setMintKey(m.key)}>
+                    ✨ {t('Transformar em NFT')}
+                  </button>
+                </div>
               </>,
               'm-' + m.key,
             ),
@@ -494,9 +496,10 @@ function MyItems({ info, busy, run, okTx, feeBps }: PanelProps & { feeBps: numbe
               nf.itemId,
               <>
                 <span className="tiny">
-                  <span className="mono muted">NFT #{nf.tokenId}</span> ·{' '}
+                  <span className="muted">NFT #{nf.tokenId}</span> ·{' '}
                   {nf.status === 'listed' ? <b className="status-pendente">{t('À venda por {p} USDC', { p: usdc(nf.price) })}</b> : <span className="pos">{t('Na carteira')}</span>}
                 </span>
+                <div className="w3-actions">
                 {nf.status === 'listed' ? (
                   <button className="btn full" disabled={busy} onClick={() => run(() => api.marketCancel(nf.tokenId), (r) => okTx(t('Venda cancelada.'), r.tx), false)}>
                     {t('Cancelar venda')}
@@ -507,10 +510,11 @@ function MyItems({ info, busy, run, okTx, feeBps }: PanelProps & { feeBps: numbe
                   </button>
                 )}
                 {nf.kind === 'galo' && nf.status !== 'listed' && (
-                  <button className="btn btn-sm full" disabled={busy} onClick={() => run(() => api.unmintGalo(nf.tokenId), (r) => okTx(t('🐓 Galo de volta ao jogo (NFT queimado).'), r.tx), true)}>
-                    ↩️ {t('Trazer de volta para o jogo')}
+                  <button className="btn btn-ghost btn-sm full w3-back" title={t('Trazer de volta para o jogo')} disabled={busy} onClick={() => run(() => api.unmintGalo(nf.tokenId), (r) => okTx(t('🐓 Galo de volta ao jogo (NFT queimado).'), r.tx), true)}>
+                    ↩️ {t('Voltar ao jogo')}
                   </button>
                 )}
+                </div>
               </>,
               'n-' + nf.tokenId,
               nf.rooster,
