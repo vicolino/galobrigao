@@ -62,12 +62,28 @@ export function badOrigin(req: IncomingMessage) {
   const m = req.method ?? 'GET'
   if (m === 'GET' || m === 'HEAD' || m === 'OPTIONS') return false
   if ((req.url ?? '').startsWith('/api/webhooks/')) return false
-  const allowed = new URL(process.env.PUBLIC_URL ?? 'http://localhost').origin
   const origin = req.headers.origin
-  if (origin) return origin !== allowed
+  if (origin) return !ALLOWED_ORIGINS.has(origin)
   const ref = req.headers.referer
-  return !!ref && !String(ref).startsWith(allowed + '/')
+  return !!ref && ![...ALLOWED_ORIGINS].some((a) => String(ref).startsWith(a + '/'))
 }
+
+/** Origens aceitas em POSTs: o domínio oficial, o www e o(s) endereço(s) do PUBLIC_URL (lista separada por vírgula). */
+const ALLOWED_ORIGINS = new Set(
+  [
+    'https://galobrigao.com.br',
+    'https://www.galobrigao.com.br',
+    ...(process.env.PUBLIC_URL ?? 'http://localhost').split(','),
+  ]
+    .map((u) => {
+      try {
+        return new URL(u.trim()).origin
+      } catch {
+        return ''
+      }
+    })
+    .filter(Boolean),
+)
 
 export function tooMany(res: ServerResponse) {
   res.writeHead(429, { 'Content-Type': 'application/json; charset=utf-8', 'Retry-After': '60', ...baseHeaders() })
