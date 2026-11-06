@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Manual da Marca — Galo Brigão</title>
+<meta name="description" content="Manual da marca Galo Brigão / Chicken Fighter: mascote, logotipo, cores, tipografia, tom de voz e aplicações." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Lilita+One&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --sol:#ff9f1c;--fogo:#ff6d2a;--sol-escuro:#d97400;--ouro:#ffb800;
+    --ceu:#cdeeff;--ceu-claro:#e4f6ff;--ceu-forte:#bfe6ff;--grama:#5fc45f;
+    --tinta:#0f2a40;--texto:#173753;--apagado:#5e7f98;--linha:#d4e6f1;
+    --painel:#fff;--painel2:#f3f9fd;--vitoria:#2fbf71;--derrota:#ff5a5f;--info:#2e9bff;
+    --raio:18px;--raio-sm:12px;--sombra:0 8px 22px rgba(23,55,83,.12);--sombra-lg:0 16px 40px rgba(23,55,83,.18);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    font-family:'Nunito',system-ui,sans-serif;color:var(--texto);font-size:16px;line-height:1.5;
+    background:
+      radial-gradient(1100px 480px at 50% -6%, var(--ceu-claro) 0%, transparent 70%),
+      linear-gradient(180deg, var(--ceu-forte) 0%, #d6f0ff 46%, #d9f3e6 100%) fixed;
+  }
+  .title{font-family:'Lilita One',cursive;font-weight:400;letter-spacing:.4px;color:var(--tinta);line-height:1.05}
+  .wrap{max-width:1040px;margin:0 auto;padding:0 20px}
+  a{color:var(--sol-escuro);font-weight:800;text-decoration:none}
+  a:hover{text-decoration:underline}
+
+  /* Cabeçalho */
+  header.hero{padding:clamp(40px,7vw,90px) 20px clamp(30px,5vw,60px);text-align:center}
+  .hero img.mark{width:clamp(150px,26vw,230px);height:auto;filter:drop-shadow(0 16px 26px rgba(23,55,83,.28));animation:bob 3.6s ease-in-out infinite}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+  .hero .eyebrow{display:inline-block;margin-top:14px;padding:6px 14px;border-radius:30px;background:#fff3e0;border:1px solid #ffd9a6;color:var(--sol-escuro);font-weight:900;font-size:14px}
+  .hero h1{font-size:clamp(34px,6.5vw,64px);margin:12px 0 6px}
+  .hero .names{font-family:'Lilita One',cursive;color:var(--sol);font-size:clamp(18px,2.6vw,24px)}
+  .hero p.tag{font-size:clamp(16px,2.2vw,20px);color:var(--texto);max-width:620px;margin:14px auto 0}
+  .hero .meta{margin-top:10px;color:var(--apagado);font-size:14px;font-weight:700}
+
+  /* Seções */
+  section{padding:clamp(30px,5vw,56px) 0;border-top:1px solid var(--linha)}
+  .kicker{font-weight:900;color:var(--sol-escuro);font-size:13px;letter-spacing:1.4px;text-transform:uppercase}
+  section h2{font-size:clamp(24px,4vw,36px);margin:4px 0 6px}
+  section .lead{color:var(--apagado);max-width:680px;margin:0 0 22px;font-size:clamp(15px,1.8vw,17px)}
+  .card{background:linear-gradient(180deg,var(--painel),var(--painel2));border:1px solid var(--linha);border-radius:var(--raio);box-shadow:var(--sombra)}
+
+  /* Essência */
+  .pillars{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .pillar{padding:20px}
+  .pillar .ic{font-size:30px}
+  .pillar h3{margin:8px 0 4px;color:var(--tinta);font-size:18px}
+  .pillar p{margin:0;color:var(--apagado);font-size:14.5px}
+
+  /* Nome */
+  .names-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .name-box{padding:22px}
+  .name-box .flag{font-size:22px}
+  .name-box b.n{font-family:'Lilita One',cursive;font-size:28px;color:var(--tinta);display:block;margin:6px 0 4px}
+  .name-box p{margin:0;color:var(--apagado);font-size:14.5px}
+
+  /* Mascote */
+  .family{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:6px}
+  .fam{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 8px;text-align:center}
+  .fam img{width:100%;max-width:150px;height:auto}
+  .fam b{font-size:13.5px;color:var(--tinta)}
+  .fam span{font-size:11px;font-weight:900;padding:2px 9px;border-radius:20px}
+  .tag-lendario{background:#fff2cf;color:#a66b00}
+  .tag-epico{background:#f1e6ff;color:#7b3fcc}
+  .tag-equip{background:#e6f7ee;color:#1f9e5a}
+
+  /* Logo lockup */
+  .lockup{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .lockup img{width:84px;height:auto}
+  .lockup .word{font-family:'Lilita One',cursive;font-size:clamp(30px,5vw,52px);color:var(--tinta)}
+  .lockup-note{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px}
+
+  /* Regras do + e - */
+  .rules{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .rule{padding:18px 20px}
+  .rule h4{margin:0 0 10px;font-size:15px;display:flex;align-items:center;gap:8px}
+  .rule.do h4{color:var(--vitoria)} .rule.dont h4{color:var(--derrota)}
+  .rule ul{margin:0;padding-left:18px} .rule li{margin:6px 0;font-size:14.5px}
+
+  /* Cores */
+  .swatches{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .sw{border:1px solid var(--linha);border-radius:var(--raio-sm);overflow:hidden;background:#fff}
+  .sw .chip{height:76px}
+  .sw .info{padding:9px 11px}
+  .sw .info b{display:block;font-size:14px;color:var(--tinta)}
+  .sw .info code{font-size:12px;color:var(--apagado);font-family:ui-monospace,monospace;text-transform:uppercase}
+  .sw .info em{display:block;font-style:normal;font-size:11.5px;color:var(--apagado);margin-top:3px}
+  .group-title{font-weight:900;color:var(--tinta);margin:20px 0 10px;font-size:15px}
+
+  /* Tipografia */
+  .type-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .type-box{padding:22px}
+  .type-box .big{font-family:'Lilita One',cursive;font-size:46px;color:var(--tinta);line-height:1}
+  .type-box .big-n{font-size:34px}
+  .type-box .label{color:var(--apagado);font-size:13px;font-weight:800;margin-top:10px}
+  .weights{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px}
+  .weights span{font-size:18px}
+
+  /* Voz */
+  .voice-ex{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:6px}
+  .quote{padding:16px 18px;font-size:16px}
+  .quote .q{font-weight:800;color:var(--tinta)} .quote .who{color:var(--apagado);font-size:13px;margin-top:4px}
+
+  /* Botões / elementos */
+  .btns{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+  .btn{display:inline-flex;align-items:center;gap:6px;padding:12px 20px;border-radius:14px;border:1.5px solid var(--fogo);font-weight:900;font-size:15px;cursor:default}
+  .btn-primary{background:linear-gradient(180deg,#ffb64d,var(--fogo));color:#4a2200;box-shadow:0 4px 0 var(--sol-escuro)}
+  .btn-gold{background:linear-gradient(180deg,#ffe07a,var(--ouro));border-color:#e9a900;color:#5a3f00;box-shadow:0 4px 0 #c78f00}
+  .btn-ghost{background:#fff;border-color:var(--linha);color:var(--texto);box-shadow:0 3px 0 var(--linha)}
+  .emoji-row{font-size:30px;letter-spacing:8px;margin-top:6px}
+
+  /* Aplicação */
+  .apps{display:grid;grid-template-columns:260px 1fr;gap:16px;align-items:center}
+  .apps img{width:100%;border-radius:var(--raio);border:1px solid var(--linha);box-shadow:var(--sombra)}
+  .apps ul{margin:0;padding-left:18px}.apps li{margin:7px 0}
+
+  /* Rodapé */
+  footer{background:#0b2033;color:#b9d2e6;padding:30px 20px;margin-top:20px}
+  footer .wrap{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center}
+  footer .b{display:flex;align-items:center;gap:10px}
+  footer .b img{width:34px;height:auto}
+  footer .b b{color:#fff;font-family:'Lilita One',cursive;font-size:20px}
+  footer .legal{width:100%;color:#7f9cb5;font-size:12.5px;margin:0}
+
+  @media(max-width:860px){
+    .pillars,.swatches{grid-template-columns:repeat(2,1fr)}
+    .family{grid-template-columns:repeat(3,1fr)}
+    .names-grid,.lockup-note,.rules,.type-grid,.voice-ex{grid-template-columns:1fr}
+    .apps{grid-template-columns:1fr}
+  }
+  @media(max-width:480px){.family,.swatches{grid-template-columns:repeat(2,1fr)}}
+  @media(prefers-reduced-motion:reduce){.hero img.mark{animation:none}}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <img class="mark" src="assets/mascote-galo-brigao.svg" alt="Mascote Galo Brigão" />
+  <div class="eyebrow">🐓 Manual da Marca · v1.0</div>
+  <h1 class="title">Galo Brigão</h1>
+  <div class="names">Chicken Fighter <span style="color:var(--apagado);font-size:16px">(fora do Brasil)</span></div>
+  <p class="tag">Crie seu galo, treine, vista e domine a arena. 🌽</p>
+  <p class="meta">O terreiro mais brabo da internet · galobrigao.com.br</p>
+</header>
+
+<main class="wrap">
+
+  <!-- Essência -->
+  <section>
+    <div class="kicker">01 · Essência</div>
+    <h2 class="title">O que a marca é</h2>
+    <p class="lead">Um jogo de galos cartoon, brasileiro e bem-humorado. Você cria, treina, veste e coloca seu galo pra brigar. A marca é quente, divertida e provocadora — sem nunca perder o carinho pelo interior e pelo terreiro.</p>
+    <div class="pillars">
+      <div class="card pillar"><div class="ic">🔥</div><h3>Brabo, mas de boa</h3><p>Provoca e desafia, com humor. Rivalidade de brincadeira, nunca agressão de verdade.</p></div>
+      <div class="card pillar"><div class="ic">🌽</div><h3>Raiz e caipira</h3><p>Fala de terreiro, de fazenda, de boteco. Português brasileiro, informal e coloquial.</p></div>
+      <div class="card pillar"><div class="ic">🏆</div><h3>Colecionável e vistoso</h3><p>Galos lendários, skins de fogo e ouro. Dá orgulho de mostrar o seu.</p></div>
+    </div>
+  </section>
+
+  <!-- Nome -->
+  <section>
+    <div class="kicker">02 · Nome</div>
+    <h2 class="title">Como chamar a marca</h2>
+    <p class="lead">O nome muda por região. Use sempre a grafia exata, com as duas palavras e acento.</p>
+    <div class="names-grid">
+      <div class="card name-box"><span class="flag">🇧🇷</span><b class="n">Galo Brigão</b><p>Nome oficial no Brasil e em todo conteúdo em português. Nunca "galo brigão" (minúsculas) nem "GaloBrigão".</p></div>
+      <div class="card name-box"><span class="flag">🌎</span><b class="n">Chicken Fighter</b><p>Nome em inglês, para público de fora do Brasil. Mesma identidade visual, mesmo mascote.</p></div>
+    </div>
+  </section>
+
+  <!-- Mascote -->
+  <section>
+    <div class="kicker">03 · Mascote</div>
+    <h2 class="title">O Galo de Ouro</h2>
+    <p class="lead">O herói da marca é o <b>Galo de Ouro com pena de fogo e coroa</b>: campeão, quente e com um toque de realeza cômica. É o rosto da marca — use-o no logo, no avatar e sempre que precisar de uma só imagem.</p>
+    <div class="family">
+      <div class="card fam"><img src="assets/mascote-galo-brigao.svg" alt="Galo de Ouro com coroa" /><b>Mascote oficial</b><span class="tag-lendario">Lendário</span></div>
+      <div class="card fam"><img src="assets/skin-ouro.svg" alt="Skin Ouro Maciço" /><b>Ouro Maciço</b><span class="tag-lendario">Lendário</span></div>
+      <div class="card fam"><img src="assets/skin-galaxia.svg" alt="Skin Galáxia Sideral" /><b>Galáxia Sideral</b><span class="tag-lendario">Lendário</span></div>
+      <div class="card fam"><img src="assets/skin-neon.svg" alt="Skin Neon Cyberpunk" /><b>Neon Cyberpunk</b><span class="tag-epico">Épico</span></div>
+      <div class="card fam"><img src="assets/galo-conjunto-dragao.svg" alt="Galo com conjunto Fúria do Dragão" /><b>Fúria do Dragão</b><span class="tag-equip">Equipado</span></div>
+    </div>
+    <div class="rules" style="margin-top:16px">
+      <div class="card rule do"><h4>✓ Pode</h4><ul>
+        <li>Usar o mascote sozinho como ícone/avatar.</li>
+        <li>Trocar a skin do galo em campanhas (fogo, ouro, galáxia…).</li>
+        <li>Dar respiro: deixe um espaço livre em volta de pelo menos metade da altura do galo.</li>
+      </ul></div>
+      <div class="card rule dont"><h4>✕ Evite</h4><ul>
+        <li>Distorcer, achatar ou girar o galo.</li>
+        <li>Trocar o contorno preto por outra cor.</li>
+        <li>Colocar sobre fundo poluído sem o brilho/halo que separa o galo do fundo.</li>
+      </ul></div>
+    </div>
+  </section>
+
+  <!-- Logo -->
+  <section>
+    <div class="kicker">04 · Logotipo</div>
+    <h2 class="title">Mascote + palavra</h2>
+    <p class="lead">O logotipo completo junta o mascote à palavra da marca em <b>Lilita One</b>. Em espaços apertados (favicon, avatar), use só o mascote.</p>
+    <div class="card" style="padding:28px"><div class="lockup">
+      <img src="assets/mascote-galo-brigao.svg" alt="Mascote" />
+      <span class="word">Galo Brigão</span>
+    </div></div>
+    <div class="lockup-note">
+      <div class="card rule do"><h4>✓ Versões</h4><ul>
+        <li><b>Completa:</b> mascote + palavra (cabeçalhos, materiais).</li>
+        <li><b>Símbolo:</b> só o mascote (ícone, avatar, favicon).</li>
+        <li><b>Internacional:</b> troque a palavra por "Chicken Fighter".</li>
+      </ul></div>
+      <div class="card rule dont"><h4>✕ Evite</h4><ul>
+        <li>Trocar a fonte da palavra por outra que não seja Lilita One.</li>
+        <li>Mudar a cor da palavra para algo fora da paleta (padrão: tinta escura).</li>
+        <li>Separar o mascote da palavra com linhas ou caixas.</li>
+      </ul></div>
+    </div>
+  </section>
+
+  <!-- Cores -->
+  <section>
+    <div class="kicker">05 · Cores</div>
+    <h2 class="title">Paleta</h2>
+    <p class="lead">Cartoon e ensolarada: céu azul de fundo, laranja de sol como acento, e cores vivas para raridades e estados. O <b>sol (#ff9f1c)</b> é a cor principal.</p>
+
+    <div class="group-title">Marca</div>
+    <div class="swatches">
+      <div class="sw"><div class="chip" style="background:#ff9f1c"></div><div class="info"><b>Sol</b><code>#ff9f1c</code><em>Cor principal, CTAs</em></div></div>
+      <div class="sw"><div class="chip" style="background:#ff6d2a"></div><div class="info"><b>Fogo</b><code>#ff6d2a</code><em>Gradiente de botão</em></div></div>
+      <div class="sw"><div class="chip" style="background:#d97400"></div><div class="info"><b>Sol Escuro</b><code>#d97400</code><em>Sombra / texto</em></div></div>
+      <div class="sw"><div class="chip" style="background:#ffb800"></div><div class="info"><b>Ouro</b><code>#ffb800</code><em>Conquistas</em></div></div>
+    </div>
+
+    <div class="group-title">Cenário</div>
+    <div class="swatches">
+      <div class="sw"><div class="chip" style="background:#bfe6ff"></div><div class="info"><b>Céu</b><code>#bfe6ff</code><em>Fundo</em></div></div>
+      <div class="sw"><div class="chip" style="background:#e4f6ff"></div><div class="info"><b>Céu Claro</b><code>#e4f6ff</code><em>Fundo suave</em></div></div>
+      <div class="sw"><div class="chip" style="background:#5fc45f"></div><div class="info"><b>Grama</b><code>#5fc45f</code><em>Chão, natureza</em></div></div>
+      <div class="sw"><div class="chip" style="background:#f3f9fd;border-bottom:1px solid #d4e6f1"></div><div class="info"><b>Painel</b><code>#f3f9fd</code><em>Cartões</em></div></div>
+    </div>
+
+    <div class="group-title">Tinta</div>
+    <div class="swatches">
+      <div class="sw"><div class="chip" style="background:#0f2a40"></div><div class="info"><b>Tinta</b><code>#0f2a40</code><em>Títulos</em></div></div>
+      <div class="sw"><div class="chip" style="background:#173753"></div><div class="info"><b>Texto</b><code>#173753</code><em>Corpo</em></div></div>
+      <div class="sw"><div class="chip" style="background:#5e7f98"></div><div class="info"><b>Apagado</b><code>#5e7f98</code><em>Secundário</em></div></div>
+      <div class="sw"><div class="chip" style="background:#d4e6f1"></div><div class="info"><b>Linha</b><code>#d4e6f1</code><em>Bordas</em></div></div>
+    </div>
+
+    <div class="group-title">Funcionais &amp; Raridades</div>
+    <div class="swatches">
+      <div class="sw"><div class="chip" style="background:#2fbf71"></div><div class="info"><b>Vitória</b><code>#2fbf71</code><em>Positivo</em></div></div>
+      <div class="sw"><div class="chip" style="background:#ff5a5f"></div><div class="info"><b>Derrota</b><code>#ff5a5f</code><em>Negativo</em></div></div>
+      <div class="sw"><div class="chip" style="background:#2e9bff"></div><div class="info"><b>Info</b><code>#2e9bff</code><em>Ação</em></div></div>
+      <div class="sw"><div class="chip" style="background:#b57bff"></div><div class="info"><b>Épico</b><code>#b57bff</code><em>Raridade</em></div></div>
+      <div class="sw"><div class="chip" style="background:#a8a29e"></div><div class="info"><b>Comum</b><code>#a8a29e</code><em>Raridade</em></div></div>
+      <div class="sw"><div class="chip" style="background:#4fa3ff"></div><div class="info"><b>Raro</b><code>#4fa3ff</code><em>Raridade</em></div></div>
+      <div class="sw"><div class="chip" style="background:#ffb020"></div><div class="info"><b>Lendário</b><code>#ffb020</code><em>Raridade</em></div></div>
+      <div class="sw"><div class="chip" style="background:#ffffff;border-bottom:1px solid #d4e6f1"></div><div class="info"><b>Painel</b><code>#ffffff</code><em>Base</em></div></div>
+    </div>
+  </section>
+
+  <!-- Tipografia -->
+  <section>
+    <div class="kicker">06 · Tipografia</div>
+    <h2 class="title">Duas fontes, papéis claros</h2>
+    <p class="lead">Lilita One dá o grito nos títulos; Nunito carrega todo o resto com clareza e simpatia.</p>
+    <div class="type-grid">
+      <div class="card type-box">
+        <div class="big">Galo Brigão</div>
+        <div class="label">LILITA ONE · títulos, nome, HUD, números de destaque</div>
+      </div>
+      <div class="card type-box">
+        <div class="big" style="font-family:'Nunito';font-weight:900;font-size:34px">Treine. Vista. Domine.</div>
+        <div class="label">NUNITO · corpo, botões, interface (400 → 900)</div>
+        <div class="weights">
+          <span style="font-weight:400">Aa</span><span style="font-weight:700">Aa</span>
+          <span style="font-weight:800">Aa</span><span style="font-weight:900">Aa</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Voz -->
+  <section>
+    <div class="kicker">07 · Tom de voz</div>
+    <h2 class="title">Fala de gente, fala de terreiro</h2>
+    <p class="lead">Frases curtas, com humor e atitude. Provoca, mas acolhe. Emoji com propósito (🌽🥚👑🔥🏆), nunca em excesso.</p>
+    <div class="rules">
+      <div class="card rule do"><h4>✓ A voz faz assim</h4><ul>
+        <li>Português brasileiro, informal: "cria o teu galo e vai pra briga".</li>
+        <li>Curto e direto, com piada: frase de efeito, não parágrafo.</li>
+        <li>Chama o jogador de criador, fala em terreiro, galo, rinha, milho.</li>
+      </ul></div>
+      <div class="card rule dont"><h4>✕ A voz não faz</h4><ul>
+        <li>Tom corporativo ou formal demais ("prezado usuário").</li>
+        <li>Textão. Se dá pra cortar, corta.</li>
+        <li>Inglês sem motivo (exceto a marca "Chicken Fighter").</li>
+      </ul></div>
+    </div>
+    <div class="group-title">A voz na prática (falas reais do jogo)</div>
+    <div class="voice-ex">
+      <div class="card quote"><div class="q">"Doce por fora, azedo na briga."</div><div class="who">skin Melancia Brava</div></div>
+      <div class="card quote"><div class="q">"Já perdeu uma luta. Voltou pra cobrar."</div><div class="who">skin Galo Zumbi</div></div>
+      <div class="card quote"><div class="q">"Renasce das cinzas a cada luta."</div><div class="who">skin Fênix de Fogo</div></div>
+      <div class="card quote"><div class="q">"Ninguém vê ele chegando."</div><div class="who">skin Comando Camuflado</div></div>
+    </div>
+  </section>
+
+  <!-- Elementos -->
+  <section>
+    <div class="kicker">08 · Elementos</div>
+    <h2 class="title">Botões, formas e emoji</h2>
+    <p class="lead">Botões "candy" com borda inferior sólida que afunda ao clicar. Cantos bem arredondados, contorno preto no mascote, e emoji como tempero.</p>
+    <div class="card" style="padding:26px">
+      <div class="btns">
+        <span class="btn btn-primary">🐓 Criar meu galo</span>
+        <span class="btn btn-gold">Conjunto lendário</span>
+        <span class="btn btn-ghost">Já tenho conta</span>
+      </div>
+      <div class="group-title" style="margin-top:22px">Emoji da marca</div>
+      <div class="emoji-row">🐓 🌽 🥚 👑 🔥 🏆 ⚔️ 🏟️</div>
+    </div>
+  </section>
+
+  <!-- Aplicação -->
+  <section>
+    <div class="kicker">09 · Aplicação</div>
+    <h2 class="title">Avatar &amp; redes sociais</h2>
+    <p class="lead">Para foto de perfil, use o mascote sobre o fundo céu + brilho de sol — o galo dourado fica nítido mesmo no corte circular.</p>
+    <div class="apps">
+      <img src="assets/avatar-instagram-1080.png" alt="Avatar do perfil — Galo Brigão" />
+      <ul>
+        <li>Mascote centralizado, com <b>folga em volta</b> para o corte circular.</li>
+        <li>Fundo: gradiente céu (#bfe6ff → #d9f3e6) com um <b>halo laranja</b> atrás do galo.</li>
+        <li>Exportar quadrado, no mínimo 512×512 (ideal 1080×1080).</li>
+        <li>Bio curta com a tagline + o endereço <b>galobrigao.com.br</b>.</li>
+      </ul>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="b"><img src="assets/mascote-galo-brigao.svg" alt="" /><b>Galo Brigão</b></div>
+    <p class="legal">Proibido para menores de 18 anos. · Galo Brigão Jogos Digitais LTDA · suporte@galobrigao.com.br · galobrigao.com.br</p>
+  </div>
+</footer>
+
+</body>
+</html>

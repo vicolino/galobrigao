@@ -1,0 +1,39 @@
+/* Galo Brigão — Tokens de cor da marca
+   Mesmos valores usados no jogo (src/styles.css). Copie :root para reaproveitar. */
+:root {
+  /* Marca (acentos) */
+  --sol: #ff9f1c;        /* cor principal — CTAs, destaques */
+  --fogo: #ff6d2a;       /* laranja quente — gradiente de botão */
+  --sol-escuro: #d97400; /* sombra de botão, texto sobre claro */
+  --ouro: #ffb800;       /* conquistas, lendário */
+
+  /* Cenário (cartoon) */
+  --ceu: #cdeeff;        /* fundo base */
+  --ceu-claro: #e4f6ff;
+  --ceu-forte: #bfe6ff;
+  --grama: #5fc45f;      /* chão, natureza */
+
+  /* Tinta */
+  --tinta: #0f2a40;      /* títulos (Lilita One) */
+  --texto: #173753;      /* corpo */
+  --apagado: #5e7f98;    /* secundário */
+  --linha: #d4e6f1;      /* bordas */
+  --painel: #ffffff;
+  --painel2: #f3f9fd;
+
+  /* Funcionais */
+  --vitoria: #2fbf71;    /* vitória / positivo */
+  --derrota: #ff5a5f;    /* derrota / negativo */
+  --info: #2e9bff;       /* informação / links de ação */
+
+  /* Raridades */
+  --rar-comum: #a8a29e;
+  --rar-raro: #4fa3ff;
+  --rar-epico: #b57bff;
+  --rar-lendario: #ffb020;
+
+  /* Forma */
+  --raio: 18px;
+  --raio-pequeno: 12px;
+  --sombra: 0 8px 22px rgba(23, 55, 83, 0.12);
+}

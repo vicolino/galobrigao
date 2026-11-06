@@ -22,7 +22,7 @@ export function Loja({ tab: tabParam }: { tab?: string }) {
   return (
     <>
       <PageHead title={t('🛒 Loja')} subtitle={t('Galos, skins, acessórios, ferramentas de luta e muito mais.')} />
-      <WalletBar />
+      <WalletBar hideBuy={tab === 'ovos'} />
       <Tabs
         value={tab}
         onChange={(v) => go(`/loja/${v}`)}

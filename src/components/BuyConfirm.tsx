@@ -106,7 +106,7 @@ export function BuyConfirm() {
 }
 
 /** Barra de saldo fixa no topo da Loja; quando o saldo cai, mostra quanto saiu. */
-export function WalletBar() {
+export function WalletBar({ hideBuy = false }: { hideBuy?: boolean } = {}) {
   const { wallet } = useGame()
   const prev = useRef(wallet)
   const [delta, setDelta] = useState<{ milho: number; ovos: number; key: number } | null>(null)
@@ -137,9 +137,11 @@ export function WalletBar() {
       </span>
       {delta && <span className="wb-deltas" key={delta.key}>{[chip(delta.milho, '🌽'), chip(delta.ovos, '🥚')]}</span>}
       <span className="grow" />
-      <button className="btn btn-sm btn-gold" onClick={() => go('/loja/ovos')}>
-        {t('💎 Comprar ovos')}
-      </button>
+      {!hideBuy && (
+        <button className="btn btn-sm btn-gold" onClick={() => go('/loja/ovos')}>
+          {t('💎 Comprar ovos')}
+        </button>
+      )}
     </div>
   )
 }
