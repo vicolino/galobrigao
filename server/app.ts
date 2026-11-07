@@ -11,9 +11,9 @@ import { addMintable, premiumViolation, runShop, ShopError, softViolation, type 
 import { makeRooster, today } from '../src/game/rooster'
 import type { GameState } from '../src/game/types'
 import { checkPassword, clearCookie, createSession, destroySession, dummyPasswordCheck, hashPassword, needsRehash, sessionCookie, userFromRequest } from './auth'
-import { badOrigin, baseHeaders, clientIp, escapeHtml, isProd, limited, tooMany } from './security'
+import { badOrigin, baseHeaders, clientIp, isProd, limited, tooMany } from './security'
 import { getDb, type OrderRow, type UserRow } from './db'
-import { sendMail } from './mail'
+import { emailShell, sendMail } from './mail'
 import { SaveConflict, loadSave, writeSave } from './saves'
 import { handlePvp, PvpError } from './pvp'
 import { FeiraError, feiraDeleteUser, handleFeira } from './feira'
@@ -181,7 +181,15 @@ async function sendVerifyEmail(user: UserRow, lang: Lang) {
   await sendMail(
     user.email,
     t('Confirme seu e-mail', undefined, lang),
-    `<p>${t('Olá, {nome}!', { nome: escapeHtml(user.name) }, lang)}</p><p>${t('Confirme seu e-mail para liberar as compras e o seu crédito de boas-vindas: {link}', { link: `<a href="${link}">${link}</a>` }, lang)}</p><p>${t('O link vale por 24 horas. Se não foi você, ignore este e-mail.', undefined, lang)}</p>`, // i18n-ok
+    emailShell({
+      brand: appName(lang),
+      heading: t('Olá, {nome}!', { nome: user.name }, lang),
+      intro: t('Confirme seu e-mail para liberar as compras e o seu crédito de boas-vindas.', undefined, lang),
+      button: { text: t('Confirmar e-mail', undefined, lang), href: link },
+      linkFallback: { label: t('Se o botão não abrir, copie e cole este link no navegador:', undefined, lang), href: link },
+      note: t('O link vale por 24 horas. Se não foi você, ignore este e-mail.', undefined, lang),
+      footer: t('Este é um e-mail automático do {brand}. Por favor, não responda.', { brand: appName(lang) }, lang),
+    }),
     appName(lang),
   )
 }
@@ -423,7 +431,15 @@ export async function handle(req: Req, res: Res) {
         void sendMail(
           user.email,
           t('Redefinir sua senha', undefined, l),
-          `<p>${t('Olá, {nome}!', { nome: escapeHtml(user.name) }, l)}</p><p>${t('Para criar uma senha nova, acesse: {link}', { link: `<a href="${link}">${link}</a>` }, l)}</p><p>${t('O link vale por 1 hora. Se não foi você, ignore este e-mail.', undefined, l)}</p>`, // i18n-ok
+          emailShell({
+            brand: appName(l),
+            heading: t('Olá, {nome}!', { nome: user.name }, l),
+            intro: t('Recebemos um pedido para criar uma senha nova na sua conta. É só clicar no botão abaixo.', undefined, l),
+            button: { text: t('Criar senha nova', undefined, l), href: link },
+            linkFallback: { label: t('Se o botão não abrir, copie e cole este link no navegador:', undefined, l), href: link },
+            note: t('O link vale por 1 hora. Se não foi você, ignore este e-mail.', undefined, l),
+            footer: t('Este é um e-mail automático do {brand}. Por favor, não responda.', { brand: appName(l) }, l),
+          }),
           appName(l),
         ).catch((e) => console.error('[mail] forgot', e))
       }

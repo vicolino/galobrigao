@@ -30,7 +30,7 @@ export const RELEASES = (): Release[] => [
     date: '2026-11-05',
     title: t('Deposite USDC e ganhe ovos'),
     items: [
-      { emoji: '💵', title: t('Depósito em USDC'), text: t('Mande USDC (Polygon) para a sua carteira do jogo e converta em ovos de ouro. Na rede de teste, pegue 20 USDC de teste por dia.'), link: '/carteira' },
+      { emoji: '💵', title: t('Depósito em USDC'), text: t('Mande USDC (Polygon) para a sua carteira do jogo e converta em ovos de ouro. Na rede de teste, pegue 20 USDC de teste (uma vez por conta).'), link: '/carteira' },
     ],
   },
   {

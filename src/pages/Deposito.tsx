@@ -118,27 +118,31 @@ export function DepositoUsdc({ info, busy, run, okTx }: PanelProps) {
           {d.network.testnet && <> {t('Esta é uma rede de teste: não envie fundos reais.')}</>}
         </div>
         {d.network.testnet && (
-          <div className="row gap wrap">
-            <button
-              className="btn btn-sm"
-              disabled={gettingTest}
-              onClick={async () => {
-                setGettingTest(true)
-                try {
-                  await api.testUsdc()
-                  toast(t('💵 20 USDC de teste chegaram na sua carteira!'), 'ok')
-                  await load()
-                } catch (e) {
-                  toast(tx((e as Error).message), 'erro')
-                } finally {
-                  setGettingTest(false)
-                }
-              }}
-            >
-              {gettingTest ? <span className="spinner" /> : <>💵 {t('Receber 20 USDC de teste')}</>}
-            </button>
-            <span className="tiny muted">{t('A taxa de rede é por nossa conta: você não precisa de POL.')}</span>
-          </div>
+          d.testUsdcClaimed ? (
+            <p className="tiny muted">✅ {t('Você já pegou seus 20 USDC de teste (uma vez por conta).')}</p>
+          ) : (
+            <div className="row gap wrap">
+              <button
+                className="btn btn-sm"
+                disabled={gettingTest}
+                onClick={async () => {
+                  setGettingTest(true)
+                  try {
+                    await api.testUsdc()
+                    toast(t('💵 20 USDC de teste chegaram na sua carteira!'), 'ok')
+                    await load()
+                  } catch (e) {
+                    toast(tx((e as Error).message), 'erro')
+                  } finally {
+                    setGettingTest(false)
+                  }
+                }}
+              >
+                {gettingTest ? <span className="spinner" /> : <>💵 {t('Receber 20 USDC de teste (uma vez)')}</>}
+              </button>
+              <span className="tiny muted">{t('A taxa de rede é por nossa conta: você não precisa de POL.')}</span>
+            </div>
+          )
         )}
 
         <h3 className="dep-sub">🥚 {t('Converter em ovos')}</h3>

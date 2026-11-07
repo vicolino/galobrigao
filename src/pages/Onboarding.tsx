@@ -182,7 +182,11 @@ export function StarterScreen() {
           {mvp && (
             <div className="mvp-banner">
               🎁 <b>{t('MODO MVP:')}</b>{' '}
-              <>{tn('você ganhou {valor} de crédito de teste para gastar na loja. Escolha um kit abaixo!', { valor: <b key="v">{brl(user?.mvpCreditCents ?? 0)}</b> })}</>
+              {user && !user.emailVerified ? (
+                <>✉️ {t('confirme seu e-mail para ganhar o seu crédito de teste e escolher um kit. Por enquanto, você pode começar de graça com o Galo Livre.')}</>
+              ) : (
+                <>{tn('você ganhou {valor} de crédito de teste para gastar na loja. Escolha um kit abaixo!', { valor: <b key="v">{brl(user?.mvpCreditCents ?? 0)}</b> })}</>
+              )}
             </div>
           )}
           <div className="avatar-pick center-row">

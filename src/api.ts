@@ -248,7 +248,7 @@ export interface Web3Info {
 }
 /** 💵 Depósito USDC → ovos. */
 export interface DepositView { id: string; usdc: number; eggs: number; status: 'pending' | 'done' | 'failed' | 'uncredited'; hash: string | null; at: number; url: string | null }
-export interface DepositInfo { network: { id: number; name: string; testnet: boolean }; usdc: string; address: string | null; balance: number | null; rate: number; min: number; cap: number; usedToday: number; kycRequired: boolean; recent: DepositView[] }
+export interface DepositInfo { network: { id: number; name: string; testnet: boolean }; usdc: string; address: string | null; balance: number | null; rate: number; min: number; cap: number; usedToday: number; kycRequired: boolean; testUsdcClaimed: boolean; recent: DepositView[] }
 export interface MarketListing { tokenId: number; kind: 'acc' | 'skin' | 'galo'; itemId: string; price: number; seller: string; mine: boolean; rooster?: GaloLook }
 export interface AdminWeb3TxRow {
   id: number | string

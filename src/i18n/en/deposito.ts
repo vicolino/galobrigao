@@ -1,10 +1,10 @@
 // Dicionário inglês da área "deposito" — 💵 Depositar USDC → ovos (chave = texto original em português).
 const dict: Record<string, string> = {
   '💵 20 USDC de teste chegaram na sua carteira!': '💵 20 test USDC just arrived in your wallet!',
-  'Receber 20 USDC de teste': 'Get 20 test USDC',
+  'Receber 20 USDC de teste (uma vez)': 'Get 20 test USDC (one time)',
+  'Você já pegou seus 20 USDC de teste (uma vez por conta).': 'You already claimed your 20 test USDC (one per account).',
   'A taxa de rede é por nossa conta: você não precisa de POL.': 'Network fees are on us: you don’t need POL.',
   'Indisponível': 'Unavailable',
-  'Você já pegou USDC de teste hoje. Volte amanhã.': 'You already got test USDC today. Come back tomorrow.',
   // Carteira
   'Depositar USDC': 'Deposit USDC',
   'QR code do seu endereço': 'QR code of your address',

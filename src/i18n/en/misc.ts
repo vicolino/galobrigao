@@ -34,6 +34,8 @@ const en: Record<string, string> = {
   'MODO MVP:': 'MVP MODE:',
   'você ganhou {valor} de crédito de teste para gastar na loja. Escolha um kit abaixo!':
     'you got {valor} in test credit to spend in the shop. Pick a kit below!',
+  'confirme seu e-mail para ganhar o seu crédito de teste e escolher um kit. Por enquanto, você pode começar de graça com o Galo Livre.':
+    'confirm your email to get your test credit and pick a kit. For now, you can start for free with the Free Rooster.',
   'GRÁTIS': 'FREE',
   'Galo Livre': 'Free Rooster',
   '🌽 {milho} de milho · 🥚 {ovos} ovos': '🌽 {milho} corn · 🥚 {ovos} eggs',

@@ -177,18 +177,27 @@ export async function handleDeposito(path: string, method: string, body: Record<
         cap: cfg.dailyCapUsdc,
         usedToday: usd(usedTodayUnits(user.id)),
         kycRequired: kycNeeded,
+        testUsdcClaimed: !!user.test_usdc_claimed_at,
         recent: recent.map(publicDeposit),
       },
     }
   }
 
-  // ----- Rede de teste: 20 USDC de teste por dia (o USDC da Circle é outro contrato e não serve aqui) -----
+  // ----- Rede de teste: 20 USDC de teste, UMA VEZ por conta (o USDC da Circle é outro contrato e não serve aqui) -----
   if (path === '/api/web3/test-usdc' && method === 'POST') {
     if (isMainnet()) fail(404, t('Indisponível'))
     const w = walletRow(user.id) ?? fail(409, t('Abra a Carteira antes de depositar.'))
-    if (limited(`testusdc:${user.id}`, 1, DAY)) fail(429, t('Você já pegou USDC de teste hoje. Volte amanhã.'))
-    const hash = await mintTestUsdc(w.address as Address, BigInt(20 * USDC))
-    return { body: { ok: true, usdc: 20, hash } }
+    // Reserva atômica: marca o resgate antes de minerar, então cliques concorrentes não mineram duas vezes.
+    const reserved = db().prepare('UPDATE users SET test_usdc_claimed_at = ? WHERE id = ? AND test_usdc_claimed_at IS NULL').run(Date.now(), user.id)
+    if (reserved.changes !== 1) fail(429, t('Você já pegou seu USDC de teste. É uma vez por conta.'))
+    try {
+      const hash = await mintTestUsdc(w.address as Address, BigInt(20 * USDC))
+      return { body: { ok: true, usdc: 20, hash } }
+    } catch (e) {
+      // A mintagem falhou: libera o brinde de novo para ele tentar mais tarde.
+      db().prepare('UPDATE users SET test_usdc_claimed_at = NULL WHERE id = ?').run(user.id)
+      throw e
+    }
   }
 
   if (path !== '/api/web3/deposit-eggs' || method !== 'POST') return null

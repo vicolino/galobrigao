@@ -156,6 +156,7 @@ export function getDb() {
   if (!cols.includes('role')) db.exec("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'player'")
   if (!cols.includes('lang')) db.exec("ALTER TABLE users ADD COLUMN lang TEXT NOT NULL DEFAULT 'pt'")
   if (!cols.includes('kyc_status')) db.exec("ALTER TABLE users ADD COLUMN kyc_status TEXT NOT NULL DEFAULT 'none'")
+  if (!cols.includes('test_usdc_claimed_at')) db.exec('ALTER TABLE users ADD COLUMN test_usdc_claimed_at INTEGER')
   // Verificação de e-mail: contas que já existiam quando a coluna foi criada entram como verificadas (backfill
   // roda só uma vez, aqui dentro do if). A partir daqui, todo cadastro novo nasce com NULL e precisa confirmar.
   if (!cols.includes('email_verified_at')) {
@@ -284,6 +285,8 @@ export interface UserRow {
   ban_reason?: string | null
   /** Verificação de identidade para envios externos: 'none' | 'pending' | 'verified' | 'rejected'. */
   kyc_status?: string
+  /** Quando o jogador resgatou o brinde de 20 USDC de teste (null = ainda não pegou). Uma vez por conta. */
+  test_usdc_claimed_at?: number | null
   /** Origem do cadastro (UTM do primeiro acesso), já higienizada. */
   utm_source?: string | null
   utm_medium?: string | null
