@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { simulate } from '../src/game/battle'
 import { TOOL_BY_ID } from '../src/game/data'
+import { creditTreasury } from './treasury'
 import { challengeTtl, ONLINE_WINDOW, pvpDailyRewards, PVP_ENERGY, pvpRewards, stakeFee, stakeLimits, type ChallengeView, type LobbyPlayer, type PvpRewards } from '../src/game/pvp'
 import { addXp, currentEnergy, today, uid, withEnergy } from '../src/game/rooster'
 import type { GameState, MissionKind, Rooster } from '../src/game/types'
@@ -269,6 +270,8 @@ export function handlePvp(path: string, method: string, _url: URL, body: Record<
     try {
       writeSave(c.from_user, ra.state, fromSave.rev + 1)
       writeSave(c.to_user, rb.state, toSave.rev + 1)
+      // A taxa não some: vai para a carteira do sistema (ovos conservados: −aposta do perdedor, +prêmio do vencedor, +taxa do sistema).
+      if (fee > 0) creditTreasury('desafio', 'ovo', fee, c.id)
       const result = { winner: res.winner, method: res.method, a: snap(a), b: snap(b), rewardsFrom: ra.rewards, rewardsTo: rb.rewards, stake, fee, toolA: usedA, toolB: usedB }
       d.prepare("UPDATE challenges SET status = 'aceito', resolved_at = ?, seed = ?, result = ?, seen_to = 1, to_tool = ? WHERE id = ?").run(now(), seed, JSON.stringify(result), toTool, c.id)
       d.exec('COMMIT')

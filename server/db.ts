@@ -87,6 +87,17 @@ export function getDb() {
     );
     CREATE INDEX IF NOT EXISTS challenges_to ON challenges(to_user, status);
     CREATE INDEX IF NOT EXISTS challenges_from ON challenges(from_user, status);
+    -- Carteira do sistema (tesouraria): entradas de ovos/milho que o sistema recolhe (taxas etc.).
+    -- Append-only: o saldo é a soma das linhas. Os ovos NÃO somem da economia; ficam aqui (lastro p/ NFT).
+    CREATE TABLE IF NOT EXISTS treasury (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      at INTEGER NOT NULL,
+      source TEXT NOT NULL,
+      currency TEXT NOT NULL,
+      amount INTEGER NOT NULL,
+      ref TEXT
+    );
+    CREATE INDEX IF NOT EXISTS treasury_at ON treasury(at);
     CREATE TABLE IF NOT EXISTS config (
       key TEXT PRIMARY KEY,
       value TEXT NOT NULL,

@@ -101,4 +101,15 @@ export interface FeiraAdmin {
   trades: FeiraTrade[]
   /** 🔑 Aluguel de galos (src/game/aluguel.ts). */
   rentals?: import('./aluguel').AluguelAdmin
+  /** 💰 Carteira do sistema (server/treasury.ts): taxas recolhidas, não queimadas. */
+  system?: TreasuryStats
+}
+
+export interface TreasuryStats {
+  days: number
+  /** Saldo total em ovos (lastro para a moeda NFT). */
+  ovos: number
+  milho: number
+  bySource: { source: string; currency: string; total: number; n: number }[]
+  recent: { at: number; source: string; currency: string; amount: number; ref: string | null }[]
 }

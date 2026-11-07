@@ -829,11 +829,42 @@ function FeiraAdminTab() {
   useEffect(() => {
     api.admin.feira().then(setD).catch((e) => setErr(tx((e as Error).message)))
   }, [])
+  const SOURCE_LABEL: Record<string, string> = { desafio: t('🤝 Desafios'), feira: t('🛒 Feira'), aluguel: t('🔑 Aluguel'), ajuste: t('⚙️ Ajuste') }
   return (
     <>
       <h1>{t('Feira')}</h1>
       <p className="tiny muted">{t('Trocas entre jogadores. A taxa da Feira (10% das vendas + 🥚 2 por presente) sai da economia.')}</p>
       {err && <div className="warn">{err}</div>}
+      {d?.system && (
+        <div className="card">
+          <h3>{t('💰 Carteira do sistema')}</h3>
+          <p className="tiny muted">{t('As taxas que o jogo recolhe entram aqui — não somem da economia. Os ovos aqui são o lastro para a moeda NFT.')}</p>
+          <div className="kpi-grid small">
+            <Kpi label={t('🥚 Saldo em ovos')} value={n(d.system.ovos)} />
+            <Kpi label={t('🌽 Saldo em milho')} value={n(d.system.milho)} />
+          </div>
+          {d.system.bySource.length > 0 && (
+            <table className="table admin-table">
+              <thead>
+                <tr>
+                  <th>{t('Fonte (últimos {d} dias)', { d: d.system.days })}</th>
+                  <th className="num">{t('Entradas')}</th>
+                  <th className="num">{t('Total')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {d.system.bySource.map((r, i) => (
+                  <tr key={i}>
+                    <td className="tiny">{SOURCE_LABEL[r.source] ?? r.source}</td>
+                    <td className="num tiny">{n(r.n)}</td>
+                    <td className="num tiny">{`${r.currency === 'milho' ? '🌽' : '🥚'} ${n(r.total)}`}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
       {d && (
         <div className="kpi-grid small">
           <Kpi label={t('🏷️ Anúncios ativos')} value={n(d.active)} />
@@ -1216,7 +1247,7 @@ function Config() {
             <>
               <div className="card cfg-section">
                 <h3>{t('💰 Aposta entre jogadores')}</h3>
-                <p className="tiny muted cfg-desc">{t('Cada um bota o mesmo valor em milho; quem vence leva o total menos a taxa.')}</p>
+                <p className="tiny muted cfg-desc">{t('Cada um bota o mesmo valor em ovos; quem vence leva o total menos a taxa. A taxa vai para a Carteira do sistema (veja em Feira).')}</p>
                 <div className="cfg-grid">
                   {num('pvp', 'feePct', t('Taxa do desafio (%)'), { unit: '%', step: 0.5, hint: t('Sobre o total apostado pelos dois') })}
                   {num('pvp', 'minStakeOvo', t('Aposta mínima do desafio (ovos)'), { unit: '🥚', step: 1 })}

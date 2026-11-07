@@ -116,6 +116,17 @@ const dict: Record<string, string> = {
   '🌽 Volume vendido': '🌽 Volume sold',
   '🥚 Volume vendido': '🥚 Volume sold',
   'Últimas trocas': 'Latest trades',
+  // Carteira do sistema (tesouraria)
+  '💰 Carteira do sistema': '💰 System wallet',
+  'As taxas que o jogo recolhe entram aqui — não somem da economia. Os ovos aqui são o lastro para a moeda NFT.': 'The fees the game collects go here — they do not vanish from the economy. The eggs here back the future NFT currency.',
+  '🥚 Saldo em ovos': '🥚 Balance in eggs',
+  '🌽 Saldo em milho': '🌽 Balance in corn',
+  'Fonte (últimos {d} dias)': 'Source (last {d} days)',
+  'Entradas': 'Entries',
+  '🛒 Feira': '🛒 Market',
+  '⚙️ Ajuste': '⚙️ Adjustment',
+  'Cada um bota o mesmo valor em ovos; quem vence leva o total menos a taxa. A taxa vai para a Carteira do sistema (veja em Feira).':
+    'Each player puts in the same amount of eggs; the winner takes the total minus the fee. The fee goes to the System wallet (see Market).',
   'De': 'From',
   'Para': 'To',
   'Item': 'Item',
