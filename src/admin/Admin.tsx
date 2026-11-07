@@ -30,6 +30,43 @@ const TABS: { id: Tab; label: string }[] = [
 const n = (v: number) => v.toLocaleString(locale())
 const pct = (v: number) => `${(v * 100).toLocaleString(locale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`
 const dt = (ms: number | null) => (ms ? new Date(ms).toLocaleString(locale(), { dateStyle: 'short', timeStyle: 'short' }) : '—')
+
+/** Dropdown próprio (sem <select> nativo), com a cara do jogo. */
+function Picker({ value, options, onChange }: { value: string; options: { value: string; label: string; danger?: boolean }[]; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false)
+  const active = options.find((o) => o.value === value) ?? options[0]
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false)
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [open])
+  return (
+    <div className="cfg-picker">
+      <button type="button" className={`cfg-picker-btn${active?.danger ? ' danger' : ''}`} aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
+        <span>{active?.label}</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
+      {open && (
+        <>
+          <div className="cfg-picker-back" onClick={() => setOpen(false)} />
+          <ul className="cfg-picker-menu" role="listbox">
+            {options.map((o) => (
+              <li key={o.value}>
+                <button type="button" role="option" aria-selected={o.value === value} className={`cfg-picker-opt${o.value === value ? ' on' : ''}${o.danger ? ' danger' : ''}`} onClick={() => { setOpen(false); onChange(o.value) }}>
+                  <span>{o.label}</span>
+                  {o.value === value && <span aria-hidden>✓</span>}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </div>
+  )
+}
 const ago = (ms: number | null) => {
   if (!ms) return t('nunca')
   const m = Math.round((Date.now() - ms) / 60000)
@@ -1173,11 +1210,15 @@ function Config() {
                   </label>
                   <label className="field">
                     <span>{t('Tipo')}</span>
-                    <select value={cfg.announcement.kind} onChange={(e) => set('announcement', { kind: e.target.value as AppConfig['announcement']['kind'] })}>
-                      <option value="info">{t('ℹ️ Informação')}</option>
-                      <option value="promo">{t('🎉 Promoção')}</option>
-                      <option value="alerta">{t('⚠️ Alerta')}</option>
-                    </select>
+                    <Picker
+                      value={cfg.announcement.kind}
+                      onChange={(v) => set('announcement', { kind: v as AppConfig['announcement']['kind'] })}
+                      options={[
+                        { value: 'info', label: t('ℹ️ Informação') },
+                        { value: 'promo', label: t('🎉 Promoção') },
+                        { value: 'alerta', label: t('⚠️ Alerta') },
+                      ]}
+                    />
                   </label>
                 </div>
                 {cfg.announcement.text && <div className={`announce announce-${cfg.announcement.kind}`}>{cfg.announcement.text}</div>}
@@ -1204,12 +1245,16 @@ function Config() {
                 <p className="tiny muted cfg-desc">{t('A chave que liga a rede. Mainnet = USDC de verdade. Só ligue depois que a mainnet estiver toda configurada (contratos, carteira operadora com gás, KYC).')}</p>
                 <label className="field">
                   <span>{t('Rede ativa')}</span>
-                  <select value={cfg.onchain.network} onChange={(e) => set('onchain', { network: e.target.value })}>
-                    <option value="">{t('Automático (usa o servidor)')}</option>
-                    <option value="off">{t('Desligado (sem cripto)')}</option>
-                    <option value="testnet">{t('Testnet (Polygon Amoy — teste)')}</option>
-                    <option value="mainnet">{t('Mainnet (Polygon — DINHEIRO REAL)')}</option>
-                  </select>
+                  <Picker
+                    value={cfg.onchain.network}
+                    onChange={(v) => set('onchain', { network: v })}
+                    options={[
+                      { value: '', label: t('Automático (usa o servidor)') },
+                      { value: 'off', label: t('Desligado (sem cripto)') },
+                      { value: 'testnet', label: t('Testnet (Polygon Amoy — teste)') },
+                      { value: 'mainnet', label: t('Mainnet (Polygon — DINHEIRO REAL)'), danger: true },
+                    ]}
+                  />
                 </label>
                 {cfg.onchain.network === 'mainnet' && <p className="tiny neg">{t('⚠️ Mainnet LIGADA: depósitos e saques são em USDC real. Confirme que tudo está configurado e testado.')}</p>}
               </div>

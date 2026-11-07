@@ -737,6 +737,20 @@ select {
 select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 /* Opções do menu nativo: fundo claro e texto escuro (evita menu preto no macOS dark) */
 option { background-color: #fff; color: var(--text); }
+/* Dropdown próprio do back-office (sem <select> nativo; menu com a cara do jogo) */
+.cfg-picker { position: relative; width: 100%; max-width: 360px; }
+.cfg-picker-btn { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg2); color: var(--text); font-family: inherit; font-weight: 700; font-size: 14px; cursor: pointer; }
+.cfg-picker-btn:hover { border-color: var(--accent); }
+.cfg-picker-btn.danger { color: var(--red-dk); border-color: var(--red); }
+.cfg-picker-btn svg { flex: none; opacity: 0.7; }
+.cfg-picker-back { position: fixed; inset: 0; z-index: 50; }
+.cfg-picker-menu { position: absolute; z-index: 51; top: calc(100% + 6px); left: 0; right: 0; margin: 0; padding: 6px; list-style: none; background: var(--panel); border: 1px solid var(--line2); border-radius: 12px; box-shadow: var(--shadow-lg); }
+.cfg-picker-opt { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; padding: 9px 10px; border: 0; border-radius: 9px; background: transparent; color: var(--text); font-family: inherit; font-weight: 600; font-size: 14px; text-align: left; cursor: pointer; }
+.cfg-picker-opt:hover { background: var(--sky2); }
+.cfg-picker-opt.on { background: var(--accent); color: #fff; }
+.cfg-picker-opt.danger { color: var(--red-dk); }
+.cfg-picker-opt.danger:hover { background: #ffe3e4; }
+.cfg-picker-opt.on.danger { background: var(--red); color: #fff; }
 .starter-page { width: 100%; max-width: 1100px; display: flex; flex-direction: column; gap: 16px; }
 .starter-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
 .starter-card { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; position: relative; padding-top: 22px; }
