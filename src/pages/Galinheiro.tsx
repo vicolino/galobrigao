@@ -370,46 +370,56 @@ function RoosterDetail({ id }: { id: string }) {
           </div>
 
           <div className="actions">
-            <button className="btn btn-primary" onClick={() => go(`/rinha?galo=${ro.id}`)}>
-              {t('⚔️ Lutar')}
-            </button>
-            <button className="btn" onClick={train}>
-              {t('💪 Treinar')} <small>(🌽{fmt(trainCost(ro.level))} · ⚡15)</small>
-            </button>
-            <button className="btn" onClick={() => setItemsOpen(true)}>
-              {t('🍽️ Usar item')}
-            </button>
-            <button className="btn" onClick={() => setSkinOpen(true)}>
-              {t('🎨 Skin')}
-            </button>
-            <button className="btn" onClick={() => setStyleOpen(true)}>
-              {t('🎭 Estilo')}
-            </button>
-            <ShareButton card={{ ro, headline: t('🐓 MEU GALO'), stat: `${t('💰 Vale 🌽 {n}', { n: fmt(roosterValue(ro)) })} · ${recordLine(ro)}` }} />
+            <div className="actions-group actions-main">
+              <button className="btn btn-primary" onClick={() => go(`/rinha?galo=${ro.id}`)}>
+                {t('⚔️ Lutar')}
+              </button>
+              <button className="btn" onClick={train}>
+                {t('💪 Treinar')} <small>(🌽{fmt(trainCost(ro.level))} · ⚡15)</small>
+              </button>
+              {!ro.rental && (
+                <button className="btn" onClick={() => go(`/cruzamento?a=${ro.id}`)}>
+                  {t('🥚 Cruzar')}
+                </button>
+              )}
+            </div>
+
+            <div className="actions-group actions-customize">
+              <span className="actions-label">{t('Personalizar')}</span>
+              <button className="btn" onClick={() => setItemsOpen(true)}>
+                {t('🍽️ Usar item')}
+              </button>
+              <button className="btn" onClick={() => setSkinOpen(true)}>
+                {t('🎨 Skin')}
+              </button>
+              <button className="btn" onClick={() => setStyleOpen(true)}>
+                {t('🎭 Estilo')}
+              </button>
+              <ShareButton card={{ ro, headline: t('🐓 MEU GALO'), stat: `${t('💰 Vale 🌽 {n}', { n: fmt(roosterValue(ro)) })} · ${recordLine(ro)}` }} />
+            </div>
+
             {ro.rental ? (
               <div className="alu-detail tiny">
                 {t('🔑 Alugado de {nome}: volta em {t}. Não dá para vender, dar, cruzar nem anunciar. Nome e estilo voltam ao original.', { nome: ro.rental.ownerName, t: leftShort(ro.rental.until) })}
               </div>
             ) : (
-            <>
-            <button className="btn" onClick={() => go(`/cruzamento?a=${ro.id}`)}>
-              {t('🥚 Cruzar')}
-            </button>
-            {ro.nft ? (
-              <button className="btn btn-gold" onClick={() => go('/carteira')}>
-                {t('💎 Galo NFT: ver na Carteira')}
-              </button>
-            ) : (
-              <button className="btn btn-danger" onClick={() => setSellOpen(true)}>
-                {t('💰 Vender')}
-              </button>
-            )}
-            {s.roosters.length > 1 && !ro.nft && (
-              <button className="btn btn-gold" onClick={() => go(`/feira/vender?galo=${ro.id}`)}>
-                {t('💰 Vender na Feira')}
-              </button>
-            )}
-            </>
+              <div className="actions-group sell-zone">
+                <span className="actions-label">{t('Vender este galo')}</span>
+                {ro.nft ? (
+                  <button className="btn btn-gold btn-sm" onClick={() => go('/carteira')}>
+                    {t('💎 Galo NFT: ver na Carteira')}
+                  </button>
+                ) : (
+                  <button className="btn btn-danger btn-sm" onClick={() => setSellOpen(true)}>
+                    {t('💰 Vender')}
+                  </button>
+                )}
+                {s.roosters.length > 1 && !ro.nft && (
+                  <button className="btn btn-gold btn-sm" onClick={() => go(`/feira/vender?galo=${ro.id}`)}>
+                    {t('💰 Vender na Feira')}
+                  </button>
+                )}
+              </div>
             )}
           </div>
         </div>

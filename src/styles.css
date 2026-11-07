@@ -365,7 +365,15 @@ input[type='datetime-local']::-webkit-calendar-picker-indicator:hover { opacity:
 .record b { font-size: 18px; }
 .record span { font-size: 11px; color: var(--muted); }
 .lucky { color: #8be28f; font-weight: 800; }
-.actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.actions { display: flex; flex-direction: column; gap: 12px; margin-top: 12px; }
+.actions-group { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.actions-label { flex-basis: 100%; margin: 0; font-size: 11px; font-weight: 800; letter-spacing: 0.6px; text-transform: uppercase; color: var(--muted); }
+/* Ação principal em destaque: Lutar ocupa a linha inteira, Treinar/Cruzar embaixo */
+.actions-main .btn-primary { flex: 1 1 100%; font-size: 15px; padding: 11px 15px; }
+.actions-main .btn { flex: 1 1 calc(50% - 4px); }
+/* Zona de venda: destacada e separada, com menos proeminência (ações destrutivas) */
+.sell-zone { margin-top: 2px; padding: 10px 12px; border: 1.5px dashed var(--line2); border-radius: 13px; background: var(--panel2); }
+.sell-zone .btn { flex: 1 1 auto; }
 .equip-current { display: flex; justify-content: space-between; align-items: center; background: var(--bg2); padding: 10px; border-radius: 10px; margin-bottom: 10px; }
 
 /* ---------- Rinha ---------- */

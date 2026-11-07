@@ -60,6 +60,8 @@ const en: Record<string, string> = {
   '🍽️ Usar item': '🍽️ Use item',
   '🎨 Skin': '🎨 Skin',
   '🎭 Estilo': '🎭 Style',
+  'Personalizar': 'Customize',
+  'Vender este galo': 'Sell this rooster',
   '💰 Vender': '💰 Sell',
   'Equipado:': 'Equipped:',
   'Tirar': 'Remove',
