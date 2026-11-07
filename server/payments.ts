@@ -99,25 +99,41 @@ export async function fetchRemoteStatus(order: OrderRow): Promise<{ status: Remo
   return { status: results[0] ? mapStatus(results[0].status) : 'pendente' }
 }
 
-/** Webhook do Mercado Pago: valida assinatura (se configurada) e devolve o id do pagamento. */
+/**
+ * Webhook do Mercado Pago. Só trata notificações de pagamento (ignora merchant_order e afins).
+ * A assinatura é validada quando vem (webhook assinado); se faltar (IPN/legado) ou não bater, a
+ * notificação NÃO é descartada: o status real é sempre reconsultado em /v1/payments com o nosso
+ * Access Token (fonte da verdade), então um payload forjado não consegue creditar nada — o crédito
+ * depende de o MP confirmar o pagamento daquela ordem. Isso garante confirmação mesmo sem webhook assinado.
+ */
 export async function parseMpWebhook(headers: Record<string, string | string[] | undefined>, url: URL, body: Record<string, unknown>) {
-  const dataId = String((body.data as { id?: string })?.id ?? url.searchParams.get('data.id') ?? '')
+  const q = url.searchParams
+  const topic = String(body.type ?? body.topic ?? q.get('type') ?? q.get('topic') ?? '').toLowerCase()
+  if (topic && topic !== 'payment') return null // merchant_order etc.: o pagamento vem em notificação própria
+  const dataId = String((body.data as { id?: string })?.id ?? q.get('data.id') ?? q.get('id') ?? '')
+  if (!dataId) return null
+
   const secret = process.env.MP_WEBHOOK_SECRET
-  if (secret) {
-    const sig = String(headers['x-signature'] ?? '')
+  const sig = String(headers['x-signature'] ?? '')
+  if (secret && sig) {
     const reqId = String(headers['x-request-id'] ?? '')
     const parts = Object.fromEntries(sig.split(',').map((p) => p.trim().split('=') as [string, string]))
     const manifest = `id:${dataId.toLowerCase()};request-id:${reqId};ts:${parts.ts};`
     const expected = createHmac('sha256', secret).update(manifest).digest('hex')
     const got = Buffer.from(String(parts.v1 ?? ''), 'utf8')
     const exp = Buffer.from(expected, 'utf8')
-    if (got.length !== exp.length || !timingSafeEqual(got, exp)) throw new Error('assinatura inválida') // i18n-ok
-    // Rejeita notificações velhas (replay): ts em milissegundos
-    const ts = Number(parts.ts)
-    const tsMs = ts < 1e12 ? ts * 1000 : ts
-    if (ts && Math.abs(Date.now() - tsMs) > 10 * 60_000) throw new Error('notificação expirada') // i18n-ok
+    if (got.length === exp.length && timingSafeEqual(got, exp)) {
+      // Assinada e válida: rejeita replay (ts em segundos ou ms)
+      const ts = Number(parts.ts)
+      const tsMs = ts < 1e12 ? ts * 1000 : ts
+      if (ts && Math.abs(Date.now() - tsMs) > 10 * 60_000) throw new Error('notificação expirada') // i18n-ok
+    } else {
+      console.warn(`[webhook] assinatura não confere (id=${dataId}) — confirmando pela API do MP`) // i18n-ok
+    }
+  } else if (!sig) {
+    console.warn(`[webhook] notificação sem assinatura (IPN/legado, id=${dataId}) — confirmando pela API do MP`) // i18n-ok
   }
-  if (!dataId) return null
+
   const p = await mp(`/v1/payments/${dataId}`)
   return {
     orderId: String(p.external_reference ?? ''),
