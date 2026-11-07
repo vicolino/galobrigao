@@ -147,7 +147,9 @@ echo "== Caddy (HTTPS automático)"
 cat > /etc/caddy/Caddyfile <<EOF
 galobrigao.com.br {
 	encode zstd gzip
-	reverse_proxy 127.0.0.1:8787
+	reverse_proxy 127.0.0.1:8787 {
+		header_up X-Forwarded-For {remote_host}
+	}
 	log {
 		output file /var/log/caddy/galobrigao.log {
 			roll_size 50mb
@@ -162,7 +164,9 @@ www.galobrigao.com.br {
 
 $HOST {
 	encode zstd gzip
-	reverse_proxy 127.0.0.1:8787
+	reverse_proxy 127.0.0.1:8787 {
+		header_up X-Forwarded-For {remote_host}
+	}
 }
 EOF
 systemctl enable caddy

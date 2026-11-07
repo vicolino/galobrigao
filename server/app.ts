@@ -10,7 +10,7 @@ import { newGame } from '../src/game/engine'
 import { addMintable, premiumViolation, runShop, ShopError, softViolation, type ShopOp } from '../src/game/premium'
 import { makeRooster, today } from '../src/game/rooster'
 import type { GameState } from '../src/game/types'
-import { checkPassword, clearCookie, createSession, destroySession, dummyPasswordCheck, hashPassword, sessionCookie, userFromRequest } from './auth'
+import { checkPassword, clearCookie, createSession, destroySession, dummyPasswordCheck, hashPassword, needsRehash, sessionCookie, userFromRequest } from './auth'
 import { badOrigin, baseHeaders, clientIp, escapeHtml, isProd, limited, tooMany } from './security'
 import { getDb, type OrderRow, type UserRow } from './db'
 import { sendMail } from './mail'
@@ -300,7 +300,7 @@ export async function handle(req: Req, res: Res) {
   const url = new URL(req.url ?? '/', 'http://localhost')
   const path = url.pathname
   const method = req.method ?? 'GET'
-  const secure = (process.env.PUBLIC_URL ?? '').startsWith('https')
+  const secure = isProd() || (process.env.PUBLIC_URL ?? '').startsWith('https')
   const db = getDb()
   const ip = clientIp(req)
   // Limite geral por IP (protege contra abuso e sobrecarga)
@@ -358,6 +358,8 @@ export async function handle(req: Req, res: Res) {
         throw new HttpError(401, t('E-mail ou senha incorretos'))
       }
       if (user.banned_at) throw new HttpError(403, user.ban_reason ? t('Conta bloqueada: {motivo}. Fale com o suporte.', { motivo: user.ban_reason }) : t('Conta bloqueada. Fale com o suporte.'))
+      // Migra senhas em formato legado para o custo novo do scrypt, aproveitando que temos a senha em claro aqui.
+      if (needsRehash(user)) db.prepare('UPDATE users SET pass_hash = ? WHERE id = ?').run(hashPassword(String(b.password ?? ''), user.salt).hash, user.id)
       return json(res, 200, { user: publicUser(applyPendingLimit(user)) }, { 'Set-Cookie': sessionCookie(createSession(user.id), secure) })
     }
     if (path === '/api/auth/logout' && method === 'POST') {

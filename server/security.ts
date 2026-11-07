@@ -4,10 +4,13 @@ import { t } from '../src/i18n'
 
 export const isProd = () => process.env.NODE_ENV === 'production'
 
-/** IP do cliente. Atrás do Caddy (TRUST_PROXY=1) usa o X-Forwarded-For. */
+/** IP do cliente. Atrás do Caddy (TRUST_PROXY=1) usa o X-Forwarded-For.
+ * Pega o ÚLTIMO item da lista: é o que o proxy confiável (Caddy) anexou. Os valores à frente
+ * podem ser forjados pelo cliente, então usar o primeiro deixaria qualquer um burlar os limites por IP. */
 export function clientIp(req: IncomingMessage) {
   if (process.env.TRUST_PROXY === '1') {
-    const xff = String(req.headers['x-forwarded-for'] ?? '').split(',')[0].trim()
+    const parts = String(req.headers['x-forwarded-for'] ?? '').split(',')
+    const xff = parts[parts.length - 1].trim()
     if (xff) return xff
   }
   return req.socket.remoteAddress ?? '?'
