@@ -128,6 +128,17 @@ function Overview() {
             <Kpi label={t('Online agora')} value={n(d.kpis.online)} />
           </div>
 
+          {d.treasury && (
+            <div className="card">
+              <h3>{t('💰 Carteira do sistema')}</h3>
+              <p className="tiny muted">{t('As taxas que o jogo recolhe entram aqui — não somem da economia. Os ovos aqui são o lastro para a moeda NFT.')}</p>
+              <div className="kpi-grid small">
+                <Kpi label={t('🥚 Saldo em ovos')} value={n(d.treasury.ovos)} />
+                <Kpi label={t('🌽 Saldo em milho')} value={n(d.treasury.milho)} />
+              </div>
+            </div>
+          )}
+
           <div className="admin-two">
             <DailyBars title={t('Receita por dia')} data={d.series.map((s) => ({ day: s.day, value: s.revenueCents }))} format={(v) => brl(v)} />
             <DailyBars title={t('Jogadores ativos por dia')} data={d.series.map((s) => ({ day: s.day, value: s.active }))} format={n} />

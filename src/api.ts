@@ -308,6 +308,8 @@ export interface AdminOverview {
     pvp: number
     banned: number
   }
+  /** 💰 Carteira do sistema (tesouraria): taxas e gastos recolhidos, não queimados. */
+  treasury?: import('./game/feira').TreasuryStats
   funnel: { step: string; n: number }[]
   series: AdminSeriesDay[]
   bySku: { id: string; name: string; count: number; cents: number }[]

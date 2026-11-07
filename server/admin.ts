@@ -131,6 +131,7 @@ function overview(days: number) {
       pvp: series.reduce((s, d) => s + d.pvp, 0),
       banned,
     },
+    treasury: treasuryStats(),
     funnel: [
       { step: t('Criaram conta'), n: users.length },
       { step: t('Escolheram o primeiro galo'), n: withSave },
