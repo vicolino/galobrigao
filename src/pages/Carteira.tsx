@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { api, ApiError, type GaloLook, type KycStatus, type Web3Asset, type Web3Info, type Web3Nft, type Web3Tx } from '../api'
-import { Empty, Modal, PageHead, RarityTag, Tabs } from '../components/ui'
+import { Empty, Modal, PageHead, Picker, RarityTag, Tabs } from '../components/ui'
 import { ACC_BY_ID, BREED_BY_ID, SKIN_BY_ID } from '../game/data'
 import { GaloNftPanel, NftArt } from './GaloNft'
 import { DepositoUsdc } from './Deposito'
@@ -385,11 +385,11 @@ function Send({ info, kyc, busy, run, okTx }: PanelProps & { kyc: KycStatus }) {
         <>
           <label className="field">
             <span>{t('Moeda')}</span>
-            <select value={asset} onChange={(e) => { setAsset(e.target.value as Web3Asset); setAmount('') }}>
-              {(['egg', 'corn', 'usdc'] as const).map((a) => (
-                <option key={a} value={a}>{ASSET_LABEL[a]}</option>
-              ))}
-            </select>
+            <Picker
+              value={asset}
+              options={(['egg', 'corn', 'usdc'] as const).map((a) => ({ value: a, label: ASSET_LABEL[a] }))}
+              onChange={(v) => { setAsset(v as Web3Asset); setAmount('') }}
+            />
           </label>
           <label className="field">
             <span>{t('Para o endereço')}</span>

@@ -1,7 +1,7 @@
 import { Fragment, useCallback, useEffect, useState } from 'react'
 import { api, type AdminActivity, type AdminWeb3, type KycStatus, type AdminLogRow, type AdminOrderRow, type AdminOverview, type AdminUserDetail, type AdminUserRow } from '../api'
 import { APP_NAME } from '../brand'
-import { Modal } from '../components/ui'
+import { Modal, Picker } from '../components/ui'
 import { CATALOG, brl } from '../game/catalog'
 import type { AppConfig } from '../game/config'
 import { useGame } from '../game/store'
@@ -31,42 +31,6 @@ const n = (v: number) => v.toLocaleString(locale())
 const pct = (v: number) => `${(v * 100).toLocaleString(locale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`
 const dt = (ms: number | null) => (ms ? new Date(ms).toLocaleString(locale(), { dateStyle: 'short', timeStyle: 'short' }) : '—')
 
-/** Dropdown próprio (sem <select> nativo), com a cara do jogo. */
-function Picker({ value, options, onChange }: { value: string; options: { value: string; label: string; danger?: boolean }[]; onChange: (v: string) => void }) {
-  const [open, setOpen] = useState(false)
-  const active = options.find((o) => o.value === value) ?? options[0]
-  useEffect(() => {
-    if (!open) return
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false)
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [open])
-  return (
-    <div className="cfg-picker">
-      <button type="button" className={`cfg-picker-btn${active?.danger ? ' danger' : ''}`} aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
-        <span>{active?.label}</span>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
-      </button>
-      {open && (
-        <>
-          <div className="cfg-picker-back" onClick={() => setOpen(false)} />
-          <ul className="cfg-picker-menu" role="listbox">
-            {options.map((o) => (
-              <li key={o.value}>
-                <button type="button" role="option" aria-selected={o.value === value} className={`cfg-picker-opt${o.value === value ? ' on' : ''}${o.danger ? ' danger' : ''}`} onClick={() => { setOpen(false); onChange(o.value) }}>
-                  <span>{o.label}</span>
-                  {o.value === value && <span aria-hidden>✓</span>}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
-    </div>
-  )
-}
 const ago = (ms: number | null) => {
   if (!ms) return t('nunca')
   const m = Math.round((Date.now() - ms) / 60000)

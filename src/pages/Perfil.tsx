@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api, type ApiOrder } from '../api'
 import { brl } from '../game/catalog'
-import { Modal, PageHead } from '../components/ui'
+import { Modal, PageHead, Picker } from '../components/ui'
 import { ACHIEVEMENTS, AVATARS } from '../game/data'
 import { fmt } from '../game/rooster'
 import { titleFor, useGame } from '../game/store'
@@ -108,20 +108,15 @@ export function Perfil() {
             </div>
             <label className="field">
               <span>{t('Limite mensal')}</span>
-              <select
-                value={user.limits.monthlyCents}
-                onChange={async (e) => {
-                  const r = await api.setLimit(Number(e.target.value))
+              <Picker
+                value={String(user.limits.monthlyCents)}
+                options={user.limits.options.map((c) => ({ value: String(c), label: brl(c) }))}
+                onChange={async (v) => {
+                  const r = await api.setLimit(Number(v))
                   actions.setUser(r.user)
                   toast(r.user.limits.pendingCents ? t('Aumento de limite vale em 24h.') : t('Limite atualizado.'), 'ok')
                 }}
-              >
-                {user.limits.options.map((c) => (
-                  <option key={c} value={c}>
-                    {brl(c)}
-                  </option>
-                ))}
-              </select>
+              />
             </label>
             {user.limits.pendingCents && (
               <p className="tiny warn">
