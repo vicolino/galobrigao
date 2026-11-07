@@ -7,6 +7,7 @@ import { FEIRA, feiraFee, feiraPriceOk, type FeiraKind, type FeiraListing, type 
 import type { Currency, GameState, Rooster } from '../src/game/types'
 import { getDb, type UserRow } from './db'
 import { loadSave, writeSave } from './saves'
+import { creditTreasury } from './treasury'
 import { fmt } from '../src/game/rooster'
 import { t } from '../src/i18n'
 import { aluguelAdmin, expireRentals } from './aluguel'
@@ -399,6 +400,8 @@ export function handleFeira(path: string, method: string, url: URL, body: Record
       writeSave(u.id, b, buyer.rev + 1)
       writeSave(l.seller, s, seller.rev + 1)
       trade({ kind: 'venda', listingId: l.id, seller: l.seller, buyer: u.id, assetKind: l.kind, assetId: l.item_id, assetName: name, price: l.price, currency: l.currency, fee, at: now() })
+      // A taxa da Feira não some: vai para a carteira do sistema.
+      if (fee > 0) creditTreasury('feira', l.currency === 'milho' ? 'milho' : 'ovo', fee, l.id)
       notify(l.seller, t('🏪 {nome} comprou {item}! Você recebeu {liquido} (taxa da Feira: {taxa}).', { nome: buyerName, item: name, liquido: priceText(net, l.currency), taxa: priceText(fee, l.currency) }))
       d.exec('COMMIT')
     } catch (e) {
@@ -437,6 +440,8 @@ export function handleFeira(path: string, method: string, url: URL, body: Record
       writeSave(u.id, s, cur.rev + 1)
       writeSave(to, r, dest.rev + 1)
       trade({ kind: 'presente', seller: u.id, buyer: to, assetKind: kind, assetId: id, assetName: name, price: 0, currency: 'ovo', fee: FEIRA.giftFee, at: now() })
+      // O embrulho (🥚 2) vai para a carteira do sistema.
+      if (FEIRA.giftFee > 0) creditTreasury('feira', 'ovo', FEIRA.giftFee, null)
       notify(to, t('🎁 {nome} te mandou {item}!', { nome: myName, item: name }))
       d.exec('COMMIT')
     } catch (e) {

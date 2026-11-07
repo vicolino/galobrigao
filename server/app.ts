@@ -15,6 +15,7 @@ import { badOrigin, baseHeaders, clientIp, isProd, limited, tooMany } from './se
 import { getDb, type OrderRow, type UserRow } from './db'
 import { emailShell, sendMail } from './mail'
 import { SaveConflict, loadSave, writeSave } from './saves'
+import { creditTreasury } from './treasury'
 import { handlePvp, PvpError } from './pvp'
 import { FeiraError, feiraDeleteUser, handleFeira } from './feira'
 import { AluguelError, aluguelDeleteUser, guardRentals, handleAluguel } from './aluguel'
@@ -698,6 +699,12 @@ export async function handle(req: Req, res: Res) {
         const r = withStock(op, () => {
           const r = runShop(cur.state, op)
           writeSave(u.id, r.state, cur.rev + 1)
+          // Ovos/milho gastos na Loja (itens, estrelas, energia, troca ovo→milho) vão para a
+          // carteira do sistema — não somem da economia.
+          const spentOvo = cur.state.ovos - r.state.ovos
+          const spentMilho = cur.state.milho - r.state.milho
+          if (spentOvo > 0) creditTreasury('loja', 'ovo', spentOvo, null)
+          if (spentMilho > 0) creditTreasury('loja', 'milho', spentMilho, null)
           return r
         })
         afterShop(u.id, op, r.value)

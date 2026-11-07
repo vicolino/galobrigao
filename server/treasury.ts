@@ -3,7 +3,7 @@
 // o saldo é a soma das entradas (sempre positivas; saídas futuras entram como amount negativo).
 import { getDb } from './db'
 
-export type TreasurySource = 'desafio' | 'feira' | 'aluguel' | 'ajuste'
+export type TreasurySource = 'desafio' | 'feira' | 'aluguel' | 'loja' | 'ajuste'
 
 /** Credita a carteira do sistema. Chamar DENTRO da transação que move os ovos, para ser atômico. */
 export function creditTreasury(source: TreasurySource, currency: 'ovo' | 'milho', amount: number, ref?: string | null) {
