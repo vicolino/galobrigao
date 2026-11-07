@@ -129,6 +129,8 @@ export async function parseMpWebhook(headers: Record<string, string | string[] |
       if (ts && Math.abs(Date.now() - tsMs) > 10 * 60_000) throw new Error('notificação expirada') // i18n-ok
     } else {
       console.warn(`[webhook] assinatura não confere (id=${dataId}) — confirmando pela API do MP`) // i18n-ok
+      // DIAGNÓSTICO TEMPORÁRIO (sem segredos): componentes para reproduzir o manifesto offline.
+      console.warn(`[webhook-diag] data_body=${(body.data as { id?: string })?.id ?? ''} data_query=${q.get('data.id') ?? ''} id_query=${q.get('id') ?? ''} xreqid=${reqId} ts=${parts.ts} v1=${parts.v1} query=${q.toString()}`) // i18n-ok
     }
   } else if (!sig) {
     console.warn(`[webhook] notificação sem assinatura (IPN/legado, id=${dataId}) — confirmando pela API do MP`) // i18n-ok
