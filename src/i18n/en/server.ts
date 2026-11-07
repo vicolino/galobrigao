@@ -97,6 +97,15 @@ const en: Record<string, string> = {
   'Os galos não têm mais nível parecido.': 'The roosters are no longer at a similar level.',
   'Um dos galos ficou sem energia.': 'One of the roosters ran out of energy.',
   'Não dá para cancelar esse desafio': "This challenge can't be cancelled",
+  // Desafio valendo ovos + ferramenta
+  'Aposta mínima do desafio (ovos)': 'Minimum challenge bet (eggs)',
+  'Aposta máxima do desafio (ovos)': 'Maximum challenge bet (eggs)',
+  'A aposta tem que ser entre 🥚 {min} e 🥚 {max}.': 'The bet must be between 🥚 {min} and 🥚 {max}.',
+  'Você não tem 🥚 {n} de ovos para essa aposta.': "You don't have 🥚 {n} eggs for this bet.",
+  'Esse jogador não tem ovos suficientes para essa aposta. Tente um valor menor.': "That player doesn't have enough eggs for this bet. Try a smaller amount.",
+  'Essa ferramenta não existe.': "That tool doesn't exist.",
+  'Quem desafiou não tem mais os ovos da aposta.': 'The challenger no longer has the eggs for the bet.',
+  'Você não tem 🥚 {n} de ovos para aceitar.': "You don't have 🥚 {n} eggs to accept.",
 
   // ----- Apostas -----
   'Prêmio de aposta: {aposta} ({luta})': 'Bet payout: {aposta} ({luta})',

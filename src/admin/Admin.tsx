@@ -1219,8 +1219,8 @@ function Config() {
                 <p className="tiny muted cfg-desc">{t('Cada um bota o mesmo valor em milho; quem vence leva o total menos a taxa.')}</p>
                 <div className="cfg-grid">
                   {num('pvp', 'feePct', t('Taxa do desafio (%)'), { unit: '%', step: 0.5, hint: t('Sobre o total apostado pelos dois') })}
-                  {num('pvp', 'minStake', t('Aposta mínima do desafio (milho)'), { unit: '🌽', step: 50 })}
-                  {num('pvp', 'maxStake', t('Aposta máxima do desafio (milho)'), { unit: '🌽', step: 1000 })}
+                  {num('pvp', 'minStakeOvo', t('Aposta mínima do desafio (ovos)'), { unit: '🥚', step: 1 })}
+                  {num('pvp', 'maxStakeOvo', t('Aposta máxima do desafio (ovos)'), { unit: '🥚', step: 10 })}
                 </div>
               </div>
               <div className="card cfg-section">

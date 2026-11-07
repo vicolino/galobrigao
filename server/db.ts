@@ -217,9 +217,12 @@ export function getDb() {
   // Moeda de cada aposta: as antigas foram feitas em milho (pagam em milho); as novas usam 🎟️ fichas
   const betCols = (db.prepare('PRAGMA table_info(house_bets)').all() as { name: string }[]).map((c) => c.name)
   if (!betCols.includes('currency')) db.exec("ALTER TABLE house_bets ADD COLUMN currency TEXT NOT NULL DEFAULT 'milho'")
-  // Desafio valendo milho: cada um bota `stake`; quem vence leva o total menos a taxa
+  // Desafio valendo ovos: cada um bota `stake`; quem vence leva o total menos a taxa
   const chCols = (db.prepare('PRAGMA table_info(challenges)').all() as { name: string }[]).map((c) => c.name)
   if (!chCols.includes('stake')) db.exec('ALTER TABLE challenges ADD COLUMN stake INTEGER NOT NULL DEFAULT 0')
+  // Cada jogador pode levar UMA ferramenta (só vale se os dois levarem).
+  if (!chCols.includes('from_tool')) db.exec('ALTER TABLE challenges ADD COLUMN from_tool TEXT')
+  if (!chCols.includes('to_tool')) db.exec('ALTER TABLE challenges ADD COLUMN to_tool TEXT')
   // 🌽 Arena no servidor: adversários gerados para cada galo (vida curta; server/economia.ts)
   db.exec(`
     CREATE TABLE IF NOT EXISTS arena_opps (

@@ -13,7 +13,7 @@ export interface SkuOverride {
 export interface AppConfig {
   catalog: Record<string, SkuOverride>
   rewards: { dailyOvos: number; day7Ovos: number; arenaHardWinOvos: number; missionOvosMultiplier: number }
-  pvp: { maxLevelDiff: number; dailyRewards: number; challengeTtlSec: number; feePct: number; minStake: number; maxStake: number }
+  pvp: { maxLevelDiff: number; dailyRewards: number; challengeTtlSec: number; feePct: number; minStakeOvo: number; maxStakeOvo: number }
   economy: { freeOvosPerDay: number; freeMilhoPerDay: number; defaultSpendLimitCents: number; /** 🌽 Milho/XP/prêmios só pelo servidor (desligar = volta ao modo antigo). */ serverAuthoritative: boolean }
   announcement: { text: string; kind: 'info' | 'promo' | 'alerta' }
   maintenance: { on: boolean; message: string }
@@ -59,7 +59,7 @@ export interface DropsConfig {
 export const DEFAULT_CONFIG: AppConfig = {
   catalog: Object.fromEntries(CATALOG.map((s) => [s.id, { priceCents: s.priceCents, ovos: s.ovos, bonus: s.bonus, active: true }])),
   rewards: { dailyOvos: 6, day7Ovos: 35, arenaHardWinOvos: 2, missionOvosMultiplier: 1 },
-  pvp: { maxLevelDiff: 1, dailyRewards: 20, challengeTtlSec: 60, feePct: 10, minStake: 100, maxStake: 50000 },
+  pvp: { maxLevelDiff: 1, dailyRewards: 20, challengeTtlSec: 60, feePct: 10, minStakeOvo: 1, maxStakeOvo: 100 },
   economy: { freeOvosPerDay: FREE_OVOS_PER_DAY, freeMilhoPerDay: 3_000_000, defaultSpendLimitCents: DEFAULT_SPEND_LIMIT, serverAuthoritative: true },
   announcement: { text: '', kind: 'info' },
   maintenance: { on: false, message: t('Estamos ajeitando o terreiro. Voltamos já!') },

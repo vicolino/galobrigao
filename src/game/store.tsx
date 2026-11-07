@@ -636,10 +636,10 @@ async function shop<T = unknown>(op: ShopOp, sound?: () => void): Promise<Result
     },
 
     // ----- Desafios entre jogadores -----
-    async pvpChallenge(roosterId: string, toUserId: string, toRoosterId: string, stake: number): Promise<Result> {
+    async pvpChallenge(roosterId: string, toUserId: string, toRoosterId: string, stake: number, tool?: string | null): Promise<Result> {
       try {
         await flush()
-        await api.pvpChallenge(roosterId, toUserId, toRoosterId, stake)
+        await api.pvpChallenge(roosterId, toUserId, toRoosterId, stake, tool)
         setPvp(await api.pvpPoll())
         sfx.bell()
         return { ok: true }
@@ -648,10 +648,10 @@ async function shop<T = unknown>(op: ShopOp, sound?: () => void): Promise<Result
       }
     },
 
-    async pvpRespond(id: string, accept: boolean): Promise<Result<ChallengeView>> {
+    async pvpRespond(id: string, accept: boolean, tool?: string | null): Promise<Result<ChallengeView>> {
       try {
         await flush()
-        const r = await api.pvpRespond(id, accept)
+        const r = await api.pvpRespond(id, accept, tool)
         setPvp(await api.pvpPoll())
         if (accept && r.challenge.status === 'aceito') {
           const before = ref.current

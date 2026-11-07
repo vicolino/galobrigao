@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { api } from '../api'
 import { RoosterSvg } from '../components/RoosterSvg'
 import { Empty, Modal, PageHead, RoosterCard, go } from '../components/ui'
-import { BREED_BY_ID, LEAGUE_TIERS } from '../game/data'
+import { BREED_BY_ID, LEAGUE_TIERS, TOOL_BY_ID } from '../game/data'
 import { PVP_ENERGY, pvpFeePct, stakeLimits, stakePrize, type ChallengeView, type LobbyPlayer, type LobbyRooster } from '../game/pvp'
 import { currentEnergy, fmt } from '../game/rooster'
 import { sfx } from '../game/sound'
@@ -31,8 +31,9 @@ export function Desafios() {
   const [openId, setOpenId] = useState<string | null>(null)
   const [q, setQ] = useState('')
   const lim = stakeLimits()
-  const [stake, setStake] = useState(() => Math.min(Math.max(lim.min, 500), lim.max))
-  const stakeOk = stake >= lim.min && stake <= lim.max && stake <= s.milho
+  const [stake, setStake] = useState(() => Math.min(Math.max(lim.min, 10), lim.max))
+  const [tool, setTool] = useState<string | null>(null)
+  const stakeOk = stake >= lim.min && stake <= lim.max && stake <= s.ovos
   const outgoing = pvp?.outgoing ?? null
   const left = useCountdown(outgoing?.expiresAt)
 
@@ -65,7 +66,7 @@ export function Desafios() {
   const open = shown.find((p) => p.userId === openId) ?? null
 
   const challenge = async (p: LobbyPlayer, ro: LobbyRooster) => {
-    const r = await actions.pvpChallenge(mine.id, p.userId, ro.id, stake)
+    const r = await actions.pvpChallenge(mine.id, p.userId, ro.id, stake, tool)
     if (r.ok) toast(t('Desafio enviado para {nome}! Esperando resposta...', { nome: p.name }), 'ok')
     else toast(tx(r.error), 'erro')
   }
@@ -94,7 +95,8 @@ export function Desafios() {
             <div className="tiny muted">
               {t('{a} (Nv {na}) x {b} (Nv {nb}) · expira em {s}s', { a: outgoing.a.name, na: outgoing.a.level, b: outgoing.b.name, nb: outgoing.b.level, s: left })}
             </div>
-            {outgoing.stake > 0 && <div className="tiny stake-line">{t('💰 Valendo 🌽 {n} de cada um', { n: fmt(outgoing.stake) })}</div>}
+            {outgoing.stake > 0 && <div className="tiny stake-line">{t('💰 Valendo 🥚 {n} de cada um', { n: fmt(outgoing.stake) })}</div>}
+            {outgoing.fromTool && TOOL_BY_ID[outgoing.fromTool] && <div className="tiny stake-line">{t('🧰 Você levou {ferramenta}', { ferramenta: `${TOOL_BY_ID[outgoing.fromTool].emoji} ${TOOL_BY_ID[outgoing.fromTool].name}` })}</div>}
           </div>
           <button className="btn btn-sm" onClick={() => actions.pvpCancel(outgoing.id)}>
             {t('Cancelar')}
@@ -119,25 +121,31 @@ export function Desafios() {
       <h2 className="section-title">{t('2. Quanto vale a luta')}</h2>
       <div className="card stake-card">
         <div className="row gap wrap stake-row">
-          {[100, 500, 1000, 5000, 10000]
+          {[1, 5, 10, 25, 50, 100]
             .filter((v) => v >= lim.min && v <= lim.max)
             .map((v) => (
               <button key={v} className={`btn btn-sm ${stake === v ? 'btn-primary' : ''}`} onClick={() => setStake(v)}>
-                🌽 {fmt(v)}
+                🥚 {fmt(v)}
               </button>
             ))}
-          <input className="input stake-input" type="number" min={lim.min} max={Math.min(lim.max, s.milho)} value={stake} onChange={(e) => setStake(Math.floor(Number(e.target.value) || 0))} />
+          <input className="input stake-input" type="number" min={lim.min} max={Math.min(lim.max, s.ovos)} value={stake} onChange={(e) => setStake(Math.floor(Number(e.target.value) || 0))} />
         </div>
         <p className="tiny">
-          {tn('Cada um bota {v}. Quem vencer leva {p} (taxa de {f}% do sistema). Quem perder, perde a aposta.', { v: <b>🌽 {fmt(stake)}</b>, p: <b className="pos">🌽 {fmt(stakePrize(stake))}</b>, f: pvpFeePct() })}
+          {tn('Cada um bota {v}. Quem vencer leva {p} (taxa de {f}% do sistema). Quem perder, perde a aposta.', { v: <b>🥚 {fmt(stake)}</b>, p: <b className="pos">🥚 {fmt(stakePrize(stake))}</b>, f: pvpFeePct() })}
         </p>
-        {stake > s.milho && <p className="tiny neg">{t('Você só tem 🌽 {n}.', { n: fmt(s.milho) })}</p>}
-        {(stake < lim.min || stake > lim.max) && <p className="tiny neg">{t('A aposta tem que ser entre 🌽 {min} e 🌽 {max}.', { min: fmt(lim.min), max: fmt(lim.max) })}</p>}
+        {stake > s.ovos && <p className="tiny neg">{t('Você só tem 🥚 {n}.', { n: fmt(s.ovos) })}</p>}
+        {(stake < lim.min || stake > lim.max) && <p className="tiny neg">{t('A aposta tem que ser entre 🥚 {min} e 🥚 {max}.', { min: fmt(lim.min), max: fmt(lim.max) })}</p>}
+      </div>
+
+      <h2 className="section-title">{t('3. Ferramenta (opcional)')}</h2>
+      <div className="card stake-card">
+        <ToolPicker tools={s.tools} value={tool} onChange={setTool} />
+        <p className="tiny muted">{t('Você pode levar UMA ferramenta pra luta. Ela só vale (e só é gasta) se o adversário também levar uma — se ele não tiver ferramenta, ninguém leva.')}</p>
       </div>
 
       <div className="row-between lobby-head">
         <h2 className="section-title">
-          {t('3. Jogadores online')} <span className="count-badge">{players.length}</span>
+          {t('4. Jogadores online')} <span className="count-badge">{players.length}</span>
         </h2>
         <input className="input lobby-search" placeholder={t('Buscar jogador...')} value={q} onChange={(e) => setQ(e.target.value)} />
       </div>
@@ -244,8 +252,8 @@ export function Desafios() {
                       </td>
                       <td className="tiny">{h.result?.method === 'ko' ? 'K.O.' : t('Decisão')}</td>
                       <td className={`right ${won ? 'pos' : 'neg'}`}>{(() => {
-                        const m = h.result?.rewards.milho ?? 0
-                        return `🌽 ${m < 0 ? '−' : '+'}${fmt(Math.abs(m))}`
+                        const m = h.result?.rewards.ovo ?? 0
+                        return `🥚 ${m < 0 ? '−' : '+'}${fmt(Math.abs(m))}`
                       })()}</td>
                       <td className="right">
                         <button
@@ -277,24 +285,29 @@ export function ChallengeAlert() {
   const left = useCountdown(c?.expiresAt)
   const [busy, setBusy] = useState(false)
   const [lastId, setLastId] = useState<string | null>(null)
+  const [tool, setTool] = useState<string | null>(null)
 
   useEffect(() => {
     if (c && c.id !== lastId) {
       setLastId(c.id)
+      setTool(null)
       sfx.crow()
     }
   }, [c?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Quem desafia é o lado A; o meu galo é o B
   const gap = c ? c.a.level - c.b.level : 0
-  const myMilho = state?.milho ?? 0
-  const noMoney = !!c && c.stake > myMilho
+  const myOvos = state?.ovos ?? 0
+  const noMoney = !!c && c.stake > myOvos
+  // Só dá pra levar ferramenta se quem desafiou levou uma e eu tenho pelo menos uma no inventário.
+  const iHaveTools = Object.values(state?.tools ?? {}).some((n) => n > 0)
+  const canBringTool = !!c?.fromTool && iHaveTools
 
   if (!c || left <= 0) return null
 
   const respond = async (accept: boolean) => {
     setBusy(true)
-    const r = await actions.pvpRespond(c.id, accept)
+    const r = await actions.pvpRespond(c.id, accept, tool)
     setBusy(false)
     if (!r.ok) toast(tx(r.error), 'erro')
     else if (accept) {
@@ -333,9 +346,22 @@ export function ChallengeAlert() {
         </p>
         {c.stake > 0 && (
           <div className="stake-box">
-            <b>{t('💰 Valendo 🌽 {n} de cada um', { n: fmt(c.stake) })}</b>
-            <span className="tiny">{t('Quem vencer leva 🌽 {p} (taxa de {f}%). Quem perder, perde 🌽 {n}.', { p: fmt(stakePrize(c.stake)), f: pvpFeePct(), n: fmt(c.stake) })}</span>
-            {noMoney && <span className="tiny neg">{t('Você só tem 🌽 {n}: não dá para aceitar.', { n: fmt(myMilho) })}</span>}
+            <b>{t('💰 Valendo 🥚 {n} de cada um', { n: fmt(c.stake) })}</b>
+            <span className="tiny">{t('Quem vencer leva 🥚 {p} (taxa de {f}%). Quem perder, perde 🥚 {n}.', { p: fmt(stakePrize(c.stake)), f: pvpFeePct(), n: fmt(c.stake) })}</span>
+            {noMoney && <span className="tiny neg">{t('Você só tem 🥚 {n}: não dá para aceitar.', { n: fmt(myOvos) })}</span>}
+          </div>
+        )}
+        {c.fromTool && TOOL_BY_ID[c.fromTool] && (
+          <div className="stake-box">
+            <b>{t('🧰 Ele levou {ferramenta}', { ferramenta: `${TOOL_BY_ID[c.fromTool].emoji} ${TOOL_BY_ID[c.fromTool].name}` })}</b>
+            {canBringTool ? (
+              <>
+                <span className="tiny">{t('Escolha a sua ferramenta pra equilibrar (opcional):')}</span>
+                <ToolPicker tools={state?.tools ?? {}} value={tool} onChange={setTool} />
+              </>
+            ) : (
+              <span className="tiny muted">{t('Você não tem ferramenta — a luta vai ser sem ferramenta pros dois.')}</span>
+            )}
           </div>
         )}
         <p className="tiny muted">{t('Gasta {n} de energia. Quem vencer também ganha XP e pontos de liga.', { n: PVP_ENERGY })}</p>
@@ -395,5 +421,25 @@ export function ChallengeDeclined() {
         </div>
       </div>
     </Modal>
+  )
+}
+
+/** Seletor de UMA ferramenta do inventário do jogador (ou nenhuma). */
+function ToolPicker({ tools, value, onChange }: { tools: Record<string, number>; value: string | null; onChange: (v: string | null) => void }) {
+  const list = Object.entries(tools)
+    .filter(([id, n]) => n > 0 && TOOL_BY_ID[id])
+    .map(([id, n]) => ({ id, n, tool: TOOL_BY_ID[id] }))
+  if (!list.length) return <p className="tiny muted">{t('Você não tem ferramentas. Compre na Loja → Ferramentas.')}</p>
+  return (
+    <div className="row gap wrap tool-picker">
+      <button className={`btn btn-sm ${value === null ? 'btn-primary' : ''}`} onClick={() => onChange(null)}>
+        {t('Sem ferramenta')}
+      </button>
+      {list.map(({ id, n, tool }) => (
+        <button key={id} className={`btn btn-sm ${value === id ? 'btn-primary' : ''}`} onClick={() => onChange(value === id ? null : id)} title={tool.desc}>
+          {tool.emoji} {tool.name} <span className="tiny muted">×{fmt(n)}</span>
+        </button>
+      ))}
+    </div>
   )
 }

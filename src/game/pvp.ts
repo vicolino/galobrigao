@@ -9,9 +9,9 @@ export const ONLINE_WINDOW = 45_000 // online = sinal nos últimos 45s
 export const pvpDailyRewards = () => live.pvp.dailyRewards
 export const PVP_ENERGY = 25
 
-/** Desafio valendo milho: taxa e limites vêm do backoffice. */
+/** Desafio valendo ovos: taxa e limites vêm do backoffice. */
 export const pvpFeePct = () => live.pvp.feePct
-export const stakeLimits = () => ({ min: live.pvp.minStake, max: live.pvp.maxStake })
+export const stakeLimits = () => ({ min: live.pvp.minStakeOvo, max: live.pvp.maxStakeOvo })
 /** Taxa do sistema sobre o total apostado (os dois lados). */
 export const stakeFee = (stake: number, pct = live.pvp.feePct) => Math.round((stake * 2 * pct) / 100)
 /** Quanto o vencedor leva no total (as duas apostas menos a taxa). */
@@ -23,7 +23,7 @@ export const stakePrize = (stake: number, pct = live.pvp.feePct) => stake * 2 - 
  */
 export function pvpRewards(level: number, won: boolean, ko: boolean, oppLevel = level) {
   const up = oppLevel - level
-  // O milho do desafio vem só da aposta entre os jogadores (ver stakeFee/stakePrize)
+  // Os ovos do desafio vêm só da aposta entre os jogadores (ver stakeFee/stakePrize)
   void ko
   if (won) {
     const lv = Math.max(1, Math.min(oppLevel, level + 10))
@@ -41,6 +41,8 @@ export const levelGap = (mine: number, theirs: number) => theirs - mine
 
 export interface PvpRewards {
   milho: number
+  /** Ovos ganhos (+) ou perdidos (−) na aposta do desafio. */
+  ovo: number
   xp: number
   points: number
   levels: number
@@ -57,8 +59,12 @@ export interface ChallengeView {
   b: Rooster // galo desafiado (lado direito)
   createdAt: number
   expiresAt: number
-  /** Milho que cada um bota (0 = amistoso, desafios antigos) */
+  /** Ovos que cada um bota (0 = amistoso, desafios antigos) */
   stake: number
+  /** Ferramenta que quem desafiou levou (id; null = nenhuma). Antes de resolver = escolha; depois = a que realmente valeu. */
+  fromTool?: string | null
+  /** Ferramenta que o desafiado levou (id; null = nenhuma). Só vale se os dois levarem. */
+  toTool?: string | null
   /** Taxa cobrada (desafio aceito) */
   fee?: number
   seed?: number

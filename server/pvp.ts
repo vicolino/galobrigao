@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { simulate } from '../src/game/battle'
+import { TOOL_BY_ID } from '../src/game/data'
 import { challengeTtl, ONLINE_WINDOW, pvpDailyRewards, PVP_ENERGY, pvpRewards, stakeFee, stakeLimits, type ChallengeView, type LobbyPlayer, type PvpRewards } from '../src/game/pvp'
 import { addXp, currentEnergy, today, uid, withEnergy } from '../src/game/rooster'
 import type { GameState, MissionKind, Rooster } from '../src/game/types'
@@ -30,6 +31,8 @@ interface ChallengeRow {
   seen_from: number
   seen_to: number
   stake: number
+  from_tool: string | null
+  to_tool: string | null
 }
 
 const db = () => getDb()
@@ -78,6 +81,8 @@ function view(c: ChallengeRow, me: string): ChallengeView {
     createdAt: c.created_at,
     expiresAt: c.expires_at,
     stake: c.stake ?? 0,
+    fromTool: res ? (res.toolA ?? null) : (c.from_tool ?? null),
+    toTool: res ? (res.toolB ?? null) : (c.to_tool ?? null),
     fee: res?.fee,
     seed: c.seed ?? undefined,
     result: res ? { winner: res.winner, method: res.method, rewards: mine === 'from' ? res.rewardsFrom : res.rewardsTo } : undefined,
@@ -98,16 +103,19 @@ const bump = (s: GameState, kind: MissionKind): GameState => ({
   missions: { ...s.missions, list: s.missions.list.map((m) => (m.kind === kind && !m.claimed ? { ...m, progress: Math.min(m.goal, m.progress + 1) } : m)) },
 })
 
-/** Aplica o resultado do desafio no save de um jogador. */
-function applyResult(s: GameState, roosterId: string, won: boolean, ko: boolean, oppName: string, limited: boolean, oppLevel: number, stakeDelta: number): { state: GameState; rewards: PvpRewards } {
+/** Aplica o resultado do desafio no save de um jogador. `toolUsed` = ferramenta a consumir (null = nenhuma). */
+function applyResult(s: GameState, roosterId: string, won: boolean, ko: boolean, oppName: string, limited: boolean, oppLevel: number, stakeDelta: number, toolUsed: string | null): { state: GameState; rewards: PvpRewards } {
   const ro = s.roosters.find((r) => r.id === roosterId)!
   const base = pvpRewards(ro.level, won, ko, oppLevel)
-  // XP e pontos vêm do jogo (com limite diário); o milho é a aposta: + para quem vence, − para quem perde
-  const rw = { ...(limited ? { milho: 0, xp: 0, points: 0 } : base), milho: stakeDelta }
+  // XP e pontos vêm do jogo (com limite diário); os ovos são a aposta: + para quem vence, − para quem perde
+  const rw = { ...(limited ? { milho: 0, xp: 0, points: 0 } : base), milho: 0, ovo: stakeDelta }
   const { levels } = addXp(ro, rw.xp)
+  // Ferramenta usada é consumida (1 unidade). Só chega aqui se os dois levaram (regra simétrica).
+  const tools = toolUsed ? { ...s.tools, [toolUsed]: Math.max(0, (s.tools[toolUsed] ?? 0) - 1) } : s.tools
   let n: GameState = {
     ...s,
-    milho: s.milho + rw.milho,
+    ovos: s.ovos + rw.ovo,
+    tools,
     roosters: s.roosters.map((r) =>
       r.id === roosterId
         ? {
@@ -119,13 +127,20 @@ function applyResult(s: GameState, roosterId: string, won: boolean, ko: boolean,
         : r,
     ),
     league: { ...s.league, points: Math.max(0, s.league.points + rw.points) },
-    stats: { ...s.stats, fights: s.stats.fights + 1, wins: s.stats.wins + (won ? 1 : 0), kos: s.stats.kos + (won && ko ? 1 : 0), milhoEarned: s.stats.milhoEarned + Math.max(0, rw.milho) },
+    stats: {
+      ...s.stats,
+      fights: s.stats.fights + 1,
+      wins: s.stats.wins + (won ? 1 : 0),
+      kos: s.stats.kos + (won && ko ? 1 : 0),
+      toolsUsed: s.stats.toolsUsed + (toolUsed ? 1 : 0),
+      toolWins: s.stats.toolWins + (toolUsed && won ? 1 : 0),
+    },
   }
   n = bump(n, 'lutar')
   if (won) n = bump(n, 'vencer')
   if (won && ko) n = bump(n, 'ko')
   n = addPassXp(n, PASS_XP.desafio)
-  n = { ...n, history: [{ id: uid(), at: now(), text: won ? t('Desafio vencido contra {nome}', { nome: oppName }) : t('Desafio perdido contra {nome}', { nome: oppName }), milho: rw.milho, ovo: 0 }, ...n.history].slice(0, 80) }
+  n = { ...n, history: [{ id: uid(), at: now(), text: won ? t('Desafio vencido contra {nome}', { nome: oppName }) : t('Desafio perdido contra {nome}', { nome: oppName }), milho: 0, ovo: rw.ovo }, ...n.history].slice(0, 80) }
   return { state: n, rewards: { ...rw, levels, limited } }
 }
 
@@ -187,16 +202,23 @@ export function handlePvp(path: string, method: string, _url: URL, body: Record<
     if (db().prepare("SELECT 1 FROM challenges WHERE from_user = ? AND status = 'pendente'").get(u.id)) fail(t('Você já tem um desafio esperando resposta.'))
     const busy = busyRoosters()
     if (busy.has(mine.id) || busy.has(theirs.id)) fail(t('Um dos galos já está em outro desafio.'))
-    // Valor da luta: cada um bota o mesmo tanto de milho
+    // Valor da luta: cada um bota o mesmo tanto de ovos
     const lim = stakeLimits()
     const stake = Math.floor(Number(body.stake))
-    if (!Number.isFinite(stake) || stake < lim.min || stake > lim.max) fail(t('A aposta tem que ser entre 🌽 {min} e 🌽 {max}.', { min: lim.min, max: lim.max }))
-    if ((loadSave(u.id)?.state.milho ?? 0) < stake) fail(t('Você não tem 🌽 {n} de milho para essa aposta.', { n: stake }))
-    if ((loadSave(toUser)?.state.milho ?? 0) < stake) fail(t('Esse jogador não tem milho suficiente para essa aposta. Tente um valor menor.'))
+    if (!Number.isFinite(stake) || stake < lim.min || stake > lim.max) fail(t('A aposta tem que ser entre 🥚 {min} e 🥚 {max}.', { min: lim.min, max: lim.max }))
+    const mySave = loadSave(u.id)
+    if ((mySave?.state.ovos ?? 0) < stake) fail(t('Você não tem 🥚 {n} de ovos para essa aposta.', { n: stake }))
+    if ((loadSave(toUser)?.state.ovos ?? 0) < stake) fail(t('Esse jogador não tem ovos suficientes para essa aposta. Tente um valor menor.'))
+    // Ferramenta opcional: cada um pode levar UMA. Só vale (e só é consumida) se os dois levarem — revalidado no aceite.
+    const fromTool = body.tool ? String(body.tool) : null
+    if (fromTool) {
+      if (!TOOL_BY_ID[fromTool]) fail(t('Essa ferramenta não existe.'))
+      if ((mySave?.state.tools[fromTool] ?? 0) < 1) fail(t('Você não tem essa ferramenta.'))
+    }
     const id = randomUUID()
     db()
-      .prepare('INSERT INTO challenges (id, from_user, to_user, from_rooster, to_rooster, status, created_at, expires_at, stake) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
-      .run(id, u.id, toUser, mine.id, theirs.id, 'pendente', now(), now() + challengeTtl(), stake)
+      .prepare('INSERT INTO challenges (id, from_user, to_user, from_rooster, to_rooster, status, created_at, expires_at, stake, from_tool) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      .run(id, u.id, toUser, mine.id, theirs.id, 'pendente', now(), now() + challengeTtl(), stake, fromTool)
     return { status: 201, body: { challenge: view(getChallenge(id), u.id) } }
   }
 
@@ -220,26 +242,35 @@ export function handlePvp(path: string, method: string, _url: URL, body: Record<
     if (!fromSave || !toSave || !a || !b) return cancel(t('Um dos galos não existe mais.'))
     if (currentEnergy(a) < PVP_ENERGY || currentEnergy(b) < PVP_ENERGY) return cancel(t('Um dos galos ficou sem energia.'))
     const stake = c.stake ?? 0
-    if (stake > 0 && fromSave.state.milho < stake) return cancel(t('Quem desafiou não tem mais o milho da aposta.'))
-    if (stake > 0 && toSave.state.milho < stake) fail(t('Você não tem 🌽 {n} de milho para aceitar.', { n: stake }))
+    if (stake > 0 && fromSave.state.ovos < stake) return cancel(t('Quem desafiou não tem mais os ovos da aposta.'))
+    if (stake > 0 && toSave.state.ovos < stake) fail(t('Você não tem 🥚 {n} de ovos para aceitar.', { n: stake }))
+    // Ferramenta do desafiado (opcional). Só vale se os DOIS levarem e ambos ainda tiverem no inventário.
+    const toTool = body.tool ? String(body.tool) : null
+    if (toTool) {
+      if (!TOOL_BY_ID[toTool]) fail(t('Essa ferramenta não existe.'))
+      if ((toSave.state.tools[toTool] ?? 0) < 1) fail(t('Você não tem essa ferramenta.'))
+    }
+    const bothTools = !!c.from_tool && !!toTool && (fromSave.state.tools[c.from_tool] ?? 0) >= 1 && (toSave.state.tools[toTool] ?? 0) >= 1
+    const usedA = bothTools ? c.from_tool : null
+    const usedB = bothTools ? toTool : null
     // Taxa fixada na hora do aceite (backoffice)
     const fee = stake > 0 ? stakeFee(stake) : 0
     const winGain = stake - fee
 
     const seed = Math.floor(Math.random() * 1e9)
-    const res = simulate(a, b, seed)
+    const res = simulate(a, b, seed, [usedA ? [usedA] : [], usedB ? [usedB] : []])
     const ko = res.method === 'ko'
     const fromName = userName(c.from_user)
     const toName = userName(c.to_user)
-    const ra = applyResult(fromSave.state, a.id, res.winner === 0, ko, toName, rewardedToday(c.from_user) >= pvpDailyRewards(), b.level, res.winner === 0 ? winGain : -stake)
-    const rb = applyResult(toSave.state, b.id, res.winner === 1, ko, fromName, rewardedToday(c.to_user) >= pvpDailyRewards(), a.level, res.winner === 1 ? winGain : -stake)
+    const ra = applyResult(fromSave.state, a.id, res.winner === 0, ko, toName, rewardedToday(c.from_user) >= pvpDailyRewards(), b.level, res.winner === 0 ? winGain : -stake, usedA)
+    const rb = applyResult(toSave.state, b.id, res.winner === 1, ko, fromName, rewardedToday(c.to_user) >= pvpDailyRewards(), a.level, res.winner === 1 ? winGain : -stake, usedB)
     const d = db()
     d.exec('BEGIN')
     try {
       writeSave(c.from_user, ra.state, fromSave.rev + 1)
       writeSave(c.to_user, rb.state, toSave.rev + 1)
-      const result = { winner: res.winner, method: res.method, a: snap(a), b: snap(b), rewardsFrom: ra.rewards, rewardsTo: rb.rewards, stake, fee }
-      d.prepare("UPDATE challenges SET status = 'aceito', resolved_at = ?, seed = ?, result = ?, seen_to = 1 WHERE id = ?").run(now(), seed, JSON.stringify(result), c.id)
+      const result = { winner: res.winner, method: res.method, a: snap(a), b: snap(b), rewardsFrom: ra.rewards, rewardsTo: rb.rewards, stake, fee, toolA: usedA, toolB: usedB }
+      d.prepare("UPDATE challenges SET status = 'aceito', resolved_at = ?, seed = ?, result = ?, seen_to = 1, to_tool = ? WHERE id = ?").run(now(), seed, JSON.stringify(result), toTool, c.id)
       d.exec('COMMIT')
     } catch (e) {
       d.exec('ROLLBACK')
