@@ -616,8 +616,7 @@ function nftSvg(emoji: string, name: string, type: string) {
 const KYC = ['none', 'pending', 'verified', 'rejected']
 export function setKyc(userId: string, status: unknown) {
   const st = typeof status === 'string' && KYC.includes(status) ? status : fail(400, t('Status de KYC inválido'))
-  // Mainnet: aprovação só pelo provedor de KYC, nunca à mão no backoffice
-  if (st === 'verified' && isMainnet()) fail(403, t('Na mainnet a verificação vem só do provedor de KYC.'))
+  // KYC manual: o admin aprova no backoffice (inclusive na mainnet, por decisão do operador).
   db().prepare('UPDATE users SET kyc_status = ? WHERE id = ?').run(st, userId)
   return st
 }

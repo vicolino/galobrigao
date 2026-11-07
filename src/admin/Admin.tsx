@@ -1198,6 +1198,21 @@ function Config() {
                   <input value={cfg.maintenance.message} maxLength={200} onChange={(e) => set('maintenance', { message: e.target.value })} />
                 </label>
               </div>
+
+              <div className={`card cfg-section ${cfg.onchain.network === 'mainnet' ? 'danger-box' : ''}`}>
+                <h3>{t('⛓️ Rede on-chain (cripto)')}</h3>
+                <p className="tiny muted cfg-desc">{t('A chave que liga a rede. Mainnet = USDC de verdade. Só ligue depois que a mainnet estiver toda configurada (contratos, carteira operadora com gás, KYC).')}</p>
+                <label className="field">
+                  <span>{t('Rede ativa')}</span>
+                  <select value={cfg.onchain.network} onChange={(e) => set('onchain', { network: e.target.value })}>
+                    <option value="">{t('Automático (usa o servidor)')}</option>
+                    <option value="off">{t('Desligado (sem cripto)')}</option>
+                    <option value="testnet">{t('Testnet (Polygon Amoy — teste)')}</option>
+                    <option value="mainnet">{t('Mainnet (Polygon — DINHEIRO REAL)')}</option>
+                  </select>
+                </label>
+                {cfg.onchain.network === 'mainnet' && <p className="tiny neg">{t('⚠️ Mainnet LIGADA: depósitos e saques são em USDC real. Confirme que tudo está configurado e testado.')}</p>}
+              </div>
             </>
           )}
 

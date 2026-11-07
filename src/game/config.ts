@@ -17,6 +17,8 @@ export interface AppConfig {
   economy: { freeOvosPerDay: number; freeMilhoPerDay: number; defaultSpendLimitCents: number; /** 🌽 Milho/XP/prêmios só pelo servidor (desligar = volta ao modo antigo). */ serverAuthoritative: boolean }
   announcement: { text: string; kind: 'info' | 'promo' | 'alerta' }
   maintenance: { on: boolean; message: string }
+  /** ⛓️ Rede on-chain (chave do back-office): '' = usa o env; 'off' | 'testnet' | 'mainnet'. */
+  onchain: { network: string }
   mvp: { on: boolean; creditCents: number }
   /** 💵 Depósito de USDC → 🥚 ovos (só ida). Mínimo e limite diário em USDC por jogador. */
   deposit: { eggsPerUsdc: number; minUsdc: number; dailyCapUsdc: number }
@@ -63,6 +65,8 @@ export const DEFAULT_CONFIG: AppConfig = {
   economy: { freeOvosPerDay: FREE_OVOS_PER_DAY, freeMilhoPerDay: 3_000_000, defaultSpendLimitCents: DEFAULT_SPEND_LIMIT, serverAuthoritative: true },
   announcement: { text: '', kind: 'info' },
   maintenance: { on: false, message: t('Estamos ajeitando o terreiro. Voltamos já!') },
+  // ⛓️ Rede on-chain: '' = usa o WEB3_NETWORK do env (padrão). A chave no admin troca para off/testnet/mainnet.
+  onchain: { network: '' },
   // Modo MVP: cada conta ganha crédito de teste (sem valor real) para comprar na loja
   mvp: { on: true, creditCents: 10000 },
   // (não chama `web3`: /api/config já usa `web3: boolean` para dizer se a carteira está ligada)
@@ -85,6 +89,7 @@ export function mergeConfig(saved: Partial<AppConfig> | null | undefined): AppCo
     economy: { ...DEFAULT_CONFIG.economy, ...s.economy },
     announcement: { ...DEFAULT_CONFIG.announcement, ...s.announcement },
     maintenance: { ...DEFAULT_CONFIG.maintenance, ...s.maintenance },
+    onchain: { ...DEFAULT_CONFIG.onchain, ...s.onchain },
     mvp: { ...DEFAULT_CONFIG.mvp, ...s.mvp },
     deposit: { ...DEFAULT_CONFIG.deposit, ...s.deposit },
     drops: { ...DEFAULT_CONFIG.drops, ...s.drops },

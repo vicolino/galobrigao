@@ -80,5 +80,10 @@ export function validateConfig(input: AppConfig): AppConfig {
   dr.supplyCap = Math.round(num(dr.supplyCap, 0, 1_000_000, t('Tiragem máxima por item (0 = sem limite)')))
   c.maintenance.on = !!c.maintenance.on
   c.maintenance.message = String(c.maintenance.message ?? '').slice(0, 200)
+  // ⛓️ Chave da rede on-chain: só valores conhecidos (vazio = usa o env).
+  {
+    const net = String(c.onchain?.network ?? '').trim().toLowerCase()
+    c.onchain = { network: ['', 'off', 'testnet', 'mainnet'].includes(net) ? net : '' }
+  }
   return c
 }

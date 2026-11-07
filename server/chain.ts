@@ -43,6 +43,12 @@ const NETWORKS: Record<ChainKey, { chain: Chain | null; rpc: string | null; expl
  * null = não configurado.
  */
 export function web3Network(e = process.env): ChainKey | null {
+  // 🔌 Chave do back-office (config.onchain.network) tem prioridade sobre o env.
+  const sel = (live.onchain?.network ?? '').trim().toLowerCase()
+  if (sel === 'off') return null
+  if (sel === 'mainnet') return 'polygon'
+  if (sel === 'testnet') return 'amoy'
+  // '' (sem escolha no admin) → usa o env.
   const n = (e.WEB3_NETWORK ?? '').trim().toLowerCase()
   if (n === 'testnet' || n === 'amoy') return 'amoy'
   if (n === 'mainnet' || n === 'polygon') return 'polygon'
@@ -65,7 +71,7 @@ export function mainnetBlockers(e = process.env): string[] {
   const out: string[] = []
   if (e.WEB3_MAINNET_ACK !== 'yes') out.push('WEB3_MAINNET_ACK=yes') // i18n-ok (log do servidor)
   const kyc = (e.KYC_PROVIDER ?? '').trim().toLowerCase()
-  if (!kyc || kyc === 'manual') out.push('KYC_PROVIDER (provedor real; manual não vale na mainnet)') // i18n-ok (log do servidor)
+  if (!kyc) out.push('KYC_PROVIDER (defina; use "manual" para aprovação no backoffice)') // i18n-ok (log do servidor)
   if (live.economy?.serverAuthoritative === false) out.push('economy.serverAuthoritative ligado no backoffice') // i18n-ok (log do servidor)
   return out
 }
@@ -84,20 +90,29 @@ export function web3Env(): Web3Env | null {
     return null
   }
   const net = NETWORKS[chain]
-  const rpc = e.WEB3_RPC_URL || net.rpc
-  const usdc = e.WEB3_USDC || net.usdc
-  if (!rpc || !/^0x[0-9a-fA-F]{64}$/.test(e.WEB3_OPERATOR_KEY ?? '') || !/^[0-9a-fA-F]{64}$/.test(e.WEB3_WALLET_SECRET ?? '')) return null
-  const addrs = [e.WEB3_EGG, e.WEB3_CORN, e.WEB3_ITEMS, e.WEB3_MARKET, usdc]
+  // Mainnet (polygon) usa as variáveis WEB3_MAINNET_*; testnet/local usam WEB3_*.
+  // Os endereços de contrato são específicos da rede (sem fallback cruzado). O segredo AES é compartilhado.
+  const P = chain === 'polygon' ? 'WEB3_MAINNET_' : 'WEB3_'
+  const rpc = e[`${P}RPC_URL`] || net.rpc
+  const usdc = e[`${P}USDC`] || net.usdc
+  const operatorKey = e[`${P}OPERATOR_KEY`]
+  const secret = e.WEB3_WALLET_SECRET
+  if (!rpc || !/^0x[0-9a-fA-F]{64}$/.test(operatorKey ?? '') || !/^[0-9a-fA-F]{64}$/.test(secret ?? '')) return null
+  const egg = e[`${P}EGG`]
+  const corn = e[`${P}CORN`]
+  const items = e[`${P}ITEMS`]
+  const market = e[`${P}MARKET`]
+  const addrs = [egg, corn, items, market, usdc]
   if (!addrs.every((a) => ADDR.test(a ?? ''))) return null
   return {
     chain,
     rpc,
-    operatorKey: e.WEB3_OPERATOR_KEY as `0x${string}`,
-    secret: Buffer.from(e.WEB3_WALLET_SECRET!, 'hex'),
-    egg: e.WEB3_EGG as Address,
-    corn: e.WEB3_CORN as Address,
-    items: e.WEB3_ITEMS as Address,
-    market: e.WEB3_MARKET as Address,
+    operatorKey: operatorKey as `0x${string}`,
+    secret: Buffer.from(secret!, 'hex'),
+    egg: egg as Address,
+    corn: corn as Address,
+    items: items as Address,
+    market: market as Address,
     usdc: usdc as Address,
   }
 }

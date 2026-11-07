@@ -234,6 +234,17 @@ const en: Record<string, string> = {
   'Compras com crédito não contam como receita. Mudar o valor vale só para quem ainda não recebeu.':
     "Credit purchases don't count as revenue. Changing the amount only affects accounts that haven't received it yet.",
   '🚧 Modo manutenção': '🚧 Maintenance mode',
+  // ⛓️ Chave da rede on-chain
+  '⛓️ Rede on-chain (cripto)': '⛓️ On-chain network (crypto)',
+  'A chave que liga a rede. Mainnet = USDC de verdade. Só ligue depois que a mainnet estiver toda configurada (contratos, carteira operadora com gás, KYC).':
+    'The switch that turns the network on. Mainnet = real USDC. Only turn it on after mainnet is fully configured (contracts, operator wallet with gas, KYC).',
+  'Rede ativa': 'Active network',
+  'Automático (usa o servidor)': 'Automatic (uses the server)',
+  'Desligado (sem cripto)': 'Off (no crypto)',
+  'Testnet (Polygon Amoy — teste)': 'Testnet (Polygon Amoy — test)',
+  'Mainnet (Polygon — DINHEIRO REAL)': 'Mainnet (Polygon — REAL MONEY)',
+  '⚠️ Mainnet LIGADA: depósitos e saques são em USDC real. Confirme que tudo está configurado e testado.':
+    '⚠️ Mainnet ON: deposits and withdrawals are in real USDC. Make sure everything is configured and tested.',
   'Ligado — jogadores veem a mensagem abaixo e não conseguem jogar nem comprar (administradores continuam entrando)':
     "On — players see the message below and can't play or buy (admins can still log in)",
   'Mensagem': 'Message',
