@@ -9,10 +9,10 @@ import { OfertasAdmin } from './OfertasAdmin'
 import { SKIN_BY_ID } from '../game/data'
 import { locale, t, tp, tx } from '../i18n'
 import { C1, C2, DailyBars, HBars, Kpi, SplitBar } from './Charts'
-import type { FeiraAdmin } from '../game/feira'
+import type { FeiraAdmin, TreasuryLedger } from '../game/feira'
 import { TorneiosAdmin } from './TorneiosAdmin'
 
-type Tab = 'geral' | 'atividade' | 'jogadores' | 'pedidos' | 'config' | 'auditoria' | 'cripto' | 'feira' | 'torneios'
+type Tab = 'geral' | 'atividade' | 'jogadores' | 'pedidos' | 'config' | 'auditoria' | 'cripto' | 'feira' | 'carteira' | 'torneios'
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'geral', label: t('📈 Visão geral') },
@@ -23,6 +23,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'auditoria', label: t('🧾 Auditoria') },
   { id: 'cripto', label: t('⛓️ Cripto') },
   { id: 'feira', label: t('🏪 Feira') },
+  { id: 'carteira', label: t('💰 Carteira') },
   { id: 'torneios', label: t('🏟️ Torneios') },
 ]
 
@@ -78,6 +79,7 @@ export function Admin({ tab: tabParam }: { tab?: string }) {
         {tab === 'auditoria' && <Audit />}
         {tab === 'cripto' && <Web3Admin />}
         {tab === 'feira' && <FeiraAdminTab />}
+        {tab === 'carteira' && <CarteiraAdmin />}
         {tab === 'torneios' && <TorneiosAdmin />}
       </main>
     </div>
@@ -1485,6 +1487,153 @@ function Audit() {
       <Modal open={!!view} onClose={() => setView(null)} title={t('Detalhes')}>
         <pre className="audit-pre">{view && JSON.stringify(JSON.parse(view), null, 2)}</pre>
       </Modal>
+    </>
+  )
+}
+
+/** 💰 Carteira do sistema: extrato completo (de onde veio cada ovo) + retirada (ovo → USDC). */
+function CarteiraAdmin() {
+  const [d, setD] = useState<TreasuryLedger | null>(null)
+  const [err, setErr] = useState('')
+  const [source, setSource] = useState('')
+  const [ovos, setOvos] = useState(0)
+  const [usd, setUsd] = useState(0)
+  const [reason, setReason] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [msg, setMsg] = useState('')
+
+  const load = (src: string) =>
+    api.admin
+      .treasury(src || undefined)
+      .then(setD)
+      .catch((e) => setErr(tx((e as Error).message)))
+  useEffect(() => {
+    void load(source)
+  }, [source])
+
+  const SRC: Record<string, string> = { desafio: t('🤝 Desafio'), feira: t('🏪 Feira'), aluguel: t('🔑 Aluguel'), loja: t('🏬 Loja'), saque: t('💸 Retirada'), ajuste: t('⚙️ Ajuste') }
+  const srcLabel = (s: string) => SRC[s] ?? s
+  const coin = (c: string) => (c === 'milho' ? '🌽' : '🥚')
+
+  const withdraw = async () => {
+    setBusy(true)
+    setMsg('')
+    try {
+      const r = await api.admin.treasuryWithdraw(Math.round(ovos), Number(usd), reason.trim())
+      setMsg(t('Retirada registrada. Saldo agora: 🥚 {n}', { n: n(r.ovos) }))
+      setOvos(0)
+      setUsd(0)
+      setReason('')
+      await load(source)
+    } catch (e) {
+      setMsg(tx((e as Error).message))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <>
+      <h1>{t('💰 Carteira do sistema')}</h1>
+      <p className="tiny muted">{t('Todo ovo e milho que o jogo recolhe entra aqui — de onde veio, quando e o que gerou. Os ovos são o lastro para a moeda NFT.')}</p>
+      {err && <p className="neg">{err}</p>}
+      {!d ? (
+        <p className="muted">
+          <span className="spinner" /> {t('Carregando...')}
+        </p>
+      ) : (
+        <>
+          <div className="kpi-grid">
+            <Kpi label={t('🥚 Saldo em ovos')} value={n(d.ovos)} />
+            <Kpi label={t('🌽 Saldo em milho')} value={n(d.milho)} />
+          </div>
+
+          <div className="admin-two">
+            <div className="card">
+              <h3>{t('Arrecadação por fonte (total)')}</h3>
+              <table className="table admin-table">
+                <thead>
+                  <tr>
+                    <th>{t('Fonte')}</th>
+                    <th className="num">{t('Entradas')}</th>
+                    <th className="num">{t('Total')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {d.bySource.map((r, i) => (
+                    <tr key={i}>
+                      <td className="tiny">{srcLabel(r.source)}</td>
+                      <td className="num tiny">{n(r.n)}</td>
+                      <td className="num tiny">{`${coin(r.currency)} ${n(r.total)}`}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {d.bySource.length === 0 && <p className="muted center">{t('Nada ainda.')}</p>}
+            </div>
+
+            <div className="card">
+              <h3>{t('💸 Retirar (ovo → USDC)')}</h3>
+              <p className="tiny muted">{t('Registro contábil: debita o saldo em ovos do sistema e guarda o valor em USDC + motivo. O USDC de verdade você transfere da carteira on-chain — isto não move fundos.')}</p>
+              <div className="row gap wrap">
+                <label className="tiny">
+                  {t('Ovos a retirar')}
+                  <input className="input" type="number" min={1} value={ovos || ''} onChange={(e) => setOvos(Math.floor(Number(e.target.value) || 0))} />
+                </label>
+                <label className="tiny">
+                  {t('Valor em USDC')}
+                  <input className="input" type="number" min={0} step="0.01" value={usd || ''} onChange={(e) => setUsd(Number(e.target.value) || 0)} />
+                </label>
+              </div>
+              <label className="tiny">
+                {t('Motivo')}
+                <input className="input" value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t('Ex.: pagamento fornecedor X')} />
+              </label>
+              <button className="btn btn-primary" disabled={busy || ovos <= 0 || !reason.trim()} onClick={withdraw}>
+                {busy ? <span className="spinner" /> : t('Registrar retirada')}
+              </button>
+              {msg && <p className="tiny">{tx(msg)}</p>}
+            </div>
+          </div>
+
+          <div className="card">
+            <div className="row-between">
+              <h3>{t('Extrato')}</h3>
+              <div className="tabs compact">
+                <button className={`tab ${source === '' ? 'active' : ''}`} onClick={() => setSource('')}>
+                  {t('Todas')}
+                </button>
+                {['desafio', 'feira', 'aluguel', 'loja', 'saque'].map((s) => (
+                  <button key={s} className={`tab ${source === s ? 'active' : ''}`} onClick={() => setSource(s)}>
+                    {srcLabel(s)}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <table className="table admin-table">
+              <thead>
+                <tr>
+                  <th>{t('Quando')}</th>
+                  <th>{t('Fonte')}</th>
+                  <th>{t('Detalhe')}</th>
+                  <th className="num">{t('Valor')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {d.entries.map((r) => (
+                  <tr key={r.id}>
+                    <td className="tiny">{dt(r.at)}</td>
+                    <td className="tiny">{srcLabel(r.source)}</td>
+                    <td className="tiny">{r.detail || (r.ref ? r.ref.slice(0, 8) : '—')}</td>
+                    <td className={`num tiny ${r.amount < 0 ? 'neg' : 'pos'}`}>{`${r.amount < 0 ? '−' : '+'}${coin(r.currency)} ${n(Math.abs(r.amount))}`}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {d.entries.length === 0 && <p className="muted center">{t('Nada ainda.')}</p>}
+          </div>
+        </>
+      )}
     </>
   )
 }

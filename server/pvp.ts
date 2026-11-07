@@ -271,7 +271,7 @@ export function handlePvp(path: string, method: string, _url: URL, body: Record<
       writeSave(c.from_user, ra.state, fromSave.rev + 1)
       writeSave(c.to_user, rb.state, toSave.rev + 1)
       // A taxa não some: vai para a carteira do sistema (ovos conservados: −aposta do perdedor, +prêmio do vencedor, +taxa do sistema).
-      if (fee > 0) creditTreasury('desafio', 'ovo', fee, c.id)
+      if (fee > 0) creditTreasury('desafio', 'ovo', fee, c.id, `${fromName} x ${toName}`)
       const result = { winner: res.winner, method: res.method, a: snap(a), b: snap(b), rewardsFrom: ra.rewards, rewardsTo: rb.rewards, stake, fee, toolA: usedA, toolB: usedB }
       d.prepare("UPDATE challenges SET status = 'aceito', resolved_at = ?, seed = ?, result = ?, seen_to = 1, to_tool = ? WHERE id = ?").run(now(), seed, JSON.stringify(result), toTool, c.id)
       d.exec('COMMIT')

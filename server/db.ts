@@ -95,7 +95,8 @@ export function getDb() {
       source TEXT NOT NULL,
       currency TEXT NOT NULL,
       amount INTEGER NOT NULL,
-      ref TEXT
+      ref TEXT,
+      detail TEXT
     );
     CREATE INDEX IF NOT EXISTS treasury_at ON treasury(at);
     CREATE TABLE IF NOT EXISTS config (
@@ -234,6 +235,9 @@ export function getDb() {
   // Cada jogador pode levar UMA ferramenta (só vale se os dois levarem).
   if (!chCols.includes('from_tool')) db.exec('ALTER TABLE challenges ADD COLUMN from_tool TEXT')
   if (!chCols.includes('to_tool')) db.exec('ALTER TABLE challenges ADD COLUMN to_tool TEXT')
+  // Carteira do sistema: detalhe legível de cada entrada (qual desafio/venda/compra gerou).
+  const trCols = (db.prepare('PRAGMA table_info(treasury)').all() as { name: string }[]).map((c) => c.name)
+  if (!trCols.includes('detail')) db.exec('ALTER TABLE treasury ADD COLUMN detail TEXT')
   // 🌽 Arena no servidor: adversários gerados para cada galo (vida curta; server/economia.ts)
   db.exec(`
     CREATE TABLE IF NOT EXISTS arena_opps (

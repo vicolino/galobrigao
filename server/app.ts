@@ -703,8 +703,9 @@ export async function handle(req: Req, res: Res) {
           // carteira do sistema — não somem da economia.
           const spentOvo = cur.state.ovos - r.state.ovos
           const spentMilho = cur.state.milho - r.state.milho
-          if (spentOvo > 0) creditTreasury('loja', 'ovo', spentOvo, null)
-          if (spentMilho > 0) creditTreasury('loja', 'milho', spentMilho, null)
+          const shopDetail = `Loja: ${op.op}${'id' in op && op.id ? ' ' + op.id : ''}`
+          if (spentOvo > 0) creditTreasury('loja', 'ovo', spentOvo, null, shopDetail)
+          if (spentMilho > 0) creditTreasury('loja', 'milho', spentMilho, null, shopDetail)
           return r
         })
         afterShop(u.id, op, r.value)

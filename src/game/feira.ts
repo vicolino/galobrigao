@@ -113,3 +113,21 @@ export interface TreasuryStats {
   bySource: { source: string; currency: string; total: number; n: number }[]
   recent: { at: number; source: string; currency: string; amount: number; ref: string | null }[]
 }
+
+export interface TreasuryEntry {
+  id: number
+  at: number
+  source: string
+  currency: string
+  amount: number
+  ref: string | null
+  detail: string | null
+}
+
+/** Tela completa da Carteira do sistema (back-office). */
+export interface TreasuryLedger {
+  ovos: number
+  milho: number
+  bySource: { source: string; currency: string; total: number; n: number }[]
+  entries: TreasuryEntry[]
+}

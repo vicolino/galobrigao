@@ -6,7 +6,7 @@ import type { BetCredit, BetView, ScheduledFight } from './game/bets'
 import type { BetPick, GameState, Rooster } from './game/types'
 import { lang, t, tx } from './i18n'
 import type { Currency } from './game/types'
-import type { FeiraAdmin, FeiraData, FeiraKind, FeiraListing, FeiraPlayer } from './game/feira'
+import type { FeiraAdmin, FeiraData, FeiraKind, FeiraListing, FeiraPlayer, TreasuryLedger } from './game/feira'
 import type { LimitedStock } from './game/ofertas'
 import type { PrizeRow, TorneioDetail, TorneioKind, TorneioNotice, TorneioResult, TorneioStatus, TorneioView } from './game/torneio'
 import type { DropResult, RecentDrop } from './game/drops'
@@ -195,6 +195,8 @@ export const api = {
     kyc: (id: string, status: KycStatus) => call<{ ok: true }>(`/admin/users/${id}/kyc`, { method: 'POST', body: { status } }),
     web3: () => call<AdminWeb3>('/admin/web3'),
     feira: () => call<FeiraAdmin>('/admin/feira'),
+    treasury: (source?: string) => call<TreasuryLedger>('/admin/treasury' + (source ? `?source=${encodeURIComponent(source)}` : '')),
+    treasuryWithdraw: (ovos: number, usd: number, reason: string) => call<{ ok: true; ovos: number }>('/admin/treasury/withdraw', { method: 'POST', body: { ovos, usd, reason } }),
   },
   // ---------- Carteira cripto (testnet) ----------
   web3: () => call<Web3Info>('/web3'),

@@ -10,7 +10,7 @@ import { t } from '../src/i18n'
 import { setKyc, walletAddress, web3Overview } from './web3'
 import { depositStats } from './deposito'
 import { feiraAdmin } from './feira'
-import { treasuryStats } from './treasury'
+import { creditTreasury, treasuryBalance, treasuryLedger, treasuryStats } from './treasury'
 
 export class AdminError extends Error {
   constructor(
@@ -250,6 +250,30 @@ export async function handleAdmin(path: string, method: string, url: URL, body: 
 
   // Feira entre jogadores (só leitura: últimas trocas e taxas) + carteira do sistema
   if (path === '/api/admin/feira' && method === 'GET') return { ...feiraAdmin(), system: treasuryStats() }
+
+  // Carteira do sistema: extrato completo (filtrável por fonte) + saldo e totais por fonte
+  if (path === '/api/admin/treasury' && method === 'GET') {
+    const source = url.searchParams.get('source') || undefined
+    const limit = Number(url.searchParams.get('limit')) || 200
+    return treasuryLedger({ source, limit })
+  }
+
+  // Retirada da carteira (ovo → USDC): registro contábil. NÃO move USDC on-chain — só debita o
+  // saldo em ovos do sistema e guarda o valor em USDC + motivo. O USDC real sai da carteira on-chain.
+  if (path === '/api/admin/treasury/withdraw' && method === 'POST') {
+    const ovos = Math.round(Number(body.ovos))
+    const usd = Number(body.usd)
+    const reason = String(body.reason ?? '').trim().slice(0, 200)
+    if (!reason) throw new AdminError(400, t('Informe o motivo da retirada'))
+    if (!Number.isFinite(ovos) || ovos <= 0) throw new AdminError(400, t('Informe quantos ovos retirar.'))
+    if (!Number.isFinite(usd) || usd < 0) throw new AdminError(400, t('Valor em USDC inválido'))
+    const saldo = treasuryBalance().ovos
+    if (ovos > saldo) throw new AdminError(400, t('A carteira só tem 🥚 {n}.', { n: saldo }))
+    const detail = t('USDC {usd} — {motivo}', { usd: usd.toFixed(2), motivo: reason })
+    creditTreasury('saque', 'ovo', -ovos, null, detail)
+    audit(admin, 'carteira_retirada', null, { ovos, usd, reason })
+    return { ok: true, ovos: treasuryBalance().ovos }
+  }
 
   // Jogadores
   if (path === '/api/admin/users' && method === 'GET') {
