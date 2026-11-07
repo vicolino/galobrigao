@@ -16,15 +16,23 @@ Código maduro e bem protegido. Nos domínios de maior risco para um jogo com ec
 | 3 | Cookie de sessão sem `Secure` se `PUBLIC_URL` fosse http | `server/app.ts` | `Secure` agora é definido por `isProd() \|\| PUBLIC_URL começa com https`. Confirmado que em produção o cookie sai com `Secure`. |
 | 4 | `ws` (via `viem`) com advisory HIGH (vazamento de memória) + DoS | `package.json`, `package-lock.json` | `viem` 2.21.54 → 2.57.16 (mesma major); `ws` resolvido para 8.21.0. `npm audit`: 0 vulnerabilidades. Typecheck do web3 ok. |
 
+## Corrigido no 2º lote
+
+| Item | Arquivo | O que mudou |
+|------|---------|-------------|
+| **scrypt bloqueava o event loop** | `server/auth.ts` (+ call sites) | `hashPassword`/`checkPassword` agora são **assíncronos** (`promisify(scrypt)`, roda na threadpool). Testado: 12/12 e2e incl. caminhos negativos (senha errada em login/troca/exclusão rejeita — sem bypass). |
+| **Lockout virava DoS dirigido** | `server/app.ts` | A chave do contador de falhas passou de `email` para **`email\|ip`**: um atacante não tranca mais a conta de uma vítima só errando a senha dela; o legítimo, de outro IP, continua entrando. |
+| **Enumeração por tempo no `/forgot`** | `server/app.ts` | O envio do e-mail de recuperação não é mais aguardado (`void sendMail(...)`), então a resposta sai no mesmo tempo exista ou não a conta. |
+| **Prêmio de aposta fora da transação** | `server/bets.ts` | `takeCredits()` foi movido para **dentro** do `BEGIN/COMMIT` da aposta: se der rollback, o `credited=1` volta atrás e o jogador não perde o prêmio. |
+| **SQLite sem espera sob contenção** | `server/db.ts` | `PRAGMA busy_timeout = 5000` (espera em vez de erro imediato se o banco estiver ocupado). |
+
 ## Pendências recomendadas (não bloqueiam o lançamento)
 
-- **Arquitetura mono-processo.** Rate-limits/lockout (memória) e a atomicidade dos débitos de save (sem compare-and-swap) só valem com **um processo**. Antes de escalar para cluster/múltiplas instâncias sobre o mesmo SQLite: CAS no `writeSave` (`WHERE rev = ?`), `BEGIN IMMEDIATE` nos handlers de moeda, `PRAGMA busy_timeout`, e rate-limit/lockout compartilhado (SQLite/Redis). Hoje: **não habilitar cluster.**
-- **Enumeração de e-mail:** cadastro responde 409 distinto; `/forgot` vaza por tempo de resposta. Uniformizar.
-- **Lockout vira DoS dirigido:** 8 falhas por e-mail trancam a conta sem vínculo com IP (`app.ts`). Combinar com IP / CAPTCHA.
-- **`scryptSync` bloqueia o event loop** (agora mais caro). Migrar para `scrypt` assíncrono.
-- **Sem verificação de e-mail** (squatting; gate 18+ autodeclarado).
-- **Prêmio de aposta consumido fora da transação** (`bets.ts:286`): em rollback o jogador perde o prêmio (prejudica o jogador, não dá ganho ao atacante).
-- **RNG de caixas** usa `Math.random()` em vez de `crypto` (justiça, não exploit).
+- **Arquitetura mono-processo (CAS no save).** A atomicidade dos débitos de save depende de processo único. Antes de escalar para cluster/múltiplas instâncias sobre o mesmo SQLite: **compare-and-swap** no `writeSave` (`UPDATE … WHERE user_id=? AND rev=?`, rejeitar/retry no conflito) e rate-limit/lockout em store compartilhado (SQLite/Redis). Validado que todos os callers passam `revCarregado+1`, então o CAS é seguro — mas precisa tratar o novo caminho de conflito nos handlers async de dinheiro (web3/depósito, que têm `await` entre o load e o write). É um rollout isolado e testado, não um item de lote. Hoje: **não habilitar cluster.**
+- **Verificação de e-mail** (squatting; gate 18+ autodeclarado) — relevante por ser app com dinheiro. É um fluxo novo (token + e-mail + gate nas features de gasto); decisão de produto.
+- **Enumeração no cadastro:** `/signup` ainda responde 409 distinto quando o e-mail já existe (tradeoff de UX: avisar "já tem conta"). O `/forgot` já foi uniformizado.
+- **RNG de caixas** usa `Math.random()` em vez de `crypto` (`src/game/premium.ts`, código isomórfico cliente/servidor) — justiça, não exploit.
+- **scrypt 2¹⁷:** exigiria novo prefixo versionado (`s3:`) mantendo o verificador de 2¹⁶, para não re-brickar quem já migrou para `s2:`.
 
 ## Confirmado seguro (checado)
 

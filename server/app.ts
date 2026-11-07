@@ -333,7 +333,7 @@ export async function handle(req: Req, res: Res) {
       if (b.adult !== true) throw new HttpError(400, t('É preciso ter 18 anos ou mais'))
       if (b.terms !== true) throw new HttpError(400, t('Aceite os termos de uso'))
       if (db.prepare('SELECT 1 FROM users WHERE email = ?').get(email)) throw new HttpError(409, t('Esse e-mail já tem conta. Faça login.'))
-      const { hash, salt } = hashPassword(password)
+      const { hash, salt } = await hashPassword(password)
       const id = randomUUID()
       const now = Date.now()
       db.prepare('INSERT INTO users (id, email, name, pass_hash, salt, created_at, adult_confirmed_at, terms_accepted_at, monthly_limit_cents, lang) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(id, email, name, hash, salt, now, now, now, live.economy.defaultSpendLimitCents, reqLang(req))
@@ -348,18 +348,20 @@ export async function handle(req: Req, res: Res) {
       if (limited(`login:${ip}`, 20, 60_000)) throw new HttpError(429, t('Muitas tentativas. Espere um minuto.'))
       const b = await readBody(req)
       const email = String(b.email ?? '').trim().toLowerCase()
-      // Bloqueio por conta: 8 senhas erradas em 15 min
-      const fails = failCount(email)
+      // Bloqueio por (conta + IP): 8 senhas erradas em 15 min. A chave inclui o IP para que um atacante
+      // não consiga trancar a conta de uma vítima só errando a senha dela (o legítimo, de outro IP, ainda entra).
+      const failKey = `${email}|${ip}`
+      const fails = failCount(failKey)
       if (fails >= 8) throw new HttpError(429, t('Muitas senhas erradas nesta conta. Espere 15 minutos ou use "Esqueci minha senha".'))
       const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email) as unknown as UserRow | undefined
-      const ok = user ? checkPassword(String(b.password ?? ''), user) : dummyPasswordCheck()
+      const ok = user ? await checkPassword(String(b.password ?? ''), user) : await dummyPasswordCheck()
       if (!user || !ok) {
-        addFail(email)
+        addFail(failKey)
         throw new HttpError(401, t('E-mail ou senha incorretos'))
       }
       if (user.banned_at) throw new HttpError(403, user.ban_reason ? t('Conta bloqueada: {motivo}. Fale com o suporte.', { motivo: user.ban_reason }) : t('Conta bloqueada. Fale com o suporte.'))
       // Migra senhas em formato legado para o custo novo do scrypt, aproveitando que temos a senha em claro aqui.
-      if (needsRehash(user)) db.prepare('UPDATE users SET pass_hash = ? WHERE id = ?').run(hashPassword(String(b.password ?? ''), user.salt).hash, user.id)
+      if (needsRehash(user)) db.prepare('UPDATE users SET pass_hash = ? WHERE id = ?').run((await hashPassword(String(b.password ?? ''), user.salt)).hash, user.id)
       return json(res, 200, { user: publicUser(applyPendingLimit(user)) }, { 'Set-Cookie': sessionCookie(createSession(user.id), secure) })
     }
     if (path === '/api/auth/logout' && method === 'POST') {
@@ -371,10 +373,10 @@ export async function handle(req: Req, res: Res) {
       const u = needUser(req)
       if (limited(`pwd:${u.id}`, 10, 3600_000)) throw new HttpError(429, t('Muitas tentativas. Tente mais tarde.'))
       const b = await readBody(req)
-      if (!checkPassword(String(b.current ?? ''), u)) throw new HttpError(401, t('Senha atual incorreta'))
+      if (!(await checkPassword(String(b.current ?? ''), u))) throw new HttpError(401, t('Senha atual incorreta'))
       const next = String(b.next ?? '')
       if (next.length < 8) throw new HttpError(400, t('A senha nova precisa ter pelo menos 8 caracteres'))
-      const np = hashPassword(next)
+      const np = await hashPassword(next)
       db.prepare('UPDATE users SET pass_hash = ?, salt = ? WHERE id = ?').run(np.hash, np.salt, u.id)
       // Derruba as outras sessões e cria uma nova para este aparelho
       db.prepare('DELETE FROM sessions WHERE user_id = ?').run(u.id)
@@ -393,12 +395,14 @@ export async function handle(req: Req, res: Res) {
         db.prepare('INSERT INTO password_resets (token_hash, user_id, expires_at) VALUES (?, ?, ?)').run(hash, user.id, Date.now() + 3600_000)
         const link = `${(process.env.PUBLIC_URL ?? 'http://localhost:5173').replace(/\/$/, '')}/#/redefinir?token=${token}`
         const l = reqLang(req)
-        await sendMail(
+        // Dispara o e-mail sem await: a resposta sai no mesmo tempo exista ou não a conta, para não vazar
+        // por tempo de resposta quais e-mails têm cadastro. Erro de envio só é logado.
+        void sendMail(
           user.email,
           t('Redefinir sua senha', undefined, l),
           `<p>${t('Olá, {nome}!', { nome: escapeHtml(user.name) }, l)}</p><p>${t('Para criar uma senha nova, acesse: {link}', { link: `<a href="${link}">${link}</a>` }, l)}</p><p>${t('O link vale por 1 hora. Se não foi você, ignore este e-mail.', undefined, l)}</p>`, // i18n-ok
           appName(l),
-        )
+        ).catch((e) => console.error('[mail] forgot', e))
       }
       // Mesma resposta sempre, para não revelar quais e-mails têm conta
       return json(res, 200, { ok: true })
@@ -410,7 +414,7 @@ export async function handle(req: Req, res: Res) {
       const hash = createHash('sha256').update(String(b.token ?? '')).digest('hex')
       const row = db.prepare('SELECT * FROM password_resets WHERE token_hash = ?').get(hash) as { user_id: string; expires_at: number; used_at: number | null } | undefined
       if (!row || row.used_at || row.expires_at < Date.now()) throw new HttpError(400, t('Link inválido ou vencido. Peça um novo.'))
-      const np = hashPassword(password)
+      const np = await hashPassword(password)
       db.prepare('UPDATE users SET pass_hash = ?, salt = ? WHERE id = ?').run(np.hash, np.salt, row.user_id)
       db.prepare('UPDATE password_resets SET used_at = ? WHERE token_hash = ?').run(Date.now(), hash)
       db.prepare('DELETE FROM sessions WHERE user_id = ?').run(row.user_id)
@@ -421,7 +425,7 @@ export async function handle(req: Req, res: Res) {
     if (path === '/api/account' && method === 'DELETE') {
       const u = needUser(req)
       const b = await readBody(req)
-      if (!checkPassword(String(b.password ?? ''), u)) throw new HttpError(401, t('Senha incorreta'))
+      if (!(await checkPassword(String(b.password ?? ''), u))) throw new HttpError(401, t('Senha incorreta'))
       db.exec('BEGIN')
       db.prepare('DELETE FROM saves WHERE user_id = ?').run(u.id)
       db.prepare('DELETE FROM sessions WHERE user_id = ?').run(u.id)

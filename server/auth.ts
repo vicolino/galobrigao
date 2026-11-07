@@ -1,27 +1,30 @@
-import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto'
+import { randomBytes, scrypt as scryptCb, timingSafeEqual } from 'node:crypto'
 import type { IncomingMessage } from 'node:http'
+import { promisify } from 'node:util'
 import { getDb, type UserRow } from './db'
 
 const SESSION_DAYS = 30
 
 // Custo do scrypt: N=2^16, r=8, p=1 — 4x o padrão do Node (2^14), ~67 MB por cálculo (maxmem com folga).
 // Escolhido 2^16 (e não 2^17) para caber com segurança na VM de produção de processo único; dá para subir depois.
+// Assíncrono (promisify) para rodar na threadpool do libuv e NÃO travar o event loop durante o cálculo.
 // Hashes novos levam o prefixo 's2:'. Hash sem prefixo = formato legado (scrypt com parâmetros padrão do Node),
 // que continua sendo verificado do jeito antigo e é re-hasheado para o formato novo no próximo login (needsRehash).
 const TAG = 's2:'
 const COST = { N: 65536, r: 8, p: 1, maxmem: 160 * 1024 * 1024 }
+const scrypt = promisify(scryptCb) as (password: string, salt: string, keylen: number, options?: typeof COST) => Promise<Buffer>
 
-export function hashPassword(password: string, salt = randomBytes(16).toString('hex')) {
-  const hash = TAG + scryptSync(password, salt, 64, COST).toString('hex')
+export async function hashPassword(password: string, salt = randomBytes(16).toString('hex')) {
+  const hash = TAG + (await scrypt(password, salt, 64, COST)).toString('hex')
   return { hash, salt }
 }
 
 /** true quando a senha confere. Aceita tanto hashes legados quanto os do formato novo. */
-export function checkPassword(password: string, user: UserRow) {
+export async function checkPassword(password: string, user: UserRow) {
   const stored = user.pass_hash
   const computed = stored.startsWith(TAG)
-    ? TAG + scryptSync(password, user.salt, 64, COST).toString('hex')
-    : scryptSync(password, user.salt, 64).toString('hex')
+    ? TAG + (await scrypt(password, user.salt, 64, COST)).toString('hex')
+    : (await scrypt(password, user.salt, 64)).toString('hex')
   if (computed.length !== stored.length) return false
   return timingSafeEqual(Buffer.from(computed), Buffer.from(stored))
 }
@@ -66,9 +69,9 @@ export function destroySession(req: IncomingMessage) {
 }
 
 /** Gasta o mesmo tempo de uma senha real quando o e-mail não existe (não revela quem tem conta). */
-const DUMMY = hashPassword('senha-que-nao-existe-1234')
-export function dummyPasswordCheck() {
-  hashPassword('x', DUMMY.salt)
+const DUMMY_SALT = randomBytes(16).toString('hex')
+export async function dummyPasswordCheck() {
+  await scrypt('x', DUMMY_SALT, 64, COST)
   return false
 }
 

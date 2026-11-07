@@ -282,18 +282,20 @@ export function handleBets(path: string, method: string, body: Record<string, un
     if (!Number.isFinite(amount) || amount < live.bets.minBet) fail(t('Aposta mínima: 🎟️ {n} fichas.', { n: live.bets.minBet }))
     if (amount > live.bets.maxBet) fail(t('Aposta máxima: 🎟️ {n} fichas.', { n: live.bets.maxBet.toLocaleString(locale()) }))
     const save = loadSave(userId) ?? fail(t('Sem galinheiro'))
-    let state = save!.state
-    const c = takeCredits(userId)
-    if (c) state = applyBetCredit(state, c)
-    if ((state.fichas ?? 0) < amount) fail(t('Fichas insuficientes 🎟️'))
     const a = JSON.parse(f!.a) as Rooster
     const b = JSON.parse(f!.b) as Rooster
     const odds = pick === 'a' ? f!.odds_a : pick === 'b' ? f!.odds_b : f!.odds_ko
     const label = pickLabel(pick, a.name, b.name)
-    state = addPassXp(applyBetPlaced(state, amount, label, odds), PASS_XP.apostar)
     const d = db()
     d.exec('BEGIN')
     try {
+      let state = save!.state
+      // Consome os créditos de apostas ganhas DENTRO da transação: se o writeSave/insert der rollback,
+      // o `credited = 1` dos house_bets também volta atrás e o jogador não perde o prêmio.
+      const c = takeCredits(userId)
+      if (c) state = applyBetCredit(state, c)
+      if ((state.fichas ?? 0) < amount) fail(t('Fichas insuficientes 🎟️'))
+      state = addPassXp(applyBetPlaced(state, amount, label, odds), PASS_XP.apostar)
       writeSave(userId, state, save!.rev + 1)
       d.prepare("INSERT INTO house_bets (id, user_id, fight_id, pick, amount, odds, label, status, created_at, currency) VALUES (?, ?, ?, ?, ?, ?, ?, 'pendente', ?, 'fichas')").run(
         randomUUID(),
@@ -306,11 +308,11 @@ export function handleBets(path: string, method: string, body: Record<string, un
         Date.now(),
       )
       d.exec('COMMIT')
+      return { status: 201, body: { rev: save!.rev + 1, state, credit: c } }
     } catch (e) {
       d.exec('ROLLBACK')
       throw e
     }
-    return { status: 201, body: { rev: save!.rev + 1, state, credit: c } }
   }
 
   return null

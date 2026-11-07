@@ -25,7 +25,7 @@ if (cmd === 'admin') {
       process.exit(1)
     }
     const temp = randomBytes(9).toString('base64url')
-    const { hash, salt } = hashPassword(temp)
+    const { hash, salt } = await hashPassword(temp)
     const now = Date.now()
     const name = (process.argv[5] ?? email.split('@')[0]).slice(0, 16)
     db.prepare(
