@@ -46,11 +46,17 @@ console.error(`Chain ${chainId} via ${rpc} — operador ${account.address}`);
 const bal = await pub.getBalance({ address: account.address });
 if (bal === 0n) die('operador sem ETH para gas');
 
+// Tesouraria do Market (recebe depósitos/taxas): WEB3_TREASURY (carteira fria) ou, se não vier, o operador.
+const treasuryEnv = process.env.WEB3_TREASURY;
+if (treasuryEnv && !isAddress(treasuryEnv)) die('WEB3_TREASURY inválido');
+const treasury = treasuryEnv ? getAddress(treasuryEnv) : account.address;
+console.error(`  tesouraria  ${treasury}${treasuryEnv ? '' : ' (operador — defina WEB3_TREASURY para separar!)'}`);
+
 const egg = await deploy('GameToken', ['Chicken Fighter Egg', 'EGG', account.address]);
 const corn = await deploy('GameToken', ['Chicken Fighter Corn', 'CORN', account.address]);
 const items = await deploy('GameItems', [account.address, baseURI]);
 const usdc = usdcEnv ? getAddress(usdcEnv) : await deploy('TestUSDC', []);
-const market = await deploy('Market', [items, usdc, account.address, feeBps]);
+const market = await deploy('Market', [items, usdc, treasury, feeBps]);
 
 // Linhas prontas para colar no .env (stdout; logs vão para stderr)
 console.log(`# deploy chainId=${chainId} feeBps=${feeBps} baseURI=${baseURI}`);
