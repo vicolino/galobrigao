@@ -60,6 +60,12 @@ export function getDb() {
       expires_at INTEGER NOT NULL,
       used_at INTEGER
     );
+    CREATE TABLE IF NOT EXISTS email_verifications (
+      token_hash TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      expires_at INTEGER NOT NULL,
+      used_at INTEGER
+    );
     CREATE TABLE IF NOT EXISTS presence (
       user_id TEXT PRIMARY KEY,
       last_seen INTEGER NOT NULL
@@ -150,6 +156,12 @@ export function getDb() {
   if (!cols.includes('role')) db.exec("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'player'")
   if (!cols.includes('lang')) db.exec("ALTER TABLE users ADD COLUMN lang TEXT NOT NULL DEFAULT 'pt'")
   if (!cols.includes('kyc_status')) db.exec("ALTER TABLE users ADD COLUMN kyc_status TEXT NOT NULL DEFAULT 'none'")
+  // Verificação de e-mail: contas que já existiam quando a coluna foi criada entram como verificadas (backfill
+  // roda só uma vez, aqui dentro do if). A partir daqui, todo cadastro novo nasce com NULL e precisa confirmar.
+  if (!cols.includes('email_verified_at')) {
+    db.exec('ALTER TABLE users ADD COLUMN email_verified_at INTEGER')
+    db.exec('UPDATE users SET email_verified_at = created_at WHERE email_verified_at IS NULL')
+  }
   // Origem do cadastro (UTM do primeiro acesso)
   for (const c of ['utm_source', 'utm_medium', 'utm_campaign', 'ref']) if (!cols.includes(c)) db.exec(`ALTER TABLE users ADD COLUMN ${c} TEXT`)
   // Web3: carteiras custodiais, NFTs de itens e registro de todas as operações na chain
@@ -267,6 +279,8 @@ export interface UserRow {
   lang?: string
   mvp_credit_cents?: number
   mvp_granted_at?: number | null
+  /** Quando o e-mail foi confirmado (null = ainda não confirmado; contas antigas entraram com o created_at). */
+  email_verified_at?: number | null
   ban_reason?: string | null
   /** Verificação de identidade para envios externos: 'none' | 'pending' | 'verified' | 'rejected'. */
   kyc_status?: string

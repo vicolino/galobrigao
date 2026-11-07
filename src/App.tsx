@@ -9,7 +9,8 @@ import { Loja } from './pages/Loja'
 import { Luta } from './pages/Luta'
 import { Missoes } from './pages/Missoes'
 import { Passe } from './pages/Passe'
-import { AuthScreen, ResetScreen, StarterScreen } from './pages/Onboarding'
+import { AuthScreen, ConfirmEmailScreen, ResetScreen, StarterScreen } from './pages/Onboarding'
+import { api } from './api'
 import { Landing } from './pages/Landing'
 import { Legal } from './pages/Legal'
 import { ChallengeAlert, ChallengeDeclined, Desafios } from './pages/Desafios'
@@ -42,6 +43,7 @@ export default function App() {
   const publicPath = route.split('?')[0]
   if (publicPath === '/termos' || publicPath === '/privacidade') return <Legal doc={publicPath === '/termos' ? 'termos' : 'privacidade'} />
   if (publicPath === '/redefinir') return <ResetScreen />
+  if (publicPath === '/confirmar') return <ConfirmEmailScreen />
   if (phase === 'carregando') return <div className="onboarding"><div className="spinner big" /></div>
   if (phase === 'login') {
     if (publicPath === '/entrar') return (<><AuthScreen initialMode="login" /><Toasts /></>)
@@ -98,6 +100,7 @@ export default function App() {
           </div>
         )}
         {pubConfig?.maintenance.on && <div className="announce announce-alerta">🚧 {t('Modo manutenção ligado — só administradores conseguem jogar.')}</div>}
+        {user && !user.emailVerified && <VerifyBanner email={user.email} />}
         {pubConfig?.announcement.text && hidden !== pubConfig.announcement.text && (
           <div className={`announce announce-${pubConfig.announcement.kind}`}>
             <span>{pubConfig.announcement.kind === 'promo' ? '🎉' : pubConfig.announcement.kind === 'alerta' ? '⚠️' : '📢'} {tx(pubConfig.announcement.text)}</span>
@@ -127,6 +130,38 @@ export default function App() {
       <NewsCenter />
       <BuyConfirm />
       <Toasts />
+    </div>
+  )
+}
+
+/** Aviso fixo para quem ainda não confirmou o e-mail, com botão de reenviar o link. */
+function VerifyBanner({ email }: { email: string }) {
+  const [sent, setSent] = useState(false)
+  const [busy, setBusy] = useState(false)
+  return (
+    <div className="announce announce-alerta">
+      <span>✉️ {t('Confirme seu e-mail ({email}) para liberar compras e o seu crédito de boas-vindas.', { email })}</span>
+      {sent ? (
+        <span className="pos">{t('Link reenviado! Olhe sua caixa de entrada.')}</span>
+      ) : (
+        <button
+          className="btn btn-sm"
+          disabled={busy}
+          onClick={async () => {
+            setBusy(true)
+            try {
+              await api.resendVerification()
+              setSent(true)
+            } catch {
+              /* ignora */
+            } finally {
+              setBusy(false)
+            }
+          }}
+        >
+          {t('Reenviar')}
+        </button>
+      )}
     </div>
   )
 }

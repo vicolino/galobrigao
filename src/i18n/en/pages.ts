@@ -1,6 +1,15 @@
 // Traduções para inglês (chave = texto original em português).
 // Grupo "pages": Galinheiro, Loja, LojaExtra, Perfil, Apostas.
 const en: Record<string, string> = {
+  'Confirmando seu e-mail…': 'Confirming your email…',
+  'E-mail confirmado!': 'Email confirmed!',
+  'Pronto! Seu crédito de boas-vindas foi liberado.': 'Done! Your welcome credit has been unlocked.',
+  'Entrar no jogo': 'Enter the game',
+  'Não deu para confirmar': 'Couldn’t confirm',
+  'Voltar': 'Back',
+  'Confirme seu e-mail ({email}) para liberar compras e o seu crédito de boas-vindas.': 'Confirm your email ({email}) to unlock purchases and your welcome credit.',
+  'Link reenviado! Olhe sua caixa de entrada.': 'Link resent! Check your inbox.',
+  'Reenviar': 'Resend',
   // ---------- Galinheiro ----------
   '🏠 Galinheiro': '🏠 Coop',
   '{n}/12 galos · clique em um galo para cuidar, treinar e vestir': '{n}/12 roosters · tap a rooster to feed, train and dress it up',

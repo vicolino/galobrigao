@@ -11,6 +11,11 @@ const en: Record<string, string> = {
   'Origem não permitida': 'Origin not allowed',
   'Rota não encontrada': 'Route not found',
   'Seu jogo mudou em outra aba. Recarregue e tente de novo.': 'Your game changed in another tab. Reload and try again.',
+  'Confirme seu e-mail para comprar, depositar ou sacar. Veja o aviso no topo do jogo.': 'Confirm your email to buy, deposit or withdraw. See the notice at the top of the game.',
+  'Confirme seu e-mail': 'Confirm your email',
+  'Confirme seu e-mail para liberar as compras e o seu crédito de boas-vindas: {link}': 'Confirm your email to unlock purchases and your welcome credit: {link}',
+  'O link vale por 24 horas. Se não foi você, ignore este e-mail.': 'The link is valid for 24 hours. If this wasn’t you, ignore this email.',
+  'Link inválido ou vencido. Reenvie a confirmação.': 'Invalid or expired link. Resend the confirmation.',
   'Erro interno. Tente de novo.': 'Internal error. Please try again.',
   'Muitas requisições. Espere um pouco e tente de novo.': 'Too many requests. Wait a moment and try again.',
 

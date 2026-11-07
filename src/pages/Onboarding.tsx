@@ -304,3 +304,56 @@ export function ResetScreen() {
     </div>
   )
 }
+
+/** Tela de confirmação de e-mail (link do e-mail → #/confirmar?token=...). Confirma ao abrir. */
+export function ConfirmEmailScreen() {
+  const token = new URLSearchParams(window.location.hash.split('?')[1] ?? '').get('token') ?? ''
+  const [status, setStatus] = useState<'loading' | 'ok' | 'error'>('loading')
+  const [error, setError] = useState('')
+  useEffect(() => {
+    let alive = true
+    api
+      .verifyEmail(token)
+      .then(() => alive && setStatus('ok'))
+      .catch((err) => {
+        if (!alive) return
+        setError(tx((err as Error).message))
+        setStatus('error')
+      })
+    return () => {
+      alive = false
+    }
+  }, [token])
+  return (
+    <div className="onboarding">
+      <div className="ob-card center">
+        {status === 'loading' && (
+          <>
+            <div className="spinner big" />
+            <p className="muted">{t('Confirmando seu e-mail…')}</p>
+          </>
+        )}
+        {status === 'ok' && (
+          <>
+            <div className="prize-emoji">✅</div>
+            <h2>{t('E-mail confirmado!')}</h2>
+            <p className="pos">{t('Pronto! Seu crédito de boas-vindas foi liberado.')}</p>
+            <a className="btn btn-primary btn-lg" href="/">
+              {t('Entrar no jogo')}
+            </a>
+          </>
+        )}
+        {status === 'error' && (
+          <>
+            <div className="prize-emoji">⚠️</div>
+            <h2>{t('Não deu para confirmar')}</h2>
+            <p className="neg">{error}</p>
+            <a className="btn" href="/">
+              {t('Voltar')}
+            </a>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}

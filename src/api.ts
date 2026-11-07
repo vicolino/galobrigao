@@ -31,6 +31,7 @@ export interface ApiUser {
   mvpCreditCents?: number
   isAdmin?: boolean
   email: string
+  emailVerified?: boolean
   name: string
   limits: { monthlyCents: number; spentCents: number; pendingCents: number | null; pendingAt: number | null; options: number[] }
 }
@@ -103,6 +104,8 @@ export const api = {
   changePassword: (current: string, next: string) => call('/auth/password', { method: 'POST', body: { current, next } }),
   forgot: (email: string) => call('/auth/forgot', { method: 'POST', body: { email } }),
   reset: (token: string, password: string) => call('/auth/reset', { method: 'POST', body: { token, password } }),
+  verifyEmail: (token: string) => call<{ user: ApiUser }>('/auth/verify-email', { method: 'POST', body: { token } }),
+  resendVerification: () => call('/auth/resend-verification', { method: 'POST' }),
   deleteAccount: (password: string) => call('/account', { method: 'DELETE', body: { password } }),
   logout: () => call('/auth/logout', { method: 'POST' }),
   getSave: () => call<{ rev: number; state: GameState | null }>('/save'),

@@ -89,7 +89,8 @@ const needUser = (req: Req) => {
 
 /** Modo MVP: cada conta recebe o crédito de teste uma única vez. */
 function grantMvp(u: UserRow): UserRow {
-  if (!live.mvp.on || u.mvp_granted_at || live.mvp.creditCents <= 0) return u
+  // Só concede o crédito de boas-vindas depois que o e-mail foi confirmado (senão daria pra farmar com e-mails falsos).
+  if (!live.mvp.on || u.mvp_granted_at || !u.email_verified_at || live.mvp.creditCents <= 0) return u
   const r = getDb()
     .prepare('UPDATE users SET mvp_credit_cents = mvp_credit_cents + ?, mvp_granted_at = ? WHERE id = ? AND mvp_granted_at IS NULL')
     .run(live.mvp.creditCents, Date.now(), u.id)
@@ -155,6 +156,7 @@ const publicUser = (u: UserRow) => ({
   mvpCreditCents: u.mvp_credit_cents ?? 0,
   isAdmin: isAdmin(u),
   email: u.email,
+  emailVerified: !!u.email_verified_at,
   name: u.name,
   limits: {
     monthlyCents: u.monthly_limit_cents,
@@ -164,6 +166,25 @@ const publicUser = (u: UserRow) => ({
     options: SPEND_LIMITS,
   },
 })
+
+/** Bloqueia ações de dinheiro (compra, depósito, saque) enquanto o e-mail não for confirmado. */
+const assertVerified = (u: UserRow) => {
+  if (!u.email_verified_at) throw new HttpError(403, t('Confirme seu e-mail para comprar, depositar ou sacar. Veja o aviso no topo do jogo.'), { needsEmailVerify: true })
+}
+
+/** Cria um token de confirmação de e-mail e manda o link (vale 24h). Fire-and-forget pelo chamador. */
+async function sendVerifyEmail(user: UserRow, lang: Lang) {
+  const token = randomBytes(32).toString('hex')
+  const hash = createHash('sha256').update(token).digest('hex')
+  getDb().prepare('INSERT INTO email_verifications (token_hash, user_id, expires_at) VALUES (?, ?, ?)').run(hash, user.id, Date.now() + 24 * 3600_000)
+  const link = `${(process.env.PUBLIC_URL ?? 'http://localhost:5173').replace(/\/$/, '')}/#/confirmar?token=${token}`
+  await sendMail(
+    user.email,
+    t('Confirme seu e-mail', undefined, lang),
+    `<p>${t('Olá, {nome}!', { nome: escapeHtml(user.name) }, lang)}</p><p>${t('Confirme seu e-mail para liberar as compras e o seu crédito de boas-vindas: {link}', { link: `<a href="${link}">${link}</a>` }, lang)}</p><p>${t('O link vale por 24 horas. Se não foi você, ignore este e-mail.', undefined, lang)}</p>`, // i18n-ok
+    appName(lang),
+  )
+}
 
 // ---------- Save ----------
 
@@ -341,7 +362,9 @@ export async function handle(req: Req, res: Res) {
       const utm = (v: unknown) => String(v ?? '').toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 40) || null
       const o = (b.utm ?? {}) as Record<string, unknown>
       db.prepare('UPDATE users SET utm_source = ?, utm_medium = ?, utm_campaign = ?, ref = ? WHERE id = ?').run(utm(o.source), utm(o.medium), utm(o.campaign), utm(o.ref), id)
-      const user = grantMvp(db.prepare('SELECT * FROM users WHERE id = ?').get(id) as unknown as UserRow)
+      const user = db.prepare('SELECT * FROM users WHERE id = ?').get(id) as unknown as UserRow
+      // Conta nasce não confirmada: manda o e-mail de confirmação (sem travar a resposta) e só libera o crédito ao confirmar.
+      void sendVerifyEmail(user, reqLang(req)).catch((e) => console.error('[mail] verify', e))
       return json(res, 201, { user: publicUser(user) }, { 'Set-Cookie': sessionCookie(createSession(id), secure) })
     }
     if (path === '/api/auth/login' && method === 'POST') {
@@ -418,6 +441,28 @@ export async function handle(req: Req, res: Res) {
       db.prepare('UPDATE users SET pass_hash = ?, salt = ? WHERE id = ?').run(np.hash, np.salt, row.user_id)
       db.prepare('UPDATE password_resets SET used_at = ? WHERE token_hash = ?').run(Date.now(), hash)
       db.prepare('DELETE FROM sessions WHERE user_id = ?').run(row.user_id)
+      return json(res, 200, { ok: true })
+    }
+
+    // ----- Confirmar e-mail -----
+    if (path === '/api/auth/verify-email' && method === 'POST') {
+      const b = await readBody(req)
+      const hash = createHash('sha256').update(String(b.token ?? '')).digest('hex')
+      const row = db.prepare('SELECT * FROM email_verifications WHERE token_hash = ?').get(hash) as { user_id: string; expires_at: number; used_at: number | null } | undefined
+      if (!row || row.used_at || row.expires_at < Date.now()) throw new HttpError(400, t('Link inválido ou vencido. Reenvie a confirmação.'))
+      db.prepare('UPDATE users SET email_verified_at = COALESCE(email_verified_at, ?) WHERE id = ?').run(Date.now(), row.user_id)
+      db.prepare('UPDATE email_verifications SET used_at = ? WHERE token_hash = ?').run(Date.now(), hash)
+      // Agora que o e-mail está confirmado, o crédito de boas-vindas é liberado.
+      const fresh = grantMvp(db.prepare('SELECT * FROM users WHERE id = ?').get(row.user_id) as unknown as UserRow)
+      return json(res, 200, { user: publicUser(applyPendingLimit(fresh)) })
+    }
+
+    // ----- Reenviar confirmação de e-mail (logado) -----
+    if (path === '/api/auth/resend-verification' && method === 'POST') {
+      const u = needUser(req)
+      if (u.email_verified_at) return json(res, 200, { ok: true })
+      if (limited(`verify-resend:${u.id}`, 3, 3600_000)) throw new HttpError(429, t('Muitas tentativas. Tente mais tarde.'))
+      void sendVerifyEmail(u, reqLang(req)).catch((e) => console.error('[mail] verify-resend', e))
       return json(res, 200, { ok: true })
     }
 
@@ -566,7 +611,10 @@ export async function handle(req: Req, res: Res) {
     // ----- 💵 Depósito USDC → ovos (server/deposito.ts) -----
     if (path === '/api/web3/deposit' || path === '/api/web3/deposit-eggs' || path === '/api/web3/test-usdc') {
       const u = needUser(req)
-      if (method === 'POST') blockIfMaintenance(u)
+      if (method === 'POST') {
+        blockIfMaintenance(u)
+        assertVerified(u)
+      }
       const body = method === 'POST' ? await readBody(req) : {}
       const out = await handleDeposito(path, method, body, u)
       if (out) return json(res, out.status ?? 200, out.body)
@@ -575,7 +623,10 @@ export async function handle(req: Req, res: Res) {
     // ----- Carteira cripto, NFTs e mercado (server/web3.ts) -----
     if (path.startsWith('/api/web3') || path.startsWith('/api/market') || path.startsWith('/api/nft/')) {
       const u = path.startsWith('/api/nft/') ? null : needUser(req)
-      if (u && method === 'POST') blockIfMaintenance(u)
+      if (u && method === 'POST') {
+        blockIfMaintenance(u)
+        assertVerified(u)
+      }
       const body = method === 'POST' ? await readBody(req) : {}
       const out = await handleWeb3(path, method, body, u)
       if (out && 'svg' in out) {
@@ -667,6 +718,7 @@ export async function handle(req: Req, res: Res) {
       const u = needUser(req)
       const b = await readBody(req)
       blockIfMaintenance(u)
+      assertVerified(u)
       if (limited(`checkout:${u.id}`, 10, 600_000)) throw new HttpError(429, t('Muitos pedidos seguidos. Espere alguns minutos.'))
       const sku = effectiveSku(String(b.sku))
       if (!sku || !sku.active) throw new HttpError(404, t('Produto indisponível no momento'))
