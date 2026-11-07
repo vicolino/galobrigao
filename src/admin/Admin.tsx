@@ -132,7 +132,7 @@ function Overview() {
             <div className="card">
               <h3>{t('💰 Carteira do sistema')}</h3>
               <p className="tiny muted">{t('As taxas que o jogo recolhe entram aqui — não somem da economia. Os ovos aqui são o lastro para a moeda NFT.')}</p>
-              <div className="kpi-grid small">
+              <div className="kpi-grid">
                 <Kpi label={t('🥚 Saldo em ovos')} value={n(d.treasury.ovos)} />
                 <Kpi label={t('🌽 Saldo em milho')} value={n(d.treasury.milho)} />
               </div>
