@@ -10,6 +10,7 @@ const en: Record<string, string> = {
   'Em manutenção': 'Down for maintenance',
   'Origem não permitida': 'Origin not allowed',
   'Rota não encontrada': 'Route not found',
+  'Seu jogo mudou em outra aba. Recarregue e tente de novo.': 'Your game changed in another tab. Reload and try again.',
   'Erro interno. Tente de novo.': 'Internal error. Please try again.',
   'Muitas requisições. Espere um pouco e tente de novo.': 'Too many requests. Wait a moment and try again.',
 

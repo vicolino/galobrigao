@@ -14,7 +14,7 @@ import { checkPassword, clearCookie, createSession, destroySession, dummyPasswor
 import { badOrigin, baseHeaders, clientIp, escapeHtml, isProd, limited, tooMany } from './security'
 import { getDb, type OrderRow, type UserRow } from './db'
 import { sendMail } from './mail'
-import { loadSave, writeSave } from './saves'
+import { SaveConflict, loadSave, writeSave } from './saves'
 import { handlePvp, PvpError } from './pvp'
 import { FeiraError, feiraDeleteUser, handleFeira } from './feira'
 import { AluguelError, aluguelDeleteUser, guardRentals, handleAluguel } from './aluguel'
@@ -787,6 +787,7 @@ export async function handle(req: Req, res: Res) {
 
     throw new HttpError(404, t('Rota não encontrada'))
   } catch (e) {
+    if (e instanceof SaveConflict) return json(res, 409, { error: t('Seu jogo mudou em outra aba. Recarregue e tente de novo.') })
     if (e instanceof HttpError) return json(res, e.status, { error: e.message, ...e.extra })
     if (e instanceof PvpError) return json(res, 400, { error: e.message })
     if (e instanceof FeiraError) return json(res, e.status, { error: e.message })
