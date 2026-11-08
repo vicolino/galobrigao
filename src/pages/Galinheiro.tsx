@@ -40,7 +40,7 @@ function CoopList() {
         }
       />
       <CoopWorth userKey={user?.id ?? 'local'} />
-      <div className="grid-cards">
+      <div className="grid-cards coop-roosters">
         {s.roosters.map((r) => (
           <RoosterCard
             key={r.id}

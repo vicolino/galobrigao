@@ -1966,3 +1966,8 @@ tr.muted td { opacity: 0.55; }
 .nav-group-item:hover { background: var(--bg2); }
 .nav-group-item.active { background: #fff3e0; color: var(--accent-dk); }
 .nav-group-item .sub-dot { position: static; margin-left: auto; }
+
+/* 🐔 Galinheiro: galos numa prateleira horizontal (rola ←/→) em vez de quebrar linha */
+.coop-roosters { display: flex; flex-wrap: nowrap; gap: 14px; overflow-x: auto; overflow-y: hidden; padding-bottom: 10px; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
+.coop-roosters > * { flex: 0 0 max(220px, calc(25% - 10.5px)); scroll-snap-align: start; }
+.coop-roosters .add-card { min-height: 0; }
