@@ -233,6 +233,7 @@ export const api = {
   testUsdc: () => call<{ ok: boolean; usdc: number; hash: string }>('/web3/test-usdc', { method: 'POST' }),
   depositEggs: (amount: string) => call<{ rev?: number; state?: GameState; pending?: boolean; message?: string; deposit: DepositView }>('/web3/deposit-eggs', { method: 'POST', body: { amount } }),
   // 💎 Edições Limitadas de Raros (compra em ovos → NFT na carteira)
+  buyUsdc: (usdc: number) => call<{ order: ApiOrder; usdc: number; priceCents: number }>('/web3/usdc-buy', { method: 'POST', body: { usdc } }),
   editions: () => call<{ editions: EditionView[]; owned: string[] }>('/web3/editions'),
   buyEdition: (id: string) => call<{ rev: number; state: GameState; nft: { tokenId: number }; tx: Web3Tx }>('/web3/editions/buy', { method: 'POST', body: { id } }),
   market: () => call<{ listings: MarketListing[]; feeBps: number }>('/market'),
@@ -272,6 +273,7 @@ export interface Web3Info {
   feeBps?: number | null
   caps?: { send?: Partial<Record<Web3Asset, number>>; bridgeOut?: Partial<Record<Web3Asset, number>>; usedToday?: { send?: Partial<Record<Web3Asset, number>>; bridgeOut?: Partial<Record<Web3Asset, number>> } }
   recent?: Web3TxView[]
+  usdcSale?: { on: boolean; pricePerUsdc?: number; minUsdc?: number; maxUsdc?: number }
 }
 /** 💵 Depósito USDC → ovos. */
 export interface DepositView { id: string; usdc: number; eggs: number; status: 'pending' | 'done' | 'failed' | 'uncredited'; hash: string | null; at: number; url: string | null }

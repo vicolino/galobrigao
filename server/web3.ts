@@ -153,6 +153,62 @@ function suggestedUsdc(kind: string, itemId: string, ro?: Rooster | null): numbe
 }
 const listFloor = (sg: number) => Math.round(sg * LIST_FLOOR_PCT * 100) / 100
 
+// ---------- 💵 Venda de USDC por PIX (entrega on-chain, assíncrona) ----------
+interface UsdcSaleRow {
+  order_id: string
+  user_id: string
+  usdc_units: number
+  to_addr: string
+  status: string
+  tx_hash: string | null
+  attempts: number
+  created_at: number
+  delivered_at: number | null
+}
+
+/** Registra a venda no checkout (aguardando o pagamento). */
+export function createUsdcSale(orderId: string, userId: string, usdcUnits: number, toAddr: string) {
+  db().prepare("INSERT INTO usdc_sales (order_id, user_id, usdc_units, to_addr, status, attempts, created_at) VALUES (?, ?, ?, ?, 'awaiting', 0, ?)").run(orderId, userId, usdcUnits, toAddr, Date.now())
+}
+/** Marca como paga (chamado no fulfill do pedido). A entrega é feita por deliverUsdcSales. */
+export function markUsdcSalePaid(orderId: string) {
+  db().prepare("UPDATE usdc_sales SET status = 'paid' WHERE order_id = ? AND status IN ('awaiting', 'failed')").run(orderId)
+}
+/** USDC comprados hoje por um jogador (para o limite diário). */
+export function usdcBoughtToday(userId: string) {
+  const start = Date.now() - (Date.now() % DAY)
+  const r = db().prepare("SELECT COALESCE(SUM(usdc_units), 0) AS s FROM usdc_sales WHERE user_id = ? AND status != 'failed' AND created_at >= ?").get(userId, start) as { s: number }
+  return r.s / 1e6
+}
+/** Entrega as vendas pagas: manda USDC da operadora para a carteira do jogador, com trava de float e retry. */
+export async function deliverUsdcSales(onlyUser?: string) {
+  const c = chainy()
+  if (!c) return
+  const rows = (onlyUser
+    ? db().prepare("SELECT * FROM usdc_sales WHERE status = 'paid' AND user_id = ? ORDER BY created_at LIMIT 10").all(onlyUser)
+    : db().prepare("SELECT * FROM usdc_sales WHERE status = 'paid' ORDER BY created_at LIMIT 10").all()) as unknown as UsdcSaleRow[]
+  for (const row of rows) {
+    // Trava: só um processo pega a linha (evita envio duplicado).
+    if (!db().prepare("UPDATE usdc_sales SET status = 'sending', attempts = attempts + 1 WHERE order_id = ? AND status = 'paid'").run(row.order_id).changes) continue
+    const units = BigInt(row.usdc_units)
+    try {
+      const bal = await tokenBalance('usdc', c.operator.address)
+      if (bal < units) {
+        db().prepare("UPDATE usdc_sales SET status = 'paid' WHERE order_id = ?").run(row.order_id)
+        console.error('[usdc] float da operadora insuficiente; entrega será retentada')
+        continue
+      }
+      const hash = await transferToken(c.operator, 'usdc', row.to_addr as Address, units)
+      db().prepare("UPDATE usdc_sales SET status = 'done', tx_hash = ?, delivered_at = ? WHERE order_id = ?").run(hash, Date.now(), row.order_id)
+      logTx(row.user_id, 'usdc-sale', 'usdc', Number(units) / 1e6, row.to_addr, 'ok', hash)
+      notify(row.user_id, t('🎁 Chegou! {n} USDC na sua carteira cripto.', { n: (Number(units) / 1e6).toFixed(2) }))
+    } catch (e) {
+      db().prepare('UPDATE usdc_sales SET status = ? WHERE order_id = ?').run(row.attempts + 1 >= 5 ? 'failed' : 'paid', row.order_id)
+      console.error('[usdc] entrega falhou', e instanceof Error ? e.message.split('\n')[0] : e)
+    }
+  }
+}
+
 /** Unidades do item no save (acessório: estoque + equipados; skin: 0 ou 1). */
 function units(s: GameState, kind: string, id: string) {
   if (kind === 'skin') return s.skins.includes(id) ? 1 : 0
@@ -259,6 +315,7 @@ export async function handleWeb3(path: string, method: string, body: Record<stri
 
   // ----- Painel da carteira -----
   if (path === '/api/web3' && method === 'GET') {
+    void deliverUsdcSales(user.id).catch(() => {}) // retenta entregas de USDC pendentes ao abrir a carteira
     const w = walletOf(user.id)
     const bal = await balances(w.address).catch(() => null)
     const save = loadSave(user.id)
@@ -294,6 +351,9 @@ export async function handleWeb3(path: string, method: string, body: Record<stri
           },
         },
         recent: (db().prepare('SELECT id FROM web3_tx WHERE user_id = ? ORDER BY created_at DESC LIMIT 20').all(user.id) as { id: string }[]).map((r) => publicTx(r.id)),
+        usdcSale: live.usdcSale.on
+          ? { on: true, pricePerUsdc: Math.round(live.usdcSale.brlPerUsdc * (1 + live.usdcSale.marginPct / 100) * 100) / 100, minUsdc: live.usdcSale.minUsdc, maxUsdc: live.usdcSale.maxUsdc }
+          : { on: false },
       },
     }
   }
@@ -712,6 +772,8 @@ export function setKyc(userId: string, status: unknown) {
 export function walletAddress(userId: string) {
   return (db().prepare('SELECT address FROM wallets WHERE user_id = ?').get(userId) as { address: string } | undefined)?.address ?? null
 }
+/** Endereço da carteira do jogador, criando a carteira se ainda não existir. */
+export const ensureWalletAddress = (userId: string) => walletOf(userId).address
 
 export function web3Overview() {
   const n = (sql: string) => (db().prepare(sql).get() as { n: number }).n

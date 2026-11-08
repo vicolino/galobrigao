@@ -238,6 +238,21 @@ export function getDb() {
       created_at INTEGER NOT NULL
     );
     CREATE INDEX IF NOT EXISTS editions_active ON editions(active, created_at);
+    -- 💵 Venda de USDC por PIX: o pedido (orders) coleta o PIX; aqui fica a entrega on-chain.
+    -- status: 'awaiting' (pedido pendente) → 'paid' (pago, a entregar) → 'sending' → 'done' | 'failed'.
+    CREATE TABLE IF NOT EXISTS usdc_sales (
+      order_id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      usdc_units INTEGER NOT NULL,
+      to_addr TEXT NOT NULL,
+      status TEXT NOT NULL,
+      tx_hash TEXT,
+      attempts INTEGER NOT NULL DEFAULT 0,
+      created_at INTEGER NOT NULL,
+      delivered_at INTEGER
+    );
+    CREATE INDEX IF NOT EXISTS usdc_sales_status ON usdc_sales(status, created_at);
+    CREATE INDEX IF NOT EXISTS usdc_sales_user ON usdc_sales(user_id, created_at);
   `)
   // Moeda de cada aposta: as antigas foram feitas em milho (pagam em milho); as novas usam 🎟️ fichas
   const betCols = (db.prepare('PRAGMA table_info(house_bets)').all() as { name: string }[]).map((c) => c.name)

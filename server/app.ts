@@ -26,7 +26,7 @@ import { t, tx, withLang, type Lang } from '../src/i18n'
 import { appName } from '../src/brand'
 import { SKIN_BY_ID } from '../src/game/data'
 import { grantPassPremium, hasPassPremium, mergeClientPass, PASS_DAILY_XP } from '../src/game/pass'
-import { handleWeb3, Web3Error, web3Enabled } from './web3'
+import { createUsdcSale, deliverUsdcSales, ensureWalletAddress, handleWeb3, markUsdcSalePaid, usdcBoughtToday, Web3Error, web3Enabled } from './web3'
 import { handleDeposito } from './deposito'
 import { afterShop, deleteOfferData, firstPurchaseSku, handleOfertas, isFirstPurchase, OfertasError, withStock } from './ofertas'
 import { CriacaoError, handleCriacao } from './criacao'
@@ -263,6 +263,14 @@ function fulfill(orderId: string, paidAmountCents?: number) {
   const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(orderId) as unknown as OrderRow | undefined
   if (!order || order.fulfilled_at) return order
   if (paidAmountCents !== undefined && paidAmountCents < order.amount_cents) throw new Error(`valor pago menor que o pedido ${orderId}`)
+  // 💵 Venda de USDC: só marca pago; a entrega on-chain é assíncrona (com retry e trava de float).
+  if (order.sku === 'usdc') {
+    const now = Date.now()
+    db.prepare("UPDATE orders SET status = 'pago', paid_at = COALESCE(paid_at, ?), fulfilled_at = ? WHERE id = ?").run(now, now, orderId)
+    markUsdcSalePaid(orderId)
+    void deliverUsdcSales(order.user_id).catch((e) => console.error('[usdc] deliver', e))
+    return db.prepare('SELECT * FROM orders WHERE id = ?').get(orderId) as unknown as OrderRow
+  }
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(order.user_id) as unknown as UserRow
   const sku0 = effectiveSku(order.sku)!
   db.exec('BEGIN')
@@ -807,6 +815,40 @@ export async function handle(req: Req, res: Res) {
         order.id, order.user_id, order.sku, order.amount_cents, order.method, order.provider, order.provider_ref, order.status, order.pix_code, order.pix_qr, order.checkout_url, order.created_at,
       )
       return json(res, 201, { order: publicOrder(order) })
+    }
+
+    // 💵 Comprar USDC com PIX (a casa é a contraparte; entrega on-chain após o pagamento)
+    if (path === '/api/web3/usdc-buy' && method === 'POST') {
+      const u = needUser(req)
+      const b = await readBody(req)
+      blockIfMaintenance(u)
+      assertVerified(u)
+      if (!web3Enabled()) throw new HttpError(503, t('Carteira cripto indisponível no momento.'))
+      if (!live.usdcSale.on) throw new HttpError(400, t('A compra de USDC está indisponível no momento.'))
+      if (u.kyc_status !== 'verified') throw new HttpError(403, t('Comprar USDC exige verificação de identidade (KYC).'))
+      if (!paymentsLive()) throw new HttpError(503, t('Pix ainda não está disponível.'))
+      if (!loadSave(u.id)) throw new HttpError(409, t('Crie seu galinheiro antes de comprar'))
+      if (limited(`checkout:${u.id}`, 10, 600_000)) throw new HttpError(429, t('Muitos pedidos seguidos. Espere alguns minutos.'))
+      const cfg = live.usdcSale
+      const usdc = Math.round(Number(b.usdc) * 100) / 100
+      if (!Number.isFinite(usdc) || usdc < cfg.minUsdc || usdc > cfg.maxUsdc) throw new HttpError(400, t('Quantidade inválida (de {min} a {max} USDC).', { min: cfg.minUsdc, max: cfg.maxUsdc }))
+      if (usdcBoughtToday(u.id) + usdc > cfg.dailyCapUsdc) throw new HttpError(429, t('Limite diário de compra de USDC atingido ({n} por dia).', { n: cfg.dailyCapUsdc }))
+      const priceCents = Math.round(usdc * cfg.brlPerUsdc * (1 + cfg.marginPct / 100) * 100)
+      if (spentThisMonth(u.id) + priceCents > u.monthly_limit_cents)
+        throw new HttpError(402, t('Essa compra passa do seu limite mensal de R$ {valor}. Você pode ajustar o limite no Perfil.', { valor: (u.monthly_limit_cents / 100).toFixed(2) }))
+      const to = ensureWalletAddress(u.id)
+      const order: OrderRow = { id: randomUUID(), user_id: u.id, sku: 'usdc', amount_cents: priceCents, method: 'pix', provider: providerName(), provider_ref: null, status: 'pendente', pix_code: null, pix_qr: null, checkout_url: null, created_at: Date.now(), paid_at: null, fulfilled_at: null }
+      const sku: Sku = { id: 'usdc', kind: 'ovos', name: `${usdc} USDC`, emoji: '💵', desc: '', priceCents }
+      const pay = await startPayment(order, sku, u)
+      order.provider_ref = pay.providerRef
+      order.pix_code = pay.pixCode ?? null
+      order.pix_qr = pay.pixQr ?? null
+      order.checkout_url = pay.checkoutUrl ?? null
+      db.prepare('INSERT INTO orders (id, user_id, sku, amount_cents, method, provider, provider_ref, status, pix_code, pix_qr, checkout_url, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
+        order.id, order.user_id, order.sku, order.amount_cents, order.method, order.provider, order.provider_ref, order.status, order.pix_code, order.pix_qr, order.checkout_url, order.created_at,
+      )
+      createUsdcSale(order.id, u.id, Math.round(usdc * 1e6), to)
+      return json(res, 201, { order: publicOrder(order), usdc, priceCents })
     }
 
     if (path === '/api/orders' && method === 'GET') {
