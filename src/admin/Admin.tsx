@@ -1557,19 +1557,42 @@ function CarteiraAdmin() {
   const [d, setD] = useState<TreasuryLedger | null>(null)
   const [err, setErr] = useState('')
   const [source, setSource] = useState('')
+  const today = new Date().toLocaleDateString('en-CA') // YYYY-MM-DD no fuso local
+  const [from, setFrom] = useState(today)
+  const [to, setTo] = useState(today)
+  const [page, setPage] = useState(1)
+  const PAGE_SIZE = 25
 
-  const load = (src: string) =>
-    api.admin
-      .treasury(src || undefined)
-      .then(setD)
-      .catch((e) => setErr(tx((e as Error).message)))
   useEffect(() => {
-    void load(source)
-  }, [source])
+    const fromMs = from ? new Date(`${from}T00:00:00`).getTime() : undefined
+    const toMs = to ? new Date(`${to}T23:59:59.999`).getTime() : undefined
+    api.admin
+      .treasury({ source: source || undefined, from: fromMs, to: toMs, page, pageSize: PAGE_SIZE })
+      .then((r) => {
+        setD(r)
+        setErr('')
+      })
+      .catch((e) => setErr(tx((e as Error).message)))
+  }, [source, from, to, page])
+
+  // Trocar filtro de fonte ou de data volta para a página 1
+  const pickSource = (s: string) => {
+    setSource(s)
+    setPage(1)
+  }
+  const pickFrom = (v: string) => {
+    setFrom(v)
+    setPage(1)
+  }
+  const pickTo = (v: string) => {
+    setTo(v)
+    setPage(1)
+  }
 
   const SRC: Record<string, string> = { desafio: t('🤝 Desafio'), feira: t('🏪 Feira'), aluguel: t('🔑 Aluguel'), loja: t('🏬 Loja'), saque: t('💸 Retirada'), ajuste: t('⚙️ Ajuste') }
   const srcLabel = (s: string) => SRC[s] ?? s
   const coin = (c: string) => (c === 'milho' ? '🌽' : '🥚')
+  const totalPages = d ? Math.max(1, Math.ceil(d.total / d.pageSize)) : 1
 
   return (
     <>
@@ -1613,17 +1636,25 @@ function CarteiraAdmin() {
           </div>
 
           <div className="card">
-            <div className="row-between">
-              <h3>{t('Extrato')}</h3>
+            <h3>{t('Extrato')}</h3>
+            <div className="ledger-controls">
               <div className="tabs compact">
-                <button className={`tab ${source === '' ? 'active' : ''}`} onClick={() => setSource('')}>
+                <button className={`tab ${source === '' ? 'active' : ''}`} onClick={() => pickSource('')}>
                   {t('Todas')}
                 </button>
                 {['desafio', 'feira', 'aluguel', 'loja', 'saque'].map((s) => (
-                  <button key={s} className={`tab ${source === s ? 'active' : ''}`} onClick={() => setSource(s)}>
+                  <button key={s} className={`tab ${source === s ? 'active' : ''}`} onClick={() => pickSource(s)}>
                     {srcLabel(s)}
                   </button>
                 ))}
+              </div>
+              <div className="ledger-dates">
+                <label className="tiny muted">
+                  {t('De')} <input type="date" value={from} max={to || undefined} onChange={(e) => pickFrom(e.target.value)} />
+                </label>
+                <label className="tiny muted">
+                  {t('Até')} <input type="date" value={to} min={from || undefined} onChange={(e) => pickTo(e.target.value)} />
+                </label>
               </div>
             </div>
             <table className="table admin-table">
@@ -1631,6 +1662,7 @@ function CarteiraAdmin() {
                 <tr>
                   <th>{t('Quando')}</th>
                   <th>{t('Fonte')}</th>
+                  <th>{t('Usuário')}</th>
                   <th>{t('Detalhe')}</th>
                   <th className="num">{t('Valor')}</th>
                 </tr>
@@ -1640,13 +1672,28 @@ function CarteiraAdmin() {
                   <tr key={r.id}>
                     <td className="tiny">{dt(r.at)}</td>
                     <td className="tiny">{srcLabel(r.source)}</td>
+                    <td className="tiny">{r.userEmail || '—'}</td>
                     <td className="tiny">{r.detail || (r.ref ? r.ref.slice(0, 8) : '—')}</td>
                     <td className={`num tiny ${r.amount < 0 ? 'neg' : 'pos'}`}>{`${r.amount < 0 ? '−' : '+'}${coin(r.currency)} ${n(Math.abs(r.amount))}`}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            {d.entries.length === 0 && <p className="muted center">{t('Nada ainda.')}</p>}
+            {d.entries.length === 0 ? (
+              <p className="muted center">{t('Nada neste período.')}</p>
+            ) : (
+              <div className="pager">
+                <span className="tiny muted">{t('Página {x} de {y}', { x: n(d.page), y: n(totalPages) })}</span>
+                <div className="pager-btns">
+                  <button className="btn btn-sm" disabled={d.page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
+                    {t('‹ Anterior')}
+                  </button>
+                  <button className="btn btn-sm" disabled={d.page >= totalPages} onClick={() => setPage((p) => p + 1)}>
+                    {t('Próxima ›')}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </>
       )}

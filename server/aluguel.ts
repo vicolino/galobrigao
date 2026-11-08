@@ -404,7 +404,7 @@ export function handleAluguel(path: string, method: string, body: Record<string,
       writeSave(u.id, b, me.rev + 1)
       writeSave(r.owner, o, own.rev + 1)
       // A taxa do aluguel não some: vai para a carteira do sistema.
-      if (fee > 0) creditTreasury('aluguel', isMilho ? 'milho' : 'ovo', fee, r.id, `Aluguel: ${ro.name}`)
+      if (fee > 0) creditTreasury('aluguel', isMilho ? 'milho' : 'ovo', fee, r.id, `Aluguel: ${ro.name}`, u.id)
       notify(
         r.owner,
         t('🔑 {quem} alugou {nome} até {data}! Você recebeu {liquido} (taxa da Feira: {taxa}).', { quem: myName, nome: ro.name, data: ddmm(until), liquido: priceText(net, r.currency), taxa: priceText(fee, r.currency) }),

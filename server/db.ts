@@ -266,6 +266,8 @@ export function getDb() {
   // Carteira do sistema: detalhe legível de cada entrada (qual desafio/venda/compra gerou).
   const trCols = (db.prepare('PRAGMA table_info(treasury)').all() as { name: string }[]).map((c) => c.name)
   if (!trCols.includes('detail')) db.exec('ALTER TABLE treasury ADD COLUMN detail TEXT')
+  // Quem gerou a entrada (jogador que comprou/pagou/iniciou). Null quando não se aplica (ajuste/saque).
+  if (!trCols.includes('user_id')) db.exec('ALTER TABLE treasury ADD COLUMN user_id TEXT')
   // 🌽 Arena no servidor: adversários gerados para cada galo (vida curta; server/economia.ts)
   db.exec(`
     CREATE TABLE IF NOT EXISTS arena_opps (

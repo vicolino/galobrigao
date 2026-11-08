@@ -714,8 +714,8 @@ export async function handle(req: Req, res: Res) {
           const spentOvo = cur.state.ovos - r.state.ovos
           const spentMilho = cur.state.milho - r.state.milho
           const shopDetail = `Loja: ${op.op}${'id' in op && op.id ? ' ' + op.id : ''}`
-          if (spentOvo > 0) creditTreasury('loja', 'ovo', spentOvo, null, shopDetail)
-          if (spentMilho > 0) creditTreasury('loja', 'milho', spentMilho, null, shopDetail)
+          if (spentOvo > 0) creditTreasury('loja', 'ovo', spentOvo, null, shopDetail, u.id)
+          if (spentMilho > 0) creditTreasury('loja', 'milho', spentMilho, null, shopDetail, u.id)
           return r
         })
         afterShop(u.id, op, r.value)

@@ -441,7 +441,7 @@ export async function handleWeb3(path: string, method: string, body: Record<stri
         const n = addMintable({ ...s, ovos: s.ovos - price, skins: [...s.skins, ed!.item_id] }, `skin:${ed!.item_id}`)
         return history(n, t('Comprou {nome} (edição limitada)', { nome: item!.name }), 0, -price)
       })
-      creditTreasury('loja', 'ovo', price, id, `Edição: ${item!.name}`)
+      creditTreasury('loja', 'ovo', price, id, `Edição: ${item!.name}`, user.id)
     } catch (e) {
       releaseStock(id)
       throw e
@@ -462,7 +462,7 @@ export async function handleWeb3(path: string, method: string, body: Record<stri
         const n = { ...s, ovos: s.ovos + price, skins: s.skins.filter((k) => k !== ed!.item_id), mintable: m }
         return history(n, t('Compra cancelada: ovos devolvidos'), 0, price)
       })
-      creditTreasury('loja', 'ovo', -price, id, `Estorno edição: ${item!.name}`)
+      creditTreasury('loja', 'ovo', -price, id, `Estorno edição: ${item!.name}`, user.id)
       releaseStock(id)
       console.error('[web3] mint de edição falhou, devolvido', e instanceof Error ? e.message.split('\n')[0] : e)
       return fail(502, t('A rede não confirmou a operação. Os ovos voltaram para o seu saldo.'), back)

@@ -256,8 +256,11 @@ export async function handleAdmin(path: string, method: string, url: URL, body: 
   // Carteira do sistema: extrato completo (filtrável por fonte) + saldo e totais por fonte
   if (path === '/api/admin/treasury' && method === 'GET') {
     const source = url.searchParams.get('source') || undefined
-    const limit = Number(url.searchParams.get('limit')) || 200
-    return treasuryLedger({ source, limit })
+    const from = url.searchParams.get('from') ? Number(url.searchParams.get('from')) : undefined
+    const to = url.searchParams.get('to') ? Number(url.searchParams.get('to')) : undefined
+    const page = Number(url.searchParams.get('page')) || 1
+    const pageSize = Number(url.searchParams.get('pageSize')) || 25
+    return treasuryLedger({ source, from, to, page, pageSize })
   }
 
   // Jogadores

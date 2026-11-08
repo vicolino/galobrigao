@@ -9,10 +9,10 @@ export type TreasurySource = 'desafio' | 'feira' | 'aluguel' | 'loja' | 'saque' 
  * Credita (ou debita, com amount negativo) a carteira do sistema. Chamar DENTRO da transação que
  * move os ovos, para ser atômico. `detail` é um texto legível do que gerou a entrada (aparece no admin).
  */
-export function creditTreasury(source: TreasurySource, currency: 'ovo' | 'milho', amount: number, ref?: string | null, detail?: string | null) {
+export function creditTreasury(source: TreasurySource, currency: 'ovo' | 'milho', amount: number, ref?: string | null, detail?: string | null, userId?: string | null) {
   const a = Math.round(amount)
   if (!Number.isFinite(a) || a === 0) return
-  getDb().prepare('INSERT INTO treasury (at, source, currency, amount, ref, detail) VALUES (?, ?, ?, ?, ?, ?)').run(Date.now(), source, currency, a, ref ?? null, detail ?? null)
+  getDb().prepare('INSERT INTO treasury (at, source, currency, amount, ref, detail, user_id) VALUES (?, ?, ?, ?, ?, ?, ?)').run(Date.now(), source, currency, a, ref ?? null, detail ?? null, userId ?? null)
 }
 
 /** Saldo atual da carteira, por moeda. */
@@ -46,8 +46,11 @@ export function treasuryStats(days = 30) {
   return { days, ovos, milho, bySource, recent }
 }
 
-/** Tela completa de back-office: saldo, totais por fonte (desde sempre) e o extrato (filtrável por fonte). */
-export function treasuryLedger({ source, limit = 200 }: { source?: string; limit?: number } = {}) {
+/**
+ * Tela completa de back-office: saldo, totais por fonte (desde sempre) e o extrato paginado.
+ * O extrato aceita filtro por fonte e por período (`from`/`to` em ms); o "por fonte" é sempre total geral.
+ */
+export function treasuryLedger({ source, from, to, page = 1, pageSize = 25 }: { source?: string; from?: number; to?: number; page?: number; pageSize?: number } = {}) {
   const db = getDb()
   const { ovos, milho } = treasuryBalance()
   const bySource = db.prepare('SELECT source, currency, COALESCE(SUM(amount), 0) AS total, COUNT(*) AS n FROM treasury GROUP BY source, currency ORDER BY total DESC').all() as {
@@ -56,9 +59,29 @@ export function treasuryLedger({ source, limit = 200 }: { source?: string; limit
     total: number
     n: number
   }[]
-  const lim = Math.min(Math.max(Number(limit) || 200, 1), 1000)
-  const entries = source
-    ? (db.prepare('SELECT id, at, source, currency, amount, ref, detail FROM treasury WHERE source = ? ORDER BY at DESC, id DESC LIMIT ?').all(source, lim) as (Row & { id: number })[])
-    : (db.prepare('SELECT id, at, source, currency, amount, ref, detail FROM treasury ORDER BY at DESC, id DESC LIMIT ?').all(lim) as (Row & { id: number })[])
-  return { ovos, milho, bySource, entries }
+  // Filtros do extrato (fonte + período)
+  const where: string[] = []
+  const params: (string | number)[] = []
+  if (source) {
+    where.push('treasury.source = ?')
+    params.push(source)
+  }
+  if (Number.isFinite(from)) {
+    where.push('treasury.at >= ?')
+    params.push(from as number)
+  }
+  if (Number.isFinite(to)) {
+    where.push('treasury.at <= ?')
+    params.push(to as number)
+  }
+  const whereSql = where.length ? ` WHERE ${where.join(' AND ')}` : ''
+  const total = (db.prepare(`SELECT COUNT(*) AS n FROM treasury${whereSql}`).get(...params) as { n: number }).n
+  const size = Math.min(Math.max(Number(pageSize) || 25, 1), 100)
+  const pages = Math.max(1, Math.ceil(total / size))
+  const pg = Math.min(Math.max(Number(page) || 1, 1), pages)
+  const offset = (pg - 1) * size
+  const entries = db
+    .prepare(`SELECT treasury.id, treasury.at, treasury.source, treasury.currency, treasury.amount, treasury.ref, treasury.detail, u.email AS userEmail FROM treasury LEFT JOIN users u ON u.id = treasury.user_id${whereSql} ORDER BY treasury.at DESC, treasury.id DESC LIMIT ? OFFSET ?`)
+    .all(...params, size, offset) as (Row & { id: number; userEmail: string | null })[]
+  return { ovos, milho, bySource, entries, total, page: pg, pageSize: size }
 }

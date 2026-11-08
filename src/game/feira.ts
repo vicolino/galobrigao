@@ -122,6 +122,8 @@ export interface TreasuryEntry {
   amount: number
   ref: string | null
   detail: string | null
+  /** E-mail de quem gerou a entrada (null quando não se aplica — ajuste/saque). */
+  userEmail?: string | null
 }
 
 /** Tela completa da Carteira do sistema (back-office). */
@@ -130,4 +132,8 @@ export interface TreasuryLedger {
   milho: number
   bySource: { source: string; currency: string; total: number; n: number }[]
   entries: TreasuryEntry[]
+  /** Total de entradas que casam com o filtro atual (para paginar). */
+  total: number
+  page: number
+  pageSize: number
 }

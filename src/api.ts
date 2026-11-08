@@ -213,7 +213,16 @@ export const api = {
     kyc: (id: string, status: KycStatus) => call<{ ok: true }>(`/admin/users/${id}/kyc`, { method: 'POST', body: { status } }),
     web3: () => call<AdminWeb3>('/admin/web3'),
     feira: () => call<FeiraAdmin>('/admin/feira'),
-    treasury: (source?: string) => call<TreasuryLedger>('/admin/treasury' + (source ? `?source=${encodeURIComponent(source)}` : '')),
+    treasury: (opts: { source?: string; from?: number; to?: number; page?: number; pageSize?: number } = {}) => {
+      const q = new URLSearchParams()
+      if (opts.source) q.set('source', opts.source)
+      if (opts.from != null) q.set('from', String(opts.from))
+      if (opts.to != null) q.set('to', String(opts.to))
+      if (opts.page != null) q.set('page', String(opts.page))
+      if (opts.pageSize != null) q.set('pageSize', String(opts.pageSize))
+      const s = q.toString()
+      return call<TreasuryLedger>('/admin/treasury' + (s ? `?${s}` : ''))
+    },
     editions: () => call<{ editions: EditionView[]; collection: EditionCollectionItem[] }>('/admin/editions'),
     editionCreate: (itemId: string, price: number, supply: number, active: boolean) => call<EditionView>('/admin/editions', { method: 'POST', body: { itemId, price, supply, active } }),
     editionActive: (id: string, active: boolean) => call<EditionView>(`/admin/editions/${id}`, { method: 'PUT', body: { active } }),

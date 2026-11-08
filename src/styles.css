@@ -1672,10 +1672,10 @@ tr.muted td { opacity: 0.55; }
 .cfg-field { display: flex; flex-direction: column; gap: 5px; padding: 10px 12px; border-radius: 12px; background: var(--bg2); border: 1px solid var(--line); }
 .cfg-field.changed { border-color: var(--gold); box-shadow: 0 0 0 1px rgba(255, 198, 64, 0.35) inset; }
 .cfg-label { font-weight: 800; font-size: 13px; }
-.cfg-input { display: flex; align-items: center; border-radius: 9px; border: 1px solid var(--line); background: rgba(0, 0, 0, 0.25); overflow: hidden; }
+.cfg-input { display: flex; align-items: center; border-radius: 9px; border: 1px solid var(--line); background: var(--panel); overflow: hidden; }
 .cfg-input input { flex: 1; min-width: 0; border: 0; background: transparent; padding: 8px 10px; font: inherit; font-weight: 800; color: inherit; outline: none; }
 .cfg-input:focus-within { border-color: var(--gold); }
-.cfg-input i { font-style: normal; font-weight: 800; font-size: 12px; color: var(--muted); padding: 0 10px; border-left: 1px solid var(--line); align-self: stretch; display: flex; align-items: center; background: rgba(255, 255, 255, 0.03); }
+.cfg-input i { font-style: normal; font-weight: 800; font-size: 12px; color: var(--muted); padding: 0 10px; border-left: 1px solid var(--line); align-self: stretch; display: flex; align-items: center; background: var(--bg2); }
 .cfg-field .link-btn { background: none; border: 0; padding: 0; color: var(--gold); font: inherit; font-weight: 800; cursor: pointer; }
 .cfg-switch { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; background: var(--bg2); border: 1px solid var(--line); cursor: pointer; margin-top: 6px; }
 .cfg-switch input { position: absolute; opacity: 0; pointer-events: none; }
@@ -1693,7 +1693,7 @@ tr.muted td { opacity: 0.55; }
 .cfg-sum-bar .s-tierLendario { background: var(--gold); }
 .cfg-table input.cfg-num { width: 100px; text-align: right; }
 .cfg-changed-row td { background: rgba(255, 198, 64, 0.07); }
-.cfg-savebar { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 50; display: flex; align-items: center; gap: 10px; width: min(720px, calc(100% - 32px)); padding: 10px 14px; border-radius: 14px; background: #13261b; border: 1px solid var(--gold); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55); font-weight: 800; }
+.cfg-savebar { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 50; display: flex; align-items: center; gap: 10px; width: min(720px, calc(100% - 32px)); padding: 10px 14px; border-radius: 14px; background: var(--panel); color: var(--ink); border: 1.5px solid var(--gold); box-shadow: var(--shadow-lg); font-weight: 800; }
 @media (max-width: 860px) {
   .cfg-layout { grid-template-columns: 1fr; }
   .cfg-nav { position: static; flex-direction: row; overflow-x: auto; }
@@ -1971,3 +1971,9 @@ tr.muted td { opacity: 0.55; }
 .coop-roosters { display: flex; flex-wrap: nowrap; gap: 14px; overflow-x: auto; overflow-y: hidden; padding-bottom: 10px; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
 .coop-roosters > * { flex: 0 0 max(220px, calc(25% - 10.5px)); scroll-snap-align: start; }
 .coop-roosters .add-card { min-height: 0; }
+
+/* 💰 Carteira do sistema → Extrato: linha de controles (fonte + datas) acima da tabela */
+.ledger-controls { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.ledger-dates { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.ledger-dates label { display: inline-flex; align-items: center; gap: 6px; font-weight: 800; }
+.ledger-dates input[type='date'] { padding: 6px 9px; }
