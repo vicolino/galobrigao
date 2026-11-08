@@ -19,6 +19,7 @@ import { creditTreasury } from './treasury'
 import { activeEditions, claimStock, getEdition, releaseStock } from './editions'
 import { live } from '../src/game/config'
 import { notify } from './feira'
+import { usdcSalePrice } from './usdcRate'
 
 export class Web3Error extends Error {
   constructor(
@@ -351,9 +352,7 @@ export async function handleWeb3(path: string, method: string, body: Record<stri
           },
         },
         recent: (db().prepare('SELECT id FROM web3_tx WHERE user_id = ? ORDER BY created_at DESC LIMIT 20').all(user.id) as { id: string }[]).map((r) => publicTx(r.id)),
-        usdcSale: live.usdcSale.on
-          ? { on: true, pricePerUsdc: Math.round(live.usdcSale.brlPerUsdc * (1 + live.usdcSale.marginPct / 100) * 100) / 100, minUsdc: live.usdcSale.minUsdc, maxUsdc: live.usdcSale.maxUsdc }
-          : { on: false },
+        usdcSale: live.usdcSale.on ? { on: true, pricePerUsdc: usdcSalePrice(), minUsdc: live.usdcSale.minUsdc, maxUsdc: live.usdcSale.maxUsdc } : { on: false },
       },
     }
   }

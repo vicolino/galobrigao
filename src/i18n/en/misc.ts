@@ -1,4 +1,11 @@
 const en: Record<string, string> = {
+  "A casa vende USDC por PIX. Preço = câmbio × (1 + margem). Desligado = nada vende (modo staged).": "The house sells USDC via PIX. Price = rate × (1 + margin). Off = nothing sells (staged mode).",
+  "Cotação automática — busca o USDC/BRL em tempo real (CoinGecko). Desligado: usa o câmbio base manual.": "Automatic rate — fetches USDC/BRL in real time (CoinGecko). Off: uses the manual base rate.",
+  "Cotação viva agora: R$ {v} / USDC (CoinGecko)": "Live rate now: R$ {v} / USDC (CoinGecko)",
+  "Cotação viva indisponível no momento — usando o câmbio base manual.": "Live rate unavailable right now — using the manual base rate.",
+  "Câmbio base manual (fallback)": "Manual base rate (fallback)",
+  "Usado só se a cotação viva falhar": "Used only if the live rate fails",
+  " (ao vivo)": " (live)",
   "💵 Venda de USDC (PIX)": "💵 Sell USDC (PIX)",
   "💵 Venda de USDC por PIX": "💵 Sell USDC via PIX",
   "A casa vende USDC por PIX. Preço = câmbio base × (1 + margem). Desligado = nada vende (modo staged).": "The house sells USDC via PIX. Price = base rate × (1 + margin). Off = nothing sells (staged mode).",

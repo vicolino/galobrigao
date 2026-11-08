@@ -12,6 +12,7 @@ import { depositStats } from './deposito'
 import { feiraAdmin } from './feira'
 import { creditTreasury, treasuryBalance, treasuryLedger, treasuryStats } from './treasury'
 import { createEdition, deleteEdition, listEditions, setEditionActive } from './editions'
+import { liveUsdcBrl, maybeRefreshUsdcBrl } from './usdcRate'
 
 export class AdminError extends Error {
   constructor(
@@ -434,7 +435,8 @@ export async function handleAdmin(path: string, method: string, url: URL, body: 
   // Configuração
   if (path === '/api/admin/config' && method === 'GET') {
     const row = db().prepare("SELECT updated_at, updated_by FROM config WHERE key = 'app'").get() as { updated_at: number; updated_by: string } | undefined
-    return { config: loadConfig(), defaults: DEFAULT_CONFIG, updatedAt: row?.updated_at ?? null, updatedBy: row?.updated_by ?? null }
+    maybeRefreshUsdcBrl()
+    return { config: loadConfig(), defaults: DEFAULT_CONFIG, updatedAt: row?.updated_at ?? null, updatedBy: row?.updated_by ?? null, usdcRate: liveUsdcBrl() }
   }
   if (path === '/api/admin/config' && method === 'PUT') {
     let cfg: AppConfig

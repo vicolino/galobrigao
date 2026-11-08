@@ -65,6 +65,7 @@ export function validateConfig(input: AppConfig): AppConfig {
   c.deposit.dailyCapUsdc = num(c.deposit.dailyCapUsdc, c.deposit.minUsdc, 100_000, t('Limite diário de depósito (USDC)'))
   // 💵 Venda de USDC por PIX
   c.usdcSale.on = !!c.usdcSale.on
+  c.usdcSale.autoRate = !!c.usdcSale.autoRate
   c.usdcSale.marginPct = num(c.usdcSale.marginPct, 0, 100, t('Margem da venda de USDC (%)'))
   c.usdcSale.brlPerUsdc = num(c.usdcSale.brlPerUsdc, 1, 100, t('Câmbio base: BRL por USDC'))
   c.usdcSale.minUsdc = num(c.usdcSale.minUsdc, 1, 10_000, t('Compra mínima de USDC'))

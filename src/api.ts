@@ -207,7 +207,7 @@ export const api = {
     ban: (id: string, banned: boolean, reason: string) => call(`/admin/users/${id}/ban`, { method: 'POST', body: { banned, reason } }),
     orders: (status: string, q: string) => call<{ orders: AdminOrderRow[] }>(`/admin/orders?status=${status}&q=${encodeURIComponent(q)}`),
     recheck: (id: string) => call<{ status: string }>(`/admin/orders/${id}/recheck`, { method: 'POST' }),
-    getConfig: () => call<{ config: AppConfig; defaults: AppConfig; updatedAt: number | null; updatedBy: string | null }>('/admin/config'),
+    getConfig: () => call<{ config: AppConfig; defaults: AppConfig; updatedAt: number | null; updatedBy: string | null; usdcRate?: number | null }>('/admin/config'),
     putConfig: (config: AppConfig) => call<{ config: AppConfig; changes: string[] }>('/admin/config', { method: 'PUT', body: { config } }),
     audit: () => call<{ log: AdminLogRow[] }>('/admin/audit'),
     kyc: (id: string, status: KycStatus) => call<{ ok: true }>(`/admin/users/${id}/kyc`, { method: 'POST', body: { status } }),

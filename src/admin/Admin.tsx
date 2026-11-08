@@ -1058,6 +1058,7 @@ function Config() {
   const [defaults, setDefaults] = useState<AppConfig | null>(null)
   const [meta, setMeta] = useState<{ at: number | null; by: string | null }>({ at: null, by: null })
   const [saved, setSaved] = useState('')
+  const [usdcRate, setUsdcRate] = useState<number | null>(null)
   const [tab, setTab] = useState<CfgSection>(() => {
     try {
       return (localStorage.getItem('gb.admin.cfgTab') as CfgSection) || 'geral'
@@ -1071,6 +1072,7 @@ function Config() {
       setDefaults(r.defaults)
       setSaved(JSON.stringify(r.config))
       setMeta({ at: r.updatedAt, by: r.updatedBy })
+      setUsdcRate(r.usdcRate ?? null)
     })
   useEffect(() => {
     void load()
@@ -1388,21 +1390,36 @@ function Config() {
             </div>
           )}
 
-          {tab === 'usdc' && (
-            <div className="card cfg-section">
-              <h3>{t('💵 Venda de USDC por PIX')}</h3>
-              <p className="tiny muted cfg-desc">{t('A casa vende USDC por PIX. Preço = câmbio base × (1 + margem). Desligado = nada vende (modo staged).')}</p>
-              <CfgSwitch on={cfg.usdcSale.on} onChange={(v) => set('usdcSale', { on: v })} label={t('Ligado — jogadores podem comprar USDC com PIX (dinheiro real sai da tesouraria)')} />
-              <div className="cfg-grid">
-                {num('usdcSale', 'brlPerUsdc', t('Câmbio base: R$ por 1 USDC'), { unit: 'R$', step: 0.1, hint: t('A cotação de mercado do dia') })}
-                {num('usdcSale', 'marginPct', t('Margem (%)'), { unit: '%', step: 1, hint: t('Seu spread sobre o câmbio') })}
-                {num('usdcSale', 'minUsdc', t('Compra mínima (USDC)'), { unit: 'USDC' })}
-                {num('usdcSale', 'maxUsdc', t('Compra máxima (USDC)'), { unit: 'USDC', step: 10 })}
-                {num('usdcSale', 'dailyCapUsdc', t('Limite diário (USDC)'), { unit: 'USDC', step: 50, hint: t('Por jogador, por dia') })}
-              </div>
-              <p className="tiny" style={{ fontWeight: 800 }}>{t('Preço ao jogador agora: R$ {brl} por 1 USDC', { brl: (cfg.usdcSale.brlPerUsdc * (1 + cfg.usdcSale.marginPct / 100)).toFixed(2) })}</p>
-            </div>
-          )}
+          {tab === 'usdc' &&
+            (() => {
+              const auto = cfg.usdcSale.autoRate
+              const base = auto && usdcRate ? usdcRate : cfg.usdcSale.brlPerUsdc
+              const price = base * (1 + cfg.usdcSale.marginPct / 100)
+              return (
+                <div className="card cfg-section">
+                  <h3>{t('💵 Venda de USDC por PIX')}</h3>
+                  <p className="tiny muted cfg-desc">{t('A casa vende USDC por PIX. Preço = câmbio × (1 + margem). Desligado = nada vende (modo staged).')}</p>
+                  <CfgSwitch on={cfg.usdcSale.on} onChange={(v) => set('usdcSale', { on: v })} label={t('Ligado — jogadores podem comprar USDC com PIX (dinheiro real sai da tesouraria)')} />
+                  <CfgSwitch on={cfg.usdcSale.autoRate} onChange={(v) => set('usdcSale', { autoRate: v })} label={t('Cotação automática — busca o USDC/BRL em tempo real (CoinGecko). Desligado: usa o câmbio base manual.')} />
+                  {auto && (
+                    <p className="tiny muted">
+                      {usdcRate ? t('Cotação viva agora: R$ {v} / USDC (CoinGecko)', { v: usdcRate.toFixed(2) }) : t('Cotação viva indisponível no momento — usando o câmbio base manual.')}
+                    </p>
+                  )}
+                  <div className="cfg-grid">
+                    {num('usdcSale', 'brlPerUsdc', auto ? t('Câmbio base manual (fallback)') : t('Câmbio base: R$ por 1 USDC'), { unit: 'R$', step: 0.1, hint: auto ? t('Usado só se a cotação viva falhar') : t('A cotação de mercado do dia') })}
+                    {num('usdcSale', 'marginPct', t('Margem (%)'), { unit: '%', step: 1, hint: t('Seu spread sobre o câmbio') })}
+                    {num('usdcSale', 'minUsdc', t('Compra mínima (USDC)'), { unit: 'USDC' })}
+                    {num('usdcSale', 'maxUsdc', t('Compra máxima (USDC)'), { unit: 'USDC', step: 10 })}
+                    {num('usdcSale', 'dailyCapUsdc', t('Limite diário (USDC)'), { unit: 'USDC', step: 50, hint: t('Por jogador, por dia') })}
+                  </div>
+                  <p className="tiny" style={{ fontWeight: 800 }}>
+                    {t('Preço ao jogador agora: R$ {brl} por 1 USDC', { brl: price.toFixed(2) })}
+                    {auto && usdcRate ? t(' (ao vivo)') : ''}
+                  </p>
+                </div>
+              )
+            })()}
 
           {tab === 'economia' && (
             <>

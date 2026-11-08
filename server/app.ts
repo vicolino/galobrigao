@@ -27,6 +27,7 @@ import { appName } from '../src/brand'
 import { SKIN_BY_ID } from '../src/game/data'
 import { grantPassPremium, hasPassPremium, mergeClientPass, PASS_DAILY_XP } from '../src/game/pass'
 import { createUsdcSale, deliverUsdcSales, ensureWalletAddress, handleWeb3, markUsdcSalePaid, usdcBoughtToday, Web3Error, web3Enabled } from './web3'
+import { effectiveBrlPerUsdc } from './usdcRate'
 import { handleDeposito } from './deposito'
 import { afterShop, deleteOfferData, firstPurchaseSku, handleOfertas, isFirstPurchase, OfertasError, withStock } from './ofertas'
 import { CriacaoError, handleCriacao } from './criacao'
@@ -833,7 +834,7 @@ export async function handle(req: Req, res: Res) {
       const usdc = Math.round(Number(b.usdc) * 100) / 100
       if (!Number.isFinite(usdc) || usdc < cfg.minUsdc || usdc > cfg.maxUsdc) throw new HttpError(400, t('Quantidade inválida (de {min} a {max} USDC).', { min: cfg.minUsdc, max: cfg.maxUsdc }))
       if (usdcBoughtToday(u.id) + usdc > cfg.dailyCapUsdc) throw new HttpError(429, t('Limite diário de compra de USDC atingido ({n} por dia).', { n: cfg.dailyCapUsdc }))
-      const priceCents = Math.round(usdc * cfg.brlPerUsdc * (1 + cfg.marginPct / 100) * 100)
+      const priceCents = Math.round(usdc * effectiveBrlPerUsdc() * (1 + cfg.marginPct / 100) * 100)
       if (spentThisMonth(u.id) + priceCents > u.monthly_limit_cents)
         throw new HttpError(402, t('Essa compra passa do seu limite mensal de R$ {valor}. Você pode ajustar o limite no Perfil.', { valor: (u.monthly_limit_cents / 100).toFixed(2) }))
       const to = ensureWalletAddress(u.id)
