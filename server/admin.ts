@@ -11,6 +11,7 @@ import { setKyc, walletAddress, web3Overview } from './web3'
 import { depositStats } from './deposito'
 import { feiraAdmin } from './feira'
 import { treasuryLedger, treasuryStats } from './treasury'
+import { emissionLedger } from './emissions'
 import { createEdition, deleteEdition, listEditions, setEditionActive } from './editions'
 import { liveUsdcBrl, maybeRefreshUsdcBrl } from './usdcRate'
 
@@ -260,7 +261,8 @@ export async function handleAdmin(path: string, method: string, url: URL, body: 
     const to = url.searchParams.get('to') ? Number(url.searchParams.get('to')) : undefined
     const page = Number(url.searchParams.get('page')) || 1
     const pageSize = Number(url.searchParams.get('pageSize')) || 25
-    return treasuryLedger({ source, from, to, page, pageSize })
+    // 🚰 Emissão (torneiras) junto, mesmo período, para a tela mostrar "entra vs sai".
+    return { ...treasuryLedger({ source, from, to, page, pageSize }), emission: emissionLedger({ from, to }) }
   }
 
   // Jogadores

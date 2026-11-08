@@ -1,5 +1,6 @@
 // Dicionário inglês da área "feira" (chave = texto original em português).
 const dict: Record<string, string> = {
+  '📥 Arrecadação por fonte (no período)': '📥 Collection by source (in the period)',
   // Página
   'Feira': 'Trading Post',
   '🏪 Feira': '🏪 Trading Post',
@@ -134,6 +135,25 @@ const dict: Record<string, string> = {
     'Every egg and corn the game collects lands here — where it came from, when, and what generated it. The eggs back the future NFT currency.',
   'Arrecadação por fonte (total)': 'Collected by source (total)',
   'Nada ainda.': 'Nothing yet.',
+  // Emissão (torneiras que criam moeda) + Entra vs Sai
+  '🚰 Emissão por fonte': '🚰 Emission by source',
+  '⚔️ Arena': '⚔️ Arena',
+  '🎁 Diário': '🎁 Daily',
+  '🎯 Missões': '🎯 Missions',
+  '🏆 Liga': '🏆 League',
+  '🔁 Troca': '🔁 Exchange',
+  '💰 Venda de galo': '💰 Rooster sale',
+  '⚖️ Entra vs Sai': '⚖️ In vs Out',
+  '🚰 Emissão é o ovo/milho que o jogo cria e dá aos jogadores (torneiras). 💰 Arrecadação é o que o sistema recolhe. O líquido é emissão − arrecadação: se positivo, a economia está inflando (cria mais do que recolhe).':
+    '🚰 Emission is the egg/corn the game creates and hands to players (the taps). 💰 Collection is what the system takes back. The net is emission − collection: if positive, the economy is inflating (it creates more than it collects).',
+  'Moeda': 'Currency',
+  '🚰 Emitido': '🚰 Emitted',
+  '💰 Arrecadado': '💰 Collected',
+  'Líquido': 'Net',
+  '🥚 Ovos': '🥚 Eggs',
+  '🌽 Milho': '🌽 Corn',
+  '⚠️ Líquido positivo: a economia está inflando (emite mais do que recolhe).': '⚠️ Positive net: the economy is inflating (it emits more than it collects).',
+  '✅ Líquido não-positivo: o sistema recolhe pelo menos tanto quanto emite.': '✅ Non-positive net: the system collects at least as much as it emits.',
   '💸 Retirar (ovo → USDC)': '💸 Withdraw (eggs → USDC)',
   'Registro contábil: debita o saldo em ovos do sistema e guarda o valor em USDC + motivo. O USDC de verdade você transfere da carteira on-chain — isto não move fundos.':
     'Bookkeeping entry: it debits the system egg balance and records the USDC value + reason. You transfer the real USDC from the on-chain wallet — this does not move funds.',

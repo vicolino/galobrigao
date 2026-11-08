@@ -53,7 +53,19 @@ export function treasuryStats(days = 30) {
 export function treasuryLedger({ source, from, to, page = 1, pageSize = 25 }: { source?: string; from?: number; to?: number; page?: number; pageSize?: number } = {}) {
   const db = getDb()
   const { ovos, milho } = treasuryBalance()
-  const bySource = db.prepare('SELECT source, currency, COALESCE(SUM(amount), 0) AS total, COUNT(*) AS n FROM treasury GROUP BY source, currency ORDER BY total DESC').all() as {
+  // Arrecadação por fonte respeita o mesmo período do extrato (para bater com a emissão no "Entra vs Sai").
+  const srcWhere: string[] = []
+  const srcParams: number[] = []
+  if (Number.isFinite(from)) {
+    srcWhere.push('at >= ?')
+    srcParams.push(from as number)
+  }
+  if (Number.isFinite(to)) {
+    srcWhere.push('at <= ?')
+    srcParams.push(to as number)
+  }
+  const srcClause = srcWhere.length ? ' WHERE ' + srcWhere.join(' AND ') : ''
+  const bySource = db.prepare(`SELECT source, currency, COALESCE(SUM(amount), 0) AS total, COUNT(*) AS n FROM treasury${srcClause} GROUP BY source, currency ORDER BY total DESC`).all(...srcParams) as {
     source: string
     currency: string
     total: number

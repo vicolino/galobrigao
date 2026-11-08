@@ -136,4 +136,6 @@ export interface TreasuryLedger {
   total: number
   page: number
   pageSize: number
+  /** 🚰 Emissão (torneiras que criam moeda) no mesmo período — o lado "entra" do balanço. */
+  emission?: { total: { ovos: number; milho: number }; bySource: { source: string; currency: string; total: number; n: number }[] }
 }

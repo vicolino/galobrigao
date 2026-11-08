@@ -1591,8 +1591,15 @@ function CarteiraAdmin() {
 
   const SRC: Record<string, string> = { desafio: t('🤝 Desafio'), feira: t('🏪 Feira'), aluguel: t('🔑 Aluguel'), loja: t('🏬 Loja'), saque: t('💸 Retirada'), ajuste: t('⚙️ Ajuste') }
   const srcLabel = (s: string) => SRC[s] ?? s
+  const EMIT_SRC: Record<string, string> = { arena: t('⚔️ Arena'), diario: t('🎁 Diário'), missao: t('🎯 Missões'), liga: t('🏆 Liga'), troca: t('🔁 Troca'), 'venda-galo': t('💰 Venda de galo') }
+  const emitLabel = (s: string) => EMIT_SRC[s] ?? s
   const coin = (c: string) => (c === 'milho' ? '🌽' : '🥚')
   const totalPages = d ? Math.max(1, Math.ceil(d.total / d.pageSize)) : 1
+  // Entra vs Sai: total emitido (torneiras) − total arrecadado (tesouraria). Positivo = economia inflando.
+  const arrecadadoOvos = d ? d.bySource.filter((r) => r.currency === 'ovo').reduce((s, r) => s + r.total, 0) : 0
+  const arrecadadoMilho = d ? d.bySource.filter((r) => r.currency === 'milho').reduce((s, r) => s + r.total, 0) : 0
+  const emitidoOvos = d?.emission?.total.ovos ?? 0
+  const emitidoMilho = d?.emission?.total.milho ?? 0
 
   return (
     <>
@@ -1612,7 +1619,7 @@ function CarteiraAdmin() {
 
           <div className="admin-two">
             <div className="card">
-              <h3>{t('Arrecadação por fonte (total)')}</h3>
+              <h3>{t('📥 Arrecadação por fonte (no período)')}</h3>
               <table className="table admin-table">
                 <thead>
                   <tr>
@@ -1633,6 +1640,59 @@ function CarteiraAdmin() {
               </table>
               {d.bySource.length === 0 && <p className="muted center">{t('Nada ainda.')}</p>}
             </div>
+
+            <div className="card">
+              <h3>{t('🚰 Emissão por fonte')}</h3>
+              <table className="table admin-table">
+                <thead>
+                  <tr>
+                    <th>{t('Fonte')}</th>
+                    <th className="num">{t('Entradas')}</th>
+                    <th className="num">{t('Total')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(d.emission?.bySource ?? []).map((r, i) => (
+                    <tr key={i}>
+                      <td className="tiny">{emitLabel(r.source)}</td>
+                      <td className="num tiny">{n(r.n)}</td>
+                      <td className="num tiny">{`${coin(r.currency)} ${n(r.total)}`}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {(d.emission?.bySource.length ?? 0) === 0 && <p className="muted center">{t('Nada ainda.')}</p>}
+            </div>
+          </div>
+
+          <div className="card">
+            <h3>{t('⚖️ Entra vs Sai')}</h3>
+            <p className="tiny muted">{t('🚰 Emissão é o ovo/milho que o jogo cria e dá aos jogadores (torneiras). 💰 Arrecadação é o que o sistema recolhe. O líquido é emissão − arrecadação: se positivo, a economia está inflando (cria mais do que recolhe).')}</p>
+            <table className="table admin-table">
+              <thead>
+                <tr>
+                  <th>{t('Moeda')}</th>
+                  <th className="num">{t('🚰 Emitido')}</th>
+                  <th className="num">{t('💰 Arrecadado')}</th>
+                  <th className="num">{t('Líquido')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td className="tiny">{t('🥚 Ovos')}</td>
+                  <td className="num tiny">{n(emitidoOvos)}</td>
+                  <td className="num tiny">{n(arrecadadoOvos)}</td>
+                  <td className={`num tiny ${emitidoOvos - arrecadadoOvos > 0 ? 'neg' : 'pos'}`}>{`${emitidoOvos - arrecadadoOvos > 0 ? '+' : emitidoOvos - arrecadadoOvos < 0 ? '−' : ''}${n(Math.abs(emitidoOvos - arrecadadoOvos))}`}</td>
+                </tr>
+                <tr>
+                  <td className="tiny">{t('🌽 Milho')}</td>
+                  <td className="num tiny">{n(emitidoMilho)}</td>
+                  <td className="num tiny">{n(arrecadadoMilho)}</td>
+                  <td className={`num tiny ${emitidoMilho - arrecadadoMilho > 0 ? 'neg' : 'pos'}`}>{`${emitidoMilho - arrecadadoMilho > 0 ? '+' : emitidoMilho - arrecadadoMilho < 0 ? '−' : ''}${n(Math.abs(emitidoMilho - arrecadadoMilho))}`}</td>
+                </tr>
+              </tbody>
+            </table>
+            <p className="tiny muted">{emitidoOvos - arrecadadoOvos > 0 || emitidoMilho - arrecadadoMilho > 0 ? t('⚠️ Líquido positivo: a economia está inflando (emite mais do que recolhe).') : t('✅ Líquido não-positivo: o sistema recolhe pelo menos tanto quanto emite.')}</p>
           </div>
 
           <div className="card">

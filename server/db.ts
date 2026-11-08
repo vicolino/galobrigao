@@ -99,6 +99,19 @@ export function getDb() {
       detail TEXT
     );
     CREATE INDEX IF NOT EXISTS treasury_at ON treasury(at);
+    -- Emissão: espelho da tesouraria do lado da CRIAÇÃO de moeda. As "torneiras" (arena, bônus,
+    -- missões, venda, troca…) registram aqui o ovo/milho que criam e dão ao jogador. Append-only.
+    CREATE TABLE IF NOT EXISTS emissions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      at INTEGER NOT NULL,
+      source TEXT NOT NULL,
+      currency TEXT NOT NULL,
+      amount INTEGER NOT NULL,
+      user_id TEXT,
+      detail TEXT
+    );
+    CREATE INDEX IF NOT EXISTS emissions_source ON emissions(source);
+    CREATE INDEX IF NOT EXISTS emissions_at ON emissions(at);
     CREATE TABLE IF NOT EXISTS config (
       key TEXT PRIMARY KEY,
       value TEXT NOT NULL,

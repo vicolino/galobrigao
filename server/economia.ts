@@ -11,6 +11,7 @@ import { bumpDaily, getDb, type UserRow } from './db'
 import { loadSave, writeSave } from './saves'
 import { limited } from './security'
 import { rentalShare } from './aluguel'
+import { emit } from './emissions'
 import { arenaDrop } from './drops'
 import type { DropResult } from '../src/game/drops'
 
@@ -117,6 +118,10 @@ export function handleEconomia(path: string, method: string, url: URL, body: Rec
       throw e
     }
     bumpDaily('arena') // 📊 conta a luta da Arena do dia (métrica do backoffice)
+    // 🚰 Emissão: o milho/ovo que a Arena cria e dá ao jogador (torneira). Fora da transação do save,
+    // mas o prêmio já foi commitado acima; registramos só o que foi realmente emitido (> 0).
+    emit('arena', 'milho', out.match.rewards.milho, u.id)
+    emit('arena', 'ovo', out.match.rewards.ovo, u.id)
     // 🔑 Galo alugado: parte do milho vai para o dono (server/aluguel.ts). Mexe no save → relê.
     if (out.state.roosters.find((x) => x.id === roosterId)?.rental && out.match.rewards.milho > 0) {
       try {

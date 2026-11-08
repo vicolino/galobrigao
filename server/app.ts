@@ -16,6 +16,7 @@ import { getDb, type OrderRow, type UserRow } from './db'
 import { emailShell, sendMail } from './mail'
 import { SaveConflict, loadSave, writeSave } from './saves'
 import { creditTreasury } from './treasury'
+import { emit } from './emissions'
 import { handlePvp, PvpError } from './pvp'
 import { FeiraError, feiraDeleteUser, handleFeira } from './feira'
 import { AluguelError, aluguelDeleteUser, guardRentals, handleAluguel } from './aluguel'
@@ -716,6 +717,15 @@ export async function handle(req: Req, res: Res) {
           const shopDetail = `Loja: ${op.op}${'id' in op && op.id ? ' ' + op.id : ''}`
           if (spentOvo > 0) creditTreasury('loja', 'ovo', spentOvo, null, shopDetail, u.id)
           if (spentMilho > 0) creditTreasury('loja', 'milho', spentMilho, null, shopDetail, u.id)
+          // 🚰 Emissão: o simétrico do gasto. Alguns ops DÃO moeda (bônus diário, missão, liga, venda
+          // de galo, troca ovo→milho). Registramos o ganho (depois − antes) na torneira de emissão.
+          // Obs.: um op pode gastar E ganhar (troca gasta ovo → ganha milho); cada lado vai pro seu lugar.
+          const gainOvo = r.state.ovos - cur.state.ovos
+          const gainMilho = r.state.milho - cur.state.milho
+          const emitSrc: Record<string, string> = { claimDaily: 'diario', claimMission: 'missao', claimLeague: 'liga', sellRooster: 'venda-galo', exchange: 'troca' }
+          const src = emitSrc[op.op] ?? op.op
+          if (gainOvo > 0) emit(src, 'ovo', gainOvo, u.id, op.op)
+          if (gainMilho > 0) emit(src, 'milho', gainMilho, u.id, op.op)
           return r
         })
         afterShop(u.id, op, r.value)
