@@ -1923,3 +1923,31 @@ tr.muted td { opacity: 0.55; }
 .inv-tile.rar-raro { border-color: #4fa3ff; }
 .inv-tile.rar-epico { border-color: #b57bff; }
 .inv-tile.rar-lendario { border-color: #e0a92e; box-shadow: inset 0 0 0 1px rgba(224, 169, 46, 0.25), 0 0 14px rgba(255, 176, 32, 0.16); }
+
+/* ❓ Ajuda / Tutorial (página #/ajuda + modal de boas-vindas) */
+.help-list { display: flex; flex-direction: column; gap: 12px; }
+.help-item { padding: 0; overflow: hidden; }
+.help-item > summary { cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 18px; font-weight: 900; font-size: 16px; color: var(--ink); }
+.help-item > summary::-webkit-details-marker { display: none; }
+.help-item > summary::after { content: '+'; font-size: 24px; line-height: 1; color: var(--accent); font-weight: 900; flex: none; transition: transform 0.15s; }
+.help-item[open] > summary { border-bottom: 1.5px solid var(--line); }
+.help-item[open] > summary::after { content: '–'; color: var(--accent-dk); }
+.help-item > summary:hover { color: var(--accent-dk); }
+.help-body { padding: 14px 18px 18px; font-size: 14.5px; line-height: 1.6; color: var(--text); }
+.help-body p { margin: 0 0 10px; }
+.help-body p:last-child { margin-bottom: 0; }
+.help-ul { margin: 0; padding-left: 4px; list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.help-ul li { position: relative; padding-left: 20px; }
+.help-ul li::before { content: '🐾'; position: absolute; left: 0; top: 0; font-size: 12px; }
+.help-footer { margin-top: 18px; display: flex; justify-content: center; }
+
+.help-intro { display: flex; flex-direction: column; gap: 14px; }
+.help-intro .help-ul li { padding-left: 2px; }
+.help-intro .help-ul li::before { content: none; }
+.help-intro-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.help-intro-actions .btn { flex: 1 1 140px; }
+
+@media (max-width: 420px) {
+  .help-item > summary { padding: 14px 15px; font-size: 15px; }
+  .help-body { padding: 12px 15px 15px; }
+}

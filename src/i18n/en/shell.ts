@@ -71,6 +71,7 @@ const en: Record<string, string> = {
   'Skins': 'Skins',
   'Ferramentas': 'Tools',
   'Loja': 'Shop',
+  'Ajuda': 'Help',
   'Perfil': 'Profile',
   'Backoffice': 'Admin',
   'Milho': 'Corn',

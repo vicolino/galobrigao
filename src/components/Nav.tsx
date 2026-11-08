@@ -35,10 +35,11 @@ const NAV: Item[] = [
   { path: '/mercado', label: t('Mercado'), icon: 'mercado' },
   { path: '/novidades', label: t('Novidades'), icon: 'novidades' },
   { path: '/perfil', label: t('Perfil'), icon: 'perfil' },
+  { path: '/ajuda', label: t('Ajuda'), icon: 'ajuda' },
 ]
 
 // Principais no topo (desktop) e na barra de baixo (celular)
-const TOP = ['/galinheiro', '/rinha', '/desafios', '/torneios', '/apostas', '/loja']
+const TOP = ['/galinheiro', '/rinha', '/mercado', '/carteira', '/loja']
 const BOTTOM = ['/galinheiro', '/rinha', '/apostas', '/loja']
 const SPECIAL = ['/loja/skins', '/loja/ferramentas']
 

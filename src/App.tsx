@@ -28,6 +28,7 @@ import { Ranking } from './pages/Ranking'
 import { TorneioAlert, Torneios } from './pages/Torneios'
 import { t, tx } from './i18n'
 import { Drops } from './pages/Drops'
+import { Ajuda, TutorialGate } from './pages/Ajuda'
 
 export default function App() {
   const { state, phase, user, pubConfig, updateReady } = useGame()
@@ -84,6 +85,7 @@ export default function App() {
     case 'torneios': page = <Torneios id={param} />; break
     case 'novidades': page = <Novidades />; break
     case 'drops': page = <Drops />; break
+    case 'ajuda': page = <Ajuda />; break
     default: page = <Galinheiro selectedId={param} />
   }
 
@@ -128,6 +130,7 @@ export default function App() {
       <TorneioAlert />
       <OfferCenter />
       <NewsCenter />
+      <TutorialGate />
       <BuyConfirm />
       <Toasts />
     </div>

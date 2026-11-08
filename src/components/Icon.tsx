@@ -2,7 +2,7 @@
 export type IconName =
   | 'galinheiro' | 'cruzamento' | 'arena' | 'drops' | 'desafios' | 'torneios' | 'apostas'
   | 'missoes' | 'passe' | 'liga' | 'ranking' | 'skins' | 'ferramentas' | 'loja' | 'feira'
-  | 'carteira' | 'mercado' | 'novidades' | 'perfil' | 'mais' | 'admin' | 'som' | 'mudo'
+  | 'carteira' | 'mercado' | 'novidades' | 'perfil' | 'mais' | 'admin' | 'som' | 'mudo' | 'ajuda'
 
 const P: Record<IconName, string> = {
   galinheiro: 'M3 11.5 12 4l9 7.5M5 10v9h14v-9M9.5 19v-4a2.5 2.5 0 0 1 5 0v4',
@@ -28,6 +28,7 @@ const P: Record<IconName, string> = {
   admin: 'M12 3l7 3v5c0 4-3 7.5-7 9-4-1.5-7-5-7-9V6l7-3ZM9 12l2 2 4-4',
   som: 'M4 9v6h3l5 4V5L7 9H4ZM16 8a5 5 0 0 1 0 8M18.5 5.5a9 9 0 0 1 0 13',
   mudo: 'M4 9v6h3l5 4V5L7 9H4ZM16 9l5 6M21 9l-5 6',
+  ajuda: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18ZM9.3 9a2.8 2.8 0 0 1 5.4 1c0 1.8-2.7 2.5-2.7 4M12 17.5v0',
 }
 
 const ROUND = new Set<IconName>(['mais'])
