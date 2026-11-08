@@ -148,6 +148,7 @@ const en: Record<string, string> = {
   'Tempo para aceitar (s)': 'Time to accept (s)',
   'Ovos grátis por dia (limite)': 'Free eggs per day (limit)',
   'Milho ganho por dia (limite)': 'Corn earned per day (limit)',
+  'Teto de milho da Arena por dia (0 = sem limite)': 'Arena corn cap per day (0 = no limit)',
   'Limite de gasto padrão': 'Default spending limit',
   'Crédito MVP (centavos)': 'MVP credit (cents)',
   'Intervalo entre lutas (min)': 'Interval between fights (min)',

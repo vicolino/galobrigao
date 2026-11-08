@@ -701,6 +701,7 @@ export async function handle(req: Req, res: Res) {
     if (path === '/api/shop' && method === 'POST') {
       const u = needUser(req)
       blockIfMaintenance(u)
+      if (limited(`shop:${u.id}`, 60, 60_000)) throw new HttpError(429, t('Muitas operações seguidas. Espere um pouco.'))
       const b = await readBody(req)
       const cur = loadSave(u.id)
       if (!cur) throw new HttpError(409, t('Sem galinheiro'), { rev: 0, state: null })

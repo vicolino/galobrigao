@@ -14,6 +14,27 @@ import { rentalShare } from './aluguel'
 import { emit } from './emissions'
 import { arenaDrop } from './drops'
 import type { DropResult } from '../src/game/drops'
+import { live } from '../src/game/config'
+
+// 🏟️ Teto diário de milho da Arena por jogador: acima do teto a luta rende só 15% de milho
+// (ovos/XP/drop seguem normais). Reaproveita a tabela ovos_guard com a chave 'arena-m:AAAA-MM-DD'.
+// Retorna quanto milho de fato pode ser dado nesta luta.
+function capArenaMilho(userId: string, want: number): number {
+  const cap = live.economy?.arenaMilhoCapPerDay ?? 0
+  if (!(cap > 0) || want <= 0) return want
+  try {
+    const d = getDb()
+    const day = `arena-m:${new Date().toISOString().slice(0, 10)}`
+    const row = d.prepare('SELECT gained FROM ovos_guard WHERE user_id = ? AND day = ?').get(userId, day) as { gained: number } | undefined
+    const used = row?.gained ?? 0
+    const under = Math.max(0, cap - used)
+    const granted = Math.min(want, under) + Math.round(Math.max(0, want - under) * 0.15)
+    d.prepare('INSERT INTO ovos_guard (user_id, day, gained) VALUES (?, ?, ?) ON CONFLICT(user_id, day) DO UPDATE SET gained = excluded.gained').run(userId, day, used + want)
+    return granted
+  } catch {
+    return want // nunca derruba a luta por causa do teto
+  }
+}
 
 export class EconomiaError extends Error {
   constructor(
@@ -103,6 +124,15 @@ export function handleEconomia(path: string, method: string, url: URL, body: Rec
       const opp = opps.find((x) => x.d === difficulty) ?? fail(t('Os adversários mudaram. Escolha de novo.'), 409)
       const seed = randomInt(1, 1_000_000_000)
       const r = arenaFight(tick(cur.state), roosterId, opp.o, difficulty, tools, opp.tools, seed, (m) => fail(m))
+      // 🏟️ Teto diário de milho: acima do limite, a luta rende só uma fração (ovos/XP/drop intactos).
+      if (r.match.rewards.milho > 0) {
+        const full = r.match.rewards.milho
+        const capped = capArenaMilho(u.id, full)
+        if (capped < full) {
+          r.state.milho = Math.max(0, r.state.milho - (full - capped))
+          r.match.rewards.milho = capped
+        }
+      }
       out = { rev: cur.rev + 1, state: r.state, match: r.match }
       // 🎁 Drop raro (só vitória; sorteio no servidor, mesma transação)
       if (r.match.won) {

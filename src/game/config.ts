@@ -14,7 +14,7 @@ export interface AppConfig {
   catalog: Record<string, SkuOverride>
   rewards: { dailyOvos: number; day7Ovos: number; arenaHardWinOvos: number; missionOvosMultiplier: number }
   pvp: { maxLevelDiff: number; dailyRewards: number; challengeTtlSec: number; feePct: number; minStakeOvo: number; maxStakeOvo: number }
-  economy: { freeOvosPerDay: number; freeMilhoPerDay: number; defaultSpendLimitCents: number; /** 🌽 Milho/XP/prêmios só pelo servidor (desligar = volta ao modo antigo). */ serverAuthoritative: boolean }
+  economy: { freeOvosPerDay: number; freeMilhoPerDay: number; defaultSpendLimitCents: number; /** 🌽 Milho/XP/prêmios só pelo servidor (desligar = volta ao modo antigo). */ serverAuthoritative: boolean; /** 🏟️ Teto de milho que a Arena dá a cada jogador por dia (0 = sem limite). Acima do teto a luta rende só 15% de milho (ovos/XP/drop seguem normais). */ arenaMilhoCapPerDay: number }
   announcement: { text: string; kind: 'info' | 'promo' | 'alerta' }
   maintenance: { on: boolean; message: string }
   /** ⛓️ Rede on-chain (chave do back-office): '' = usa o env; 'off' | 'testnet' | 'mainnet'. */
@@ -65,7 +65,7 @@ export const DEFAULT_CONFIG: AppConfig = {
   catalog: Object.fromEntries(CATALOG.map((s) => [s.id, { priceCents: s.priceCents, ovos: s.ovos, bonus: s.bonus, active: true }])),
   rewards: { dailyOvos: 6, day7Ovos: 35, arenaHardWinOvos: 2, missionOvosMultiplier: 1 },
   pvp: { maxLevelDiff: 1, dailyRewards: 20, challengeTtlSec: 60, feePct: 10, minStakeOvo: 1, maxStakeOvo: 100 },
-  economy: { freeOvosPerDay: FREE_OVOS_PER_DAY, freeMilhoPerDay: 3_000_000, defaultSpendLimitCents: DEFAULT_SPEND_LIMIT, serverAuthoritative: true },
+  economy: { freeOvosPerDay: FREE_OVOS_PER_DAY, freeMilhoPerDay: 3_000_000, defaultSpendLimitCents: DEFAULT_SPEND_LIMIT, serverAuthoritative: true, arenaMilhoCapPerDay: 100_000 },
   announcement: { text: '', kind: 'info' },
   maintenance: { on: false, message: t('Estamos ajeitando o terreiro. Voltamos já!') },
   // ⛓️ Rede on-chain: '' = usa o WEB3_NETWORK do env (padrão). A chave no admin troca para off/testnet/mainnet.

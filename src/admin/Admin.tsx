@@ -1428,6 +1428,7 @@ function Config() {
                 <div className="cfg-grid">
                   {num('economy', 'freeOvosPerDay', t('Ovos grátis máximos por dia'), { unit: '🥚', hint: t('Acima disso o servidor recusa o progresso (anti-trapaça)') })}
                   {num('economy', 'freeMilhoPerDay', t('Milho ganho por dia (limite)'), { unit: '🌽', step: 100000, hint: t('Acima disso o servidor recusa o progresso') })}
+                  {num('economy', 'arenaMilhoCapPerDay', t('Teto de milho da Arena por dia'), { unit: '🏟️', step: 10000, hint: t('Acima do teto a luta rende só 15% de milho (ovos/XP/drop seguem normais). 0 = sem limite') })}
                   {num('economy', 'defaultSpendLimitCents', t('Limite de gasto padrão (R$)'), { unit: 'R$', step: 10, scale: 100, hint: t('Vale para contas novas') })}
                 </div>
               </div>

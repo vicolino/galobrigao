@@ -321,6 +321,8 @@ const en: Record<string, string> = {
   'Ovos grátis máximos por dia': 'Max free eggs per day',
   'Acima disso o servidor recusa o progresso (anti-trapaça)': 'Above this the server rejects progress (anti-cheat)',
   'Milho ganho por dia (limite)': 'Corn earned per day (limit)',
+  'Teto de milho da Arena por dia': 'Arena corn cap per day',
+  'Acima do teto a luta rende só 15% de milho (ovos/XP/drop seguem normais). 0 = sem limite': 'Past the cap a fight yields only 15% corn (eggs/XP/drops stay normal). 0 = no limit',
   'Acima disso o servidor recusa o progresso': 'Above this the server rejects progress',
   'Limite de gasto padrão (R$)': 'Default spending limit (R$)',
   'Vale para contas novas': 'Applies to new accounts',
