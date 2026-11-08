@@ -448,7 +448,9 @@ function MyItems({ info, busy, run, okTx, feeBps }: PanelProps & { feeBps: numbe
   const nfts = info.nfts ?? []
   const mintItem = mintable.find((m) => m.key === mintKey)
   const p = parseAmount(price)
-  const priceOk = Number.isFinite(p) && p > 0
+  const sellFloor = sell?.floor ?? 0
+  const sellSuggested = sell?.suggested ?? 0
+  const priceOk = Number.isFinite(p) && p > 0 && (sellFloor <= 0 || p >= sellFloor)
   const fee = priceOk ? (p * feeBps) / 10000 : 0
   const feePct = (feeBps / 100).toLocaleString(locale(), { maximumFractionDigits: 2 })
 
@@ -505,7 +507,7 @@ function MyItems({ info, busy, run, okTx, feeBps }: PanelProps & { feeBps: numbe
                     {t('Cancelar venda')}
                   </button>
                 ) : (
-                  <button className="btn btn-primary full" disabled={busy} onClick={() => { setSell(nf); setPrice('') }}>
+                  <button className="btn btn-primary full" disabled={busy} onClick={() => { setSell(nf); setPrice(nf.suggested ? String(nf.suggested) : '') }}>
                     🏷️ {t('Vender')}
                   </button>
                 )}
@@ -557,7 +559,13 @@ function MyItems({ info, busy, run, okTx, feeBps }: PanelProps & { feeBps: numbe
             </p>
             <label className="field">
               <span>{t('Preço (USDC)')}</span>
-              <input autoFocus type="number" min={0} step={0.5} inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="10" />
+              <input autoFocus type="number" min={sellFloor || 0} step={0.5} inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} placeholder={sellSuggested ? String(sellSuggested) : '10'} />
+              {sellSuggested > 0 && (
+                <span className="tiny muted">
+                  {t('💡 Sugerido pelo valor do item: ~{s} USDC', { s: usdc(sellSuggested) })}
+                  {sellFloor > 0 ? ' · ' + t('mínimo {f}', { f: usdc(sellFloor) }) : ''}
+                </span>
+              )}
             </label>
             <div className="stats-list">
               <div><span>{t('Taxa da plataforma ({p}%)', { p: feePct })}</span><span>−{usdc(fee)} USDC</span></div>

@@ -5,7 +5,7 @@
 import { randomUUID } from 'node:crypto'
 import { isAddress, getAddress, zeroAddress, type Address } from 'viem'
 import { ACC_BY_ID, SKIN_BY_ID } from '../src/game/data'
-import { uid } from '../src/game/rooster'
+import { marketPrice, uid } from '../src/game/rooster'
 import type { GameState, Rooster } from '../src/game/types'
 import { t } from '../src/i18n'
 import { balances, burnNft, burnToken, buyNft, cancelListing, chainy, feeBps, isMainnet, listingOf, listNft, mintNft, mintToken, newWallet, ownerOf, tokenBalance, transferToken, userAccount, type TokenKey } from './chain'
@@ -17,6 +17,7 @@ import { nftIneligible, roosterLock } from '../src/game/galonft'
 import { addMintable } from '../src/game/premium'
 import { creditTreasury } from './treasury'
 import { activeEditions, claimStock, getEdition, releaseStock } from './editions'
+import { live } from '../src/game/config'
 
 export class Web3Error extends Error {
   constructor(
@@ -134,6 +135,22 @@ interface NftRow {
 }
 
 const itemOf = (kind: string, id: string) => (kind === 'acc' ? ACC_BY_ID[id] : kind === 'skin' ? SKIN_BY_ID[id] : undefined)
+
+// 💵 Preço de referência de um NFT em USDC: valor do item em ovos ÷ ovos por USDC (câmbio do depósito).
+// Serve de sugestão ao listar e de piso (metade da sugestão) para proteger a economia.
+const MILHO_PER_OVO = 200
+const LIST_FLOOR_PCT = 0.5
+function suggestedUsdc(kind: string, itemId: string, ro?: Rooster | null): number {
+  let ovos = 0
+  if (kind === 'galo') ovos = ro ? marketPrice(ro) / MILHO_PER_OVO : 0
+  else {
+    const item = itemOf(kind, itemId)
+    if (item) ovos = item.currency === 'milho' ? item.price / MILHO_PER_OVO : item.price
+  }
+  const perUsdc = live.deposit?.eggsPerUsdc || 50
+  return Math.max(0, Math.round((ovos / perUsdc) * 100) / 100)
+}
+const listFloor = (sg: number) => Math.round(sg * LIST_FLOOR_PCT * 100) / 100
 
 /** Unidades do item no save (acessório: estoque + equipados; skin: 0 ou 1). */
 function units(s: GameState, kind: string, id: string) {
@@ -263,7 +280,8 @@ export async function handleWeb3(path: string, method: string, body: Record<stri
         mintable,
         nfts: nfts.map((n) => {
           const ro = n.kind === 'galo' ? liveGalo(n.token_id, user.id, n.item_id) : null
-          return { tokenId: n.token_id, kind: n.kind, itemId: n.item_id, status: pubStatus(n.status), price: usd(n.price_units), ...(ro ? { rooster: galoLook(ro) } : {}) }
+          const sg = suggestedUsdc(n.kind, n.item_id, ro)
+          return { tokenId: n.token_id, kind: n.kind, itemId: n.item_id, status: pubStatus(n.status), price: usd(n.price_units), suggested: sg, floor: listFloor(sg), ...(ro ? { rooster: galoLook(ro) } : {}) }
         }),
         feeBps: await feeBps().catch(() => null),
         caps: {
@@ -536,6 +554,10 @@ export async function handleWeb3(path: string, method: string, body: Record<stri
       if (why) fail(409, why)
       saveGaloSnapshot(tokenId, ro)
     } else if (units(save.state, nft!.kind, nft!.item_id) < heldTokens(user.id, nft!.kind, nft!.item_id)) fail(409, t('Você não tem mais esse item no jogo.'))
+    // Piso de preço: protege a economia (ninguém lista muito abaixo do valor do item).
+    const floorRo = nft!.kind === 'galo' ? save.state.roosters.find((r) => r.id === nft!.item_id) ?? null : null
+    const minUsdc = listFloor(suggestedUsdc(nft!.kind, nft!.item_id, floorRo))
+    if (minUsdc > 0 && Number(price) / 1e6 < minUsdc) fail(400, t('Preço abaixo do mínimo ({n} USDC) para proteger a economia.', { n: minUsdc }))
     const w = walletOf(user.id)
     const owner = await ownerOf(tokenId).catch(chainFail)
     if (getAddress(owner) !== getAddress(w.address)) fail(409, t('Esse NFT não está na sua carteira.'))

@@ -259,7 +259,7 @@ export type Web3Tx = Web3TxView | string | null
 /** Saldos null = não deu para ler a rede agora. */
 export interface Web3Wallet { address: string; eth: number | string | null; egg: number | string | null; corn: number | string | null; usdc: number | string | null }
 export interface Web3Mintable { key: string; kind: 'acc' | 'skin'; itemId: string; count: number }
-export interface Web3Nft { tokenId: number; kind: 'acc' | 'skin' | 'galo'; itemId: string; status: 'held' | 'listed'; price: number | null; rooster?: GaloLook }
+export interface Web3Nft { tokenId: number; kind: 'acc' | 'skin' | 'galo'; itemId: string; status: 'held' | 'listed'; price: number | null; suggested?: number; floor?: number; rooster?: GaloLook }
 /** 🐓 Galo NFT: visual público do galo do token. */
 export interface GaloLook { id: string; name: string; breedId: string; level: number; stars: number; tint: Rooster['tint'] | null; parents: [string, string] | null; breedCount: number; base: Rooster['base'] }
 export interface Web3Info {

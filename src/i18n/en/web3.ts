@@ -1,5 +1,8 @@
 // Carteira cripto, Mercado de NFTs e mensagens web3 do servidor (testnet)
 const en: Record<string, string> = {
+  "Preço abaixo do mínimo ({n} USDC) para proteger a economia.": "Price below the minimum ({n} USDC) to protect the economy.",
+  "💡 Sugerido pelo valor do item: ~{s} USDC": "💡 Suggested from the item value: ~{s} USDC",
+  "mínimo {f}": "minimum {f}",
   "Edição inválida": "Invalid edition",
   "Essa edição esgotou ou saiu do ar.": "This edition is sold out or no longer available.",
   "Item da edição não existe.": "This edition's item does not exist.",
