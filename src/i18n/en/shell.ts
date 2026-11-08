@@ -1,5 +1,6 @@
 // Traduções para inglês (chave = texto original em português).
 const en: Record<string, string> = {
+  "Lutas": "Fights",
   'Ver perfil': 'View profile',
   'Sair da conta': 'Log out',
   'Mais': 'More',

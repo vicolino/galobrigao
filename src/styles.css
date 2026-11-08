@@ -1951,3 +1951,18 @@ tr.muted td { opacity: 0.55; }
   .help-item > summary { padding: 14px 15px; font-size: 15px; }
   .help-body { padding: 12px 15px 15px; }
 }
+
+/* ⚔️ Grupo "Lutas" no menu (dropdown: Arena + Desafios) */
+.nav-group { position: relative; }
+.nav-group-top { display: inline-flex; }
+.nav-group > button.navlink { background: none; border: 0; font: inherit; cursor: pointer; }
+.bottombar .nav-group-bottom { flex: 1; display: flex; }
+.bottombar .nav-group-bottom > .navlink-bottom { width: 100%; flex: none; }
+.nav-group-back { position: fixed; inset: 0; z-index: 44; }
+.nav-group-menu { position: absolute; z-index: 45; min-width: 190px; padding: 6px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow-lg); display: flex; flex-direction: column; gap: 2px; }
+.nav-group-menu-top { top: calc(100% + 8px); left: 0; }
+.nav-group-menu-bottom { bottom: calc(100% + 12px); left: 50%; transform: translateX(-50%); }
+.nav-group-item { display: flex; align-items: center; gap: 10px; padding: 11px 12px; border-radius: 9px; text-decoration: none; color: var(--text); font-weight: 800; font-size: 14px; }
+.nav-group-item:hover { background: var(--bg2); }
+.nav-group-item.active { background: #fff3e0; color: var(--accent-dk); }
+.nav-group-item .sub-dot { position: static; margin-left: auto; }

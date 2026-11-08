@@ -38,10 +38,46 @@ const NAV: Item[] = [
   { path: '/ajuda', label: t('Ajuda'), icon: 'ajuda' },
 ]
 
-// Principais no topo (desktop) e na barra de baixo (celular)
-const TOP = ['/galinheiro', '/rinha', '/mercado', '/carteira', '/loja']
-const BOTTOM = ['/galinheiro', '/rinha', '/apostas', '/loja']
+// Principais no topo (desktop) e na barra de baixo (celular). 'lutas' = grupo (Arena + Desafios).
+const TOP = ['/galinheiro', 'lutas', '/mercado', '/carteira', '/loja']
+const BOTTOM = ['/galinheiro', 'lutas', '/apostas', '/loja']
 const SPECIAL = ['/loja/skins', '/loja/ferramentas']
+
+// Grupo "Lutas": junta Arena e Desafios num menuzinho ao lado do Galinheiro.
+const LUTAS_SUB: Item[] = [
+  { path: '/rinha', label: t(ARENA), icon: 'arena' },
+  { path: '/desafios', label: t('Desafios'), icon: 'desafios' },
+]
+
+function LutasMenu({ kind, route, badge, onNav }: { kind: 'top' | 'bottom'; route: string; badge: number; onNav: () => void }) {
+  const [open, setOpen] = useState(false)
+  const active = route.startsWith('/rinha') || route.startsWith('/desafios')
+  return (
+    <div className={`nav-group nav-group-${kind}`}>
+      <button type="button" className={`navlink navlink-${kind} ${active ? 'active' : ''}`} onClick={() => setOpen((v) => !v)} aria-haspopup="true" aria-expanded={open}>
+        <span className="navlink-ico">
+          <Icon name="arena" size={kind === 'top' ? 20 : 24} />
+          {badge > 0 && <span className="navlink-dot">{badge > 9 ? '9+' : badge}</span>}
+        </span>
+        <span className="navlink-txt">{t('Lutas')}</span>
+      </button>
+      {open && (
+        <>
+          <div className="nav-group-back" onClick={() => setOpen(false)} />
+          <div className={`nav-group-menu nav-group-menu-${kind}`}>
+            {LUTAS_SUB.map((it) => (
+              <a key={it.path} href={`#${it.path}`} className={`nav-group-item ${route.startsWith(it.path) ? 'active' : ''}`} onClick={() => { sfx.click(); setOpen(false); onNav() }}>
+                <Icon name={it.icon} size={18} />
+                <span>{it.label}</span>
+                {it.path === '/desafios' && badge > 0 && <span className="navlink-dot sub-dot">{badge > 9 ? '9+' : badge}</span>}
+              </a>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
 
 export function Nav({ route }: { route: string }) {
   const { state, actions, toast, isVip, wallet, pvp, user, pubConfig, betsInfo } = useGame()
@@ -59,7 +95,7 @@ export function Nav({ route }: { route: string }) {
   const isActive = (p: string) => (SPECIAL.includes(p) ? route.startsWith(p) : route.startsWith(p) && !SPECIAL.some((x) => route.startsWith(x)))
   const badgeFor = (p: string) =>
     p === '/missoes' ? missionsReady : p === '/passe' ? passClaimable(s) : p === '/apostas' ? openBets : p === '/desafios' ? pvp?.incoming.length ?? 0 : p === '/novidades' ? newsUnread(s.settings.newsSeen) : 0
-  const totalBadge = items.reduce((n, it) => (TOP.includes(it.path) ? n : n + badgeFor(it.path)), 0)
+  const totalBadge = items.reduce((n, it) => (TOP.includes(it.path) || it.path === '/rinha' || it.path === '/desafios' ? n : n + badgeFor(it.path)), 0)
 
   const claim = async () => {
     const r = await actions.claimDaily()
@@ -108,7 +144,13 @@ export function Nav({ route }: { route: string }) {
           <button className="brand" onClick={() => go('/galinheiro')}>
             <Logo size={46} />
           </button>
-          <nav className="topnav">{TOP.map((p) => byPath(p)).filter(Boolean).map((it) => link(it!, 'top'))}</nav>
+          <nav className="topnav">
+            {TOP.map((p) => {
+              if (p === 'lutas') return <LutasMenu key="lutas" kind="top" route={route} badge={pvp?.incoming.length ?? 0} onNav={navClick} />
+              const it = byPath(p)
+              return it ? link(it, 'top') : null
+            })}
+          </nav>
           <div className="topbar-right">
             {walletPills}
             <button className={`btn-candy btn-daily ${dailyReady ? 'wiggle' : ''}`} onClick={claim}>
@@ -148,7 +190,11 @@ export function Nav({ route }: { route: string }) {
       </header>
 
       <nav className="bottombar">
-        {BOTTOM.map((p) => byPath(p)).filter(Boolean).map((it) => link(it!, 'bottom'))}
+        {BOTTOM.map((p) => {
+          if (p === 'lutas') return <LutasMenu key="lutas" kind="bottom" route={route} badge={pvp?.incoming.length ?? 0} onNav={navClick} />
+          const it = byPath(p)
+          return it ? link(it, 'bottom') : null
+        })}
         <button className={`navlink navlink-bottom ${sheet ? 'active' : ''}`} onClick={() => setSheet(true)}>
           <span className="navlink-ico">
             <Icon name="mais" size={24} />
