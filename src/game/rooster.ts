@@ -1,5 +1,6 @@
 import { ACC_BY_ID, BREEDS, BREED_BY_ID, SET_BY_ID, SET_SIZE, STYLES, npcOwners, roosterNames } from './data'
 import { locale } from '../i18n'
+import { milhoSink } from './config'
 import type { GearSet, Rarity, Rooster, SetTier, Slot, Stats, Style } from './types'
 
 // RNG determinístico (mulberry32) para lutas reproduzíveis.
@@ -189,5 +190,6 @@ export function sellPrice(ro: Rooster) {
 
 export function marketPrice(ro: Rooster) {
   const breed = BREED_BY_ID[ro.breedId]
-  return Math.round(breed.price * (0.8 + ro.stars * 0.12) + (ro.level - 1) * 260)
+  // 💹 Dial de inflação: milhoSink aplica o multiplicador do backoffice (cobrança e exibição usam esta função).
+  return milhoSink(Math.round(breed.price * (0.8 + ro.stars * 0.12) + (ro.level - 1) * 260))
 }

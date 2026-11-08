@@ -7,6 +7,7 @@ import { RoosterSvg } from '../components/RoosterSvg'
 import { Modal, PageHead, Price, RarityTag, RoosterCard, Tabs, go } from '../components/ui'
 import { ACCESSORIES, BOXES, BREED_BY_ID, CORN_PACKS, ELECTION_ROOSTERS, FOOTBALL_ROOSTERS, BRAZIL_ROOSTERS, ITEMS, SET_BY_ID, SKIN_BY_ID, SPECIAL_ROOSTERS, RARITY, SLOTS, VIP } from '../game/data'
 import { bestRoosterLevel, fmt, marketPrice } from '../game/rooster'
+import { milhoSink, ovoToMilho } from '../game/config'
 import { sfx } from '../game/sound'
 import { useGame } from '../game/store'
 import type { Accessory, Slot } from '../game/types'
@@ -495,7 +496,7 @@ function Caixas() {
 
   const open = async (id: string) => {
     const bx = BOXES.find((x) => x.id === id)
-    if (bx && !(await confirmBuy({ emoji: bx.emoji, title: bx.name, detail: t('Abre na hora com um acessório surpresa'), price: bx.price, currency: bx.currency }))) return
+    if (bx && !(await confirmBuy({ emoji: bx.emoji, title: bx.name, detail: t('Abre na hora com um acessório surpresa'), price: bx.currency === 'milho' ? milhoSink(bx.price) : bx.price, currency: bx.currency }))) return
     const r = await actions.openBox(id)
     if (!r.ok) {
       toast(tx(r.error), 'erro')
@@ -527,7 +528,7 @@ function Caixas() {
               ))}
             </div>
             <button className="btn btn-primary full btn-lg" onClick={() => open(b.id)} disabled={!!opening}>
-              {t('Abrir')} · <Price value={b.price} currency={b.currency} />
+              {t('Abrir')} · <Price value={b.currency === 'milho' ? milhoSink(b.price) : b.price} currency={b.currency} />
             </button>
           </div>
         ))}
@@ -665,15 +666,15 @@ function Trocar() {
         {CORN_PACKS.map((p) => (
           <div key={p.id} className="card shop-item center">
             <div className="shop-emoji">🌽</div>
-            <b className="egg-amount">{fmt(p.milho)}</b>
+            <b className="egg-amount">{fmt(ovoToMilho(p.milho))}</b>
             <span className="tiny muted">{t('de milho')}</span>
             <button
               className="btn btn-primary full"
               disabled={state!.ovos < p.ovos}
               onClick={async () => {
-                if (!(await confirmBuy({ emoji: '🔁', title: t('Trocar ovos por milho'), price: p.ovos, currency: 'ovo', gainMilho: p.milho }))) return
+                if (!(await confirmBuy({ emoji: '🔁', title: t('Trocar ovos por milho'), price: p.ovos, currency: 'ovo', gainMilho: ovoToMilho(p.milho) }))) return
                 const r = await actions.exchange(p.id)
-                if (r.ok) toast(`+🌽 ${fmt(p.milho)}`, 'ok')
+                if (r.ok) toast(`+🌽 ${fmt(ovoToMilho(p.milho))}`, 'ok')
                 else toast(tx(r.error), 'erro')
               }}
             >

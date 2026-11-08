@@ -1429,6 +1429,8 @@ function Config() {
                   {num('economy', 'freeOvosPerDay', t('Ovos grátis máximos por dia'), { unit: '🥚', hint: t('Acima disso o servidor recusa o progresso (anti-trapaça)') })}
                   {num('economy', 'freeMilhoPerDay', t('Milho ganho por dia (limite)'), { unit: '🌽', step: 100000, hint: t('Acima disso o servidor recusa o progresso') })}
                   {num('economy', 'arenaMilhoCapPerDay', t('Teto de milho da Arena por dia'), { unit: '🏟️', step: 10000, hint: t('Acima do teto a luta rende só 15% de milho (ovos/XP/drop seguem normais). 0 = sem limite') })}
+                  {num('economy', 'milhoSinkMult', t('Custo de milho na loja (×)'), { unit: '💹', step: 0.1, hint: t('Multiplica o preço em milho de caixas e mercado de galos. 1 = sem mudança; 1,5 = +50% (milho vale mais, contém inflação). Ex.: caixa 1.200 → {n}', { n: Math.round(1200 * (cfg.economy.milhoSinkMult ?? 1)).toLocaleString('pt-BR') }) })}
+                  {num('economy', 'ovoToMilhoMult', t('Taxa de troca ovo→milho (×)'), { unit: '💹', step: 0.1, hint: t('Multiplica o milho recebido ao trocar ovos. 1 = sem mudança; 0,6 = −40%. Ex.: 100 ovos → {n} milho', { n: Math.round(25000 * (cfg.economy.ovoToMilhoMult ?? 1)).toLocaleString('pt-BR') }) })}
                   {num('economy', 'defaultSpendLimitCents', t('Limite de gasto padrão (R$)'), { unit: 'R$', step: 10, scale: 100, hint: t('Vale para contas novas') })}
                 </div>
               </div>

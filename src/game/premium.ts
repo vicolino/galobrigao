@@ -8,6 +8,7 @@ import { runBreed, type BreedOp } from './criacao'
 import type { Accessory, Currency, GameState, MissionKind, Rarity, Rooster } from './types'
 import { passViolation, runPass, type PassOp } from './pass'
 import { runOferta, type OfertaOp } from './ofertas'
+import { milhoSink, ovoToMilho } from './config'
 import { runEcon, type EconOp } from './economia'
 
 export const FEED_COOLDOWN = 4 * 3600_000
@@ -103,7 +104,8 @@ export function runShop(s: GameState, o: ShopOp): { state: GameState; value?: un
     }
     case 'openBox': {
       const box = BOXES.find((b) => b.id === o.id) ?? fail(t('Caixa não existe'))
-      let n = pay(s, box.price, box.currency)
+      const boxCost = box.currency === 'milho' ? milhoSink(box.price) : box.price
+      let n = pay(s, boxCost, box.currency)
       const roll = Math.random() * 100
       let acc = 0
       let rarity: Rarity = 'comum'
@@ -118,7 +120,7 @@ export function runShop(s: GameState, o: ShopOp): { state: GameState; value?: un
       n = { ...n, accessories: { ...n.accessories, [prize.id]: (n.accessories[prize.id] ?? 0) + 1 } }
       n = { ...n, stats: { ...n.stats, boxesOpened: n.stats.boxesOpened + 1 } }
       n = legendaryOvo(n, `acc:${prize.id}`, prize.rarity, box.currency)
-      n = log(purchase(n), t('{caixa}: {premio} ({raridade})', { caixa: box.name, premio: prize.name, raridade: RARITY[rarity].label }), ...spent(box.currency, box.price))
+      n = log(purchase(n), t('{caixa}: {premio} ({raridade})', { caixa: box.name, premio: prize.name, raridade: RARITY[rarity].label }), ...spent(box.currency, boxCost))
       return { state: n, value: prize }
     }
     case 'buySkin': {
@@ -159,9 +161,10 @@ export function runShop(s: GameState, o: ShopOp): { state: GameState; value?: un
     }
     case 'exchange': {
       const p = CORN_PACKS.find((x) => x.id === o.id) ?? fail(t('Troca não existe'))
+      const milhoOut = ovoToMilho(p.milho)
       let n = pay(s, p.ovos, 'ovo')
-      n = { ...n, milho: n.milho + p.milho }
-      return { state: log(n, t('Troca: {ovos} ovos → {milho} milho', { ovos: p.ovos, milho: p.milho }), p.milho, -p.ovos) }
+      n = { ...n, milho: n.milho + milhoOut }
+      return { state: log(n, t('Troca: {ovos} ovos → {milho} milho', { ovos: p.ovos, milho: milhoOut }), milhoOut, -p.ovos) }
     }
     case 'upgradeStars': {
       const ro = findRooster(s, o.roosterId)

@@ -47,6 +47,8 @@ export function validateConfig(input: AppConfig): AppConfig {
   c.economy.defaultSpendLimitCents = Math.round(num(c.economy.defaultSpendLimitCents, 1000, 1000000, t('Limite de gasto padrão')))
   c.economy.serverAuthoritative = c.economy.serverAuthoritative !== false
   c.economy.arenaMilhoCapPerDay = Math.round(num(c.economy.arenaMilhoCapPerDay, 0, 100_000_000, t('Teto de milho da Arena por dia (0 = sem limite)')))
+  c.economy.milhoSinkMult = num(c.economy.milhoSinkMult, 0.1, 10, t('Custo de milho na loja (multiplicador)'))
+  c.economy.ovoToMilhoMult = num(c.economy.ovoToMilhoMult, 0.1, 10, t('Taxa de troca ovo→milho (multiplicador)'))
   c.announcement.text = String(c.announcement.text ?? '').slice(0, 200)
   if (!['info', 'promo', 'alerta'].includes(c.announcement.kind)) c.announcement.kind = 'info'
   c.mvp.on = !!c.mvp.on
