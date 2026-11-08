@@ -1,5 +1,11 @@
 // Carteira cripto, Mercado de NFTs e mensagens web3 do servidor (testnet)
 const en: Record<string, string> = {
+  "🎁 Você recebeu {n} {moeda} na sua carteira cripto! Veja na aba Carteira.": "🎁 You received {n} {moeda} in your crypto wallet! Check the Wallet tab.",
+  "Esse endereço não pode receber envios.": "This address cannot receive transfers.",
+  "🥚 ovos de ouro": "🥚 golden eggs",
+  "🌽 milho": "🌽 corn",
+  "🎁 Você recebeu {n} {moeda} na sua carteira cripto! Use a ponte para trazer pro jogo.": "🎁 You received {n} {moeda} in your crypto wallet! Use the bridge to bring it into the game.",
+  "💡 Pode ser a carteira de outro jogador — o endereço dele fica em \"Seu endereço\". Ele recebe um aviso quando chegar.": "💡 It can be another player's wallet — their address is under \"Your address\". They get a notice when it arrives.",
   "Preço abaixo do mínimo ({n} USDC) para proteger a economia.": "Price below the minimum ({n} USDC) to protect the economy.",
   "💡 Sugerido pelo valor do item: ~{s} USDC": "💡 Suggested from the item value: ~{s} USDC",
   "mínimo {f}": "minimum {f}",

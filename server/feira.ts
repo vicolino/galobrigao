@@ -107,7 +107,7 @@ const log = (s: GameState, text: string, milho: number, ovo: number): GameState 
   history: [{ id: uid(), at: now(), text, milho, ovo }, ...s.history].slice(0, 80),
 })
 
-function notify(userId: string, text: string) {
+export function notify(userId: string, text: string) {
   db().prepare('INSERT INTO feira_notices (user_id, text, at) VALUES (?, ?, ?)').run(userId, text, now())
 }
 

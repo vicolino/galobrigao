@@ -397,6 +397,7 @@ function Send({ info, kyc, busy, run, okTx }: PanelProps & { kyc: KycStatus }) {
             <input value={to} onChange={(e) => setTo(e.target.value)} placeholder="0x…" spellCheck={false} autoCapitalize="off" autoCorrect="off" className="mono" />
           </label>
           {to !== '' && !addrOk && <p className="tiny neg">{t('Endereço inválido (precisa começar com 0x e ter 42 caracteres).')}</p>}
+          <p className="tiny muted">{t('💡 Pode ser a carteira de outro jogador — o endereço dele fica em "Seu endereço". Ele recebe um aviso quando chegar.')}</p>
           <label className="field">
             <span>{t('Quantidade')} <span className="tiny muted">· {t('disponível: {n}', { n: fmtAmt(bal) })}</span></span>
             <div className="copy-row">

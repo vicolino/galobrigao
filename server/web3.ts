@@ -18,6 +18,7 @@ import { addMintable } from '../src/game/premium'
 import { creditTreasury } from './treasury'
 import { activeEditions, claimStock, getEdition, releaseStock } from './editions'
 import { live } from '../src/game/config'
+import { notify } from './feira'
 
 export class Web3Error extends Error {
   constructor(
@@ -415,7 +416,9 @@ export async function handleWeb3(path: string, method: string, body: Record<stri
     const asset = body.asset === 'egg' || body.asset === 'corn' || body.asset === 'usdc' ? (body.asset as TokenKey) : fail(400, t('Moeda inválida'))
     const to = typeof body.to === 'string' && isAddress(body.to.trim(), { strict: false }) ? getAddress(body.to.trim()) : fail(400, t('Endereço de carteira inválido'))
     const w = walletOf(user.id)
-    if (to === zeroAddress || to === getAddress(w.address) || to === getAddress(c!.env.market) || db().prepare('SELECT 1 FROM wallets WHERE lower(address) = lower(?)').get(to)) fail(400, t('Esse endereço não pode receber envios. Use uma carteira externa.'))
+    if (to === zeroAddress || to === getAddress(w.address) || to === getAddress(c!.env.market)) fail(400, t('Esse endereço não pode receber envios.'))
+    // O destino é um jogador do Galo Brigão? (para avisá-lo que recebeu)
+    const recipient = db().prepare('SELECT user_id FROM wallets WHERE lower(address) = lower(?)').get(to) as { user_id: string } | undefined
     const cap = caps().send[asset]
     const unitsAmt = asset === 'usdc' ? usdcUnits(body.amount, 0.01, cap) : BigInt(intIn(body.amount, cap))
     const human = asset === 'usdc' ? Number(unitsAmt) / 1e6 : Number(unitsAmt)
@@ -428,6 +431,12 @@ export async function handleWeb3(path: string, method: string, body: Record<stri
     } catch (e) {
       setTx(id, 'failed')
       return chainFail(e)
+    }
+    // Avisa o jogador que recebeu (entregue no poll, como os avisos da Feira).
+    if (recipient && recipient.user_id !== user.id) {
+      const moeda = asset === 'egg' ? t('🥚 ovos de ouro') : asset === 'corn' ? t('🌽 milho') : t('💵 USDC')
+      const qtd = asset === 'usdc' ? human.toFixed(2) : String(human)
+      notify(recipient.user_id, t('🎁 Você recebeu {n} {moeda} na sua carteira cripto! Veja na aba Carteira.', { n: qtd, moeda }))
     }
     return { body: { tx: publicTx(id) } }
   }
