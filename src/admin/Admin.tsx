@@ -270,9 +270,9 @@ function Activity() {
       <div className="row-between admin-filters">
         <h1>{t('Atividade')}</h1>
         <div className="tabs compact">
-          {[7, 30, 90].map((v) => (
+          {[1, 7, 30, 90].map((v) => (
             <button key={v} className={`tab ${days === v ? 'active' : ''}`} onClick={() => setDays(v)}>
-              {t('{n} dias', { n: v })}
+              {v === 1 ? t('Hoje') : t('{n} dias', { n: v })}
             </button>
           ))}
         </div>

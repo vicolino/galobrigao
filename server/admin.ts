@@ -239,12 +239,12 @@ export async function handleAdmin(path: string, method: string, url: URL, body: 
   loadConfig()
 
   if (path === '/api/admin/overview' && method === 'GET') {
-    const days = [7, 30, 90].includes(Number(url.searchParams.get('days'))) ? Number(url.searchParams.get('days')) : 30
+    const days = [1, 7, 30, 90].includes(Number(url.searchParams.get('days'))) ? Number(url.searchParams.get('days')) : 30
     return overview(days)
   }
 
   if (path === '/api/admin/activity' && method === 'GET') {
-    const days = [7, 30, 90].includes(Number(url.searchParams.get('days'))) ? Number(url.searchParams.get('days')) : 30
+    const days = [1, 7, 30, 90].includes(Number(url.searchParams.get('days'))) ? Number(url.searchParams.get('days')) : 30
     return activity(days)
   }
 
