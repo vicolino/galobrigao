@@ -1,7 +1,7 @@
 // Rotas do backoffice (/api/admin/*). Só para e-mails listados em ADMIN_EMAILS.
 import { DEFAULT_CONFIG, type AppConfig } from '../src/game/config'
 import { SKU_BY_ID } from '../src/game/catalog'
-import { BREED_BY_ID } from '../src/game/data'
+import { BREED_BY_ID, RAROS_SKINS } from '../src/game/data'
 import { uid } from '../src/game/rooster'
 import { loadConfig, saveConfig, validateConfig } from './config'
 import { getDb, type OrderRow, type UserRow } from './db'
@@ -11,6 +11,7 @@ import { setKyc, walletAddress, web3Overview } from './web3'
 import { depositStats } from './deposito'
 import { feiraAdmin } from './feira'
 import { creditTreasury, treasuryBalance, treasuryLedger, treasuryStats } from './treasury'
+import { createEdition, deleteEdition, listEditions, setEditionActive } from './editions'
 
 export class AdminError extends Error {
   constructor(
@@ -453,6 +454,26 @@ export async function handleAdmin(path: string, method: string, url: URL, body: 
     walk(before, cfg, '')
     if (changes.length) audit(admin, 'configuracao', null, changes)
     return { config: cfg, changes }
+  }
+
+  // 💎 Edições Limitadas de Raros
+  if (path === '/api/admin/editions' && method === 'GET') {
+    return { editions: listEditions(), collection: RAROS_SKINS.map((s) => ({ id: s.id, name: s.name, emoji: s.emoji, rarity: s.rarity })) }
+  }
+  if (path === '/api/admin/editions' && method === 'POST') {
+    try {
+      return createEdition(String(body.itemId ?? ''), Number(body.price), Number(body.supply), !!body.active)
+    } catch (e) {
+      throw new AdminError(400, e instanceof Error ? e.message : t('Dados inválidos'))
+    }
+  }
+  const edMatch = path.match(/^\/api\/admin\/editions\/([\w-]+)$/)
+  if (edMatch) {
+    if (method === 'PUT') return setEditionActive(edMatch[1], !!body.active) ?? ((): never => { throw new AdminError(404, t('Edição não encontrada')) })()
+    if (method === 'DELETE') {
+      if (!deleteEdition(edMatch[1])) throw new AdminError(404, t('Edição não encontrada'))
+      return { ok: true }
+    }
   }
 
   // Auditoria

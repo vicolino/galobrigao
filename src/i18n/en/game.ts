@@ -2,6 +2,18 @@
 // Grupo "game": dados do jogo (raças, acessórios, itens, skins, ferramentas, conquistas...),
 // catálogo pago, mensagens da loja (premium.ts), missões, apostas e marca.
 const en: Record<string, string> = {
+  "Guardião do Céu": "Sky Guardian",
+  "Branco e ouro, asas de guardião. Edição de fundador.": "White and gold, guardian wings. Founder edition.",
+  "Trovão da Serra": "Mountain Thunder",
+  "Relâmpago roxo que desce da serra. Raro de verdade.": "Purple lightning rolling down the hills. Truly rare.",
+  "Coroa Real": "Royal Crown",
+  "Ouro de rei, só para os poucos que mandam no terreiro.": "King's gold, only for the few who rule the yard.",
+  "Fênix Azul": "Blue Phoenix",
+  "Renasce em chama azul. Mais fria, mais rara.": "Reborn in blue flame. Colder, rarer.",
+  "Espírito da Mata": "Forest Spirit",
+  "Verde de mata fechada. Some no terreiro e aparece na bicada.": "Deep-forest green. Vanishes in the yard, strikes at the peck.",
+  "Cosmos": "Cosmos",
+  "Carrega uma galáxia no peito. Poucos no universo.": "Carries a galaxy on its chest. Few in the universe.",
   // ---------- Raças ----------
   'Caipira': 'Farmyard',
   'Criado no quintal, come de tudo e nunca desiste.': 'Backyard-raised, eats anything and never quits.',

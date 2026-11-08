@@ -1,6 +1,17 @@
 // Traduções para inglês (chave = texto original em português).
 // Grupo "pages": Galinheiro, Loja, LojaExtra, Perfil, Apostas.
 const en: Record<string, string> = {
+  "💎 Raros": "💎 Rares",
+  "💎 Peças exclusivas, estoque limitado. Compradas com ovos e já viram NFT de verdade na sua carteira — dá para revender na Feira ou no Mercado.": "💎 Exclusive pieces, limited stock. Bought with eggs and turned into real NFTs in your wallet — resell them on the Fair or the Market.",
+  "A loja de raros precisa da carteira cripto ativa.": "The rares shop needs the crypto wallet enabled.",
+  "Nenhuma edição à venda agora. Volte depois — são poucas e saem rápido. 💎": "No editions on sale right now. Come back later — there are few of them and they go fast. 💎",
+  "Só {n} no mundo · restam {left}": "Only {n} in the world · {left} left",
+  "💎 Vira NFT na sua carteira na hora": "💎 Becomes an NFT in your wallet instantly",
+  "✔️ Você já tem": "✔️ You already own it",
+  "Comprar · 🥚 {n}": "Buy · 🥚 {n}",
+  "Comprando…": "Buying…",
+  "Edição limitada · vira NFT": "Limited edition · becomes an NFT",
+  "💎 {nome} é seu! NFT criado na sua carteira.": "💎 {nome} is yours! NFT created in your wallet.",
   'Confirmando seu e-mail…': 'Confirming your email…',
   'E-mail confirmado!': 'Email confirmed!',
   'Pronto! Seu crédito de boas-vindas foi liberado.': 'Done! Your welcome credit has been unlocked.',

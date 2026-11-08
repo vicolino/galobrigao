@@ -514,7 +514,17 @@ export const DROP_SKINS: Skin[] = [
   { id: 'drop-sertao', name: t('Relíquia do Sertão'), emoji: '🏜️', rarity: 'epico', price: 180, currency: 'ovo', fx: 'lava', exclusive: true, drop: true, colors: C('#5a2a12', '#7a3a18', '#ffb020', '#ff5a1f', '#6a3216', '#ffd23f', '#c98b3a'), desc: t('Forjado no calor de 50 graus. Brasa viva no peito.') },
   { id: 'drop-iemanja', name: t('Rainha do Mar'), emoji: '🌊', rarity: 'epico', price: 180, currency: 'ovo', fx: 'gelo', exclusive: true, drop: true, colors: C('#e8fbff', '#9fe3ff', '#1f7ad6', '#ffffff', '#c9f1ff', '#3dd6ff', '#9fe3ff'), desc: t('Branco e azul de 2 de fevereiro. Brilha como espuma de onda.') },
 ]
-export const SKIN_BY_ID: Record<string, Skin> = Object.fromEntries([...SKINS, ...SEASON_SKINS, ...TORNEIO_SKINS, ...DROP_SKINS].map((s) => [s.id, s]))
+// 💎 Coleção Raros: skins exclusivas vendidas só em Edições Limitadas (estoque definido no admin).
+// Viram NFT na carteira do jogador no ato da compra. Não aparecem na loja comum (exclusive).
+export const RAROS_SKINS: Skin[] = [
+  { id: 'raro-guardiao', name: t('Guardião do Céu'), emoji: '🕊️', rarity: 'lendario', price: 300, currency: 'ovo', fx: 'gelo', exclusive: true, colors: C('#eaf7ff', '#c4e6ff', '#7cc3f0', '#ffffff', '#dff1ff', '#ffcf3f', '#ffd87a'), desc: t('Branco e ouro, asas de guardião. Edição de fundador.') },
+  { id: 'raro-trovao', name: t('Trovão da Serra'), emoji: '⚡', rarity: 'epico', price: 160, currency: 'ovo', fx: 'neon', exclusive: true, colors: C('#161030', '#241a4a', '#6a4fff', '#2ee6ff', '#1c1440', '#ffe14a', '#6a4fff'), desc: t('Relâmpago roxo que desce da serra. Raro de verdade.') },
+  { id: 'raro-coroa-real', name: t('Coroa Real'), emoji: '👑', rarity: 'lendario', price: 350, currency: 'ovo', fx: 'ouro', exclusive: true, colors: C('#f6cf4a', '#dcab22', '#b98a10', '#ffe694', '#ffda5e', '#d62828', '#dcab22'), desc: t('Ouro de rei, só para os poucos que mandam no terreiro.') },
+  { id: 'raro-fenix-azul', name: t('Fênix Azul'), emoji: '🔷', rarity: 'lendario', price: 340, currency: 'ovo', fx: 'fogo', exclusive: true, colors: C('#1f6ad6', '#1a4fb0', '#2ee6ff', '#6ab8ff', '#2f8fff', '#ffffff', '#2ee6ff'), desc: t('Renasce em chama azul. Mais fria, mais rara.') },
+  { id: 'raro-mata', name: t('Espírito da Mata'), emoji: '🌿', rarity: 'epico', price: 170, currency: 'ovo', fx: 'camuflado', exclusive: true, colors: C('#2f6b3a', '#1f4e28', '#163a1d', '#5fae63', '#3f8a4a', '#ffcf3f', '#8a6b2a'), desc: t('Verde de mata fechada. Some no terreiro e aparece na bicada.') },
+  { id: 'raro-cosmos', name: t('Cosmos'), emoji: '🌌', rarity: 'lendario', price: 360, currency: 'ovo', fx: 'galaxia', exclusive: true, colors: C('#2a1a6e', '#190f4a', '#0e0830', '#7a4fe0', '#3a2a88', '#ff5ad8', '#9a7ad8'), desc: t('Carrega uma galáxia no peito. Poucos no universo.') },
+]
+export const SKIN_BY_ID: Record<string, Skin> = Object.fromEntries([...SKINS, ...SEASON_SKINS, ...TORNEIO_SKINS, ...DROP_SKINS, ...RAROS_SKINS].map((s) => [s.id, s]))
 
 export const SKIN_BUNDLES = [
   { id: 'elementos', name: t('Pacote Elementos'), emoji: '⚡', skins: ['fogo', 'gelo', 'lava'], price: 380, desc: t('Fogo, gelo e magma juntos.') },

@@ -97,6 +97,24 @@ async function call<T>(path: string, init: { method?: string; body?: unknown } =
 // Galos das lutas da casa são gerados no servidor com nomes em português: mostra no idioma do jogador
 const localRooster = <R extends { name: string; owner?: string }>(r: R): R => ({ ...r, name: tx(r.name), ...(r.owner ? { owner: tx(r.owner) } : {}) })
 
+export interface EditionView {
+  id: string
+  itemKind: string
+  itemId: string
+  price: number
+  total: number
+  left: number
+  sold: number
+  active: boolean
+  createdAt: number
+}
+export interface EditionCollectionItem {
+  id: string
+  name: string
+  emoji: string
+  rarity: string
+}
+
 export const api = {
   me: () => call<{ user: ApiUser | null; provider: string; paymentsLive?: boolean }>('/me'),
   signup: (b: { email: string; password: string; name: string; adult: boolean; terms: boolean; utm?: Record<string, string | undefined> }) => call<{ user: ApiUser }>('/auth/signup', { method: 'POST', body: b }),
@@ -197,6 +215,10 @@ export const api = {
     feira: () => call<FeiraAdmin>('/admin/feira'),
     treasury: (source?: string) => call<TreasuryLedger>('/admin/treasury' + (source ? `?source=${encodeURIComponent(source)}` : '')),
     treasuryWithdraw: (ovos: number, usd: number, reason: string) => call<{ ok: true; ovos: number }>('/admin/treasury/withdraw', { method: 'POST', body: { ovos, usd, reason } }),
+    editions: () => call<{ editions: EditionView[]; collection: EditionCollectionItem[] }>('/admin/editions'),
+    editionCreate: (itemId: string, price: number, supply: number, active: boolean) => call<EditionView>('/admin/editions', { method: 'POST', body: { itemId, price, supply, active } }),
+    editionActive: (id: string, active: boolean) => call<EditionView>(`/admin/editions/${id}`, { method: 'PUT', body: { active } }),
+    editionDelete: (id: string) => call<{ ok: true }>(`/admin/editions/${id}`, { method: 'DELETE' }),
   },
   // ---------- Carteira cripto (testnet) ----------
   web3: () => call<Web3Info>('/web3'),
@@ -210,6 +232,9 @@ export const api = {
   deposit: () => call<DepositInfo>('/web3/deposit'),
   testUsdc: () => call<{ ok: boolean; usdc: number; hash: string }>('/web3/test-usdc', { method: 'POST' }),
   depositEggs: (amount: string) => call<{ rev?: number; state?: GameState; pending?: boolean; message?: string; deposit: DepositView }>('/web3/deposit-eggs', { method: 'POST', body: { amount } }),
+  // 💎 Edições Limitadas de Raros (compra em ovos → NFT na carteira)
+  editions: () => call<{ editions: EditionView[]; owned: string[] }>('/web3/editions'),
+  buyEdition: (id: string) => call<{ rev: number; state: GameState; nft: { tokenId: number }; tx: Web3Tx }>('/web3/editions/buy', { method: 'POST', body: { id } }),
   market: () => call<{ listings: MarketListing[]; feeBps: number }>('/market'),
   marketList: (tokenId: number, price: number) => call<{ tx?: Web3Tx }>('/market/list', { method: 'POST', body: { tokenId, price } }),
   marketCancel: (tokenId: number) => call<{ tx?: Web3Tx }>('/market/cancel', { method: 'POST', body: { tokenId } }),

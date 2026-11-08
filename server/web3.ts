@@ -14,6 +14,9 @@ import { loadSave, writeSave } from './saves'
 import { limited } from './security'
 import { galoLook, galoMetadata, galoReceiveBlock, galoSvg, giveGalo, liveGalo, markGaloBurned, saveGaloSnapshot, takeGalo } from './galonft'
 import { nftIneligible, roosterLock } from '../src/game/galonft'
+import { addMintable } from '../src/game/premium'
+import { creditTreasury } from './treasury'
+import { activeEditions, claimStock, getEdition, releaseStock } from './editions'
 
 export class Web3Error extends Error {
   constructor(
@@ -331,6 +334,60 @@ export async function handleWeb3(path: string, method: string, body: Record<stri
       // Queimou mas não creditou: fica registrado para o suporte resolver
       setTx(id, 'burned-uncredited', hash)
       throw e
+    }
+  }
+
+  // ----- Edições Limitadas de Raros (compra em ovos → NFT na carteira) -----
+  if (path === '/api/web3/editions' && method === 'GET') {
+    return { body: { editions: activeEditions(), owned: db().prepare('SELECT item_id FROM nfts WHERE owner_user_id = ? AND kind = ?').all(user.id, 'skin').map((r) => (r as { item_id: string }).item_id) } }
+  }
+  if (path === '/api/web3/editions/buy' && method === 'POST') {
+    const id = typeof body.id === 'string' ? body.id : fail(400, t('Edição inválida'))
+    const ed = getEdition(id)
+    if (!ed || !ed.active || ed.supply_left <= 0) fail(409, t('Essa edição esgotou ou saiu do ar.'))
+    const item = SKIN_BY_ID[ed!.item_id]
+    if (!item) fail(400, t('Item da edição não existe.'))
+    const price = ed!.price_ovos
+    const w = walletOf(user.id)
+    const cur = needSave(user.id)
+    if (cur.state.skins.includes(ed!.item_id)) fail(409, t('Você já tem esse raro.'))
+    if (cur.state.ovos < price) fail(400, t('Ovos de ouro insuficientes 🥚'))
+    // 1) reserva o estoque (atômico: só uma compra leva a última unidade)
+    if (!claimStock(id)) fail(409, t('Essa edição esgotou ou saiu do ar.'))
+    // 2) debita ovos + concede a skin + marca como mintável; credita a tesouraria
+    let debited: ReturnType<typeof mutate>
+    try {
+      debited = mutate(user.id, (s) => {
+        if (s.ovos < price) fail(400, t('Ovos de ouro insuficientes 🥚'))
+        if (s.skins.includes(ed!.item_id)) fail(409, t('Você já tem esse raro.'))
+        const n = addMintable({ ...s, ovos: s.ovos - price, skins: [...s.skins, ed!.item_id] }, `skin:${ed!.item_id}`)
+        return history(n, t('Comprou {nome} (edição limitada)', { nome: item!.name }), 0, -price)
+      })
+      creditTreasury('loja', 'ovo', price, id, `Edição: ${item!.name}`)
+    } catch (e) {
+      releaseStock(id)
+      throw e
+    }
+    // 3) minta o NFT na carteira do jogador; se a rede falhar, devolve ovos e estoque
+    const txId = logTx(user.id, 'mint-edition', `skin:${ed!.item_id}`, 1, w.address)
+    try {
+      const { tokenId, hash } = await mintNft(w.address, 'skin', ed!.item_id)
+      db().prepare('INSERT INTO nfts (token_id, kind, item_id, owner_user_id, status, price_units, minted_at, tx) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(tokenId, 'skin', ed!.item_id, user.id, 'held', null, Date.now(), hash)
+      setTx(txId, 'ok', hash)
+      return { body: { ...debited, nft: { tokenId }, tx: publicTx(txId) } }
+    } catch (e) {
+      setTx(txId, 'failed')
+      const back = mutate(user.id, (s) => {
+        const m = { ...(s.mintable ?? {}) }
+        const key = `skin:${ed!.item_id}`
+        if (m[key]) m[key] = Math.max(0, m[key] - 1)
+        const n = { ...s, ovos: s.ovos + price, skins: s.skins.filter((k) => k !== ed!.item_id), mintable: m }
+        return history(n, t('Compra cancelada: ovos devolvidos'), 0, price)
+      })
+      creditTreasury('loja', 'ovo', -price, id, `Estorno edição: ${item!.name}`)
+      releaseStock(id)
+      console.error('[web3] mint de edição falhou, devolvido', e instanceof Error ? e.message.split('\n')[0] : e)
+      return fail(502, t('A rede não confirmou a operação. Os ovos voltaram para o seu saldo.'), back)
     }
   }
 

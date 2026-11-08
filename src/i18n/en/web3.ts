@@ -1,5 +1,12 @@
 // Carteira cripto, Mercado de NFTs e mensagens web3 do servidor (testnet)
 const en: Record<string, string> = {
+  "Edição inválida": "Invalid edition",
+  "Essa edição esgotou ou saiu do ar.": "This edition is sold out or no longer available.",
+  "Item da edição não existe.": "This edition's item does not exist.",
+  "Você já tem esse raro.": "You already own this rare.",
+  "Comprou {nome} (edição limitada)": "Bought {nome} (limited edition)",
+  "Compra cancelada: ovos devolvidos": "Purchase cancelled: eggs refunded",
+  "A rede não confirmou a operação. Os ovos voltaram para o seu saldo.": "The network did not confirm the operation. Your eggs were returned to your balance.",
   // ---------- Cliente: Carteira / Mercado / Admin ----------
   'Limite diário de envio: {usado} de {n}': 'Daily send limit: {usado} of {n}',
   'Limite diário: {usado} de {n}': 'Daily limit: {usado} of {n}',

@@ -1,18 +1,19 @@
 import { Fragment, useCallback, useEffect, useState } from 'react'
-import { api, type AdminActivity, type AdminWeb3, type KycStatus, type AdminLogRow, type AdminOrderRow, type AdminOverview, type AdminUserDetail, type AdminUserRow } from '../api'
+import { api, type AdminActivity, type AdminWeb3, type EditionView, type KycStatus, type AdminLogRow, type AdminOrderRow, type AdminOverview, type AdminUserDetail, type AdminUserRow } from '../api'
 import { APP_NAME } from '../brand'
 import { Modal, Picker } from '../components/ui'
+import { RoosterSvg } from '../components/RoosterSvg'
 import { CATALOG, brl } from '../game/catalog'
 import type { AppConfig } from '../game/config'
 import { useGame } from '../game/store'
 import { OfertasAdmin } from './OfertasAdmin'
-import { SKIN_BY_ID } from '../game/data'
+import { RAROS_SKINS, SKIN_BY_ID } from '../game/data'
 import { locale, t, tp, tx } from '../i18n'
 import { C1, C2, DailyBars, HBars, Kpi, SplitBar } from './Charts'
 import type { FeiraAdmin, TreasuryLedger } from '../game/feira'
 import { TorneiosAdmin } from './TorneiosAdmin'
 
-type Tab = 'geral' | 'atividade' | 'jogadores' | 'pedidos' | 'config' | 'auditoria' | 'cripto' | 'feira' | 'carteira' | 'torneios'
+type Tab = 'geral' | 'atividade' | 'jogadores' | 'pedidos' | 'config' | 'auditoria' | 'cripto' | 'feira' | 'carteira' | 'torneios' | 'edicoes'
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'geral', label: t('📈 Visão geral') },
@@ -24,6 +25,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'cripto', label: t('⛓️ Cripto') },
   { id: 'feira', label: t('🏪 Feira') },
   { id: 'carteira', label: t('💰 Carteira') },
+  { id: 'edicoes', label: t('💎 Edições Raras') },
   { id: 'torneios', label: t('🏟️ Torneios') },
 ]
 
@@ -81,6 +83,7 @@ export function Admin({ tab: tabParam }: { tab?: string }) {
         {tab === 'cripto' && <Web3Admin />}
         {tab === 'feira' && <FeiraAdminTab />}
         {tab === 'carteira' && <CarteiraAdmin />}
+        {tab === 'edicoes' && <EdicoesAdmin />}
         {tab === 'torneios' && <TorneiosAdmin />}
       </main>
     </div>
@@ -1659,5 +1662,123 @@ function CarteiraAdmin() {
         </>
       )}
     </>
+  )
+}
+
+// 💎 Edições Limitadas de Raros: lançar uma edição (skin da coleção) vendida em ovos; vira NFT na compra.
+function EdicoesAdmin() {
+  const { toast } = useGame()
+  const [data, setData] = useState<{ editions: EditionView[] } | null>(null)
+  const [err, setErr] = useState('')
+  const [itemId, setItemId] = useState(RAROS_SKINS[0]?.id ?? '')
+  const [price, setPrice] = useState('300')
+  const [supply, setSupply] = useState('50')
+  const [active, setActive] = useState(true)
+  const [busy, setBusy] = useState(false)
+
+  const load = useCallback(async () => {
+    try {
+      setData(await api.admin.editions())
+      setErr('')
+    } catch (e) {
+      setErr(e instanceof Error ? tx(e.message) : String(e))
+    }
+  }, [])
+  useEffect(() => {
+    load()
+  }, [load])
+
+  const create = async () => {
+    setBusy(true)
+    try {
+      await api.admin.editionCreate(itemId, Number(price), Number(supply), active)
+      toast(t('💎 Edição lançada!'), 'ok')
+      await load()
+    } catch (e) {
+      toast(e instanceof Error ? tx(e.message) : t('Erro ao lançar'), 'erro')
+    } finally {
+      setBusy(false)
+    }
+  }
+  const toggle = async (e: EditionView) => {
+    try {
+      await api.admin.editionActive(e.id, !e.active)
+      await load()
+    } catch {
+      toast(t('Erro ao atualizar'), 'erro')
+    }
+  }
+  const del = async (e: EditionView) => {
+    try {
+      await api.admin.editionDelete(e.id)
+      await load()
+    } catch {
+      toast(t('Erro ao apagar'), 'erro')
+    }
+  }
+
+  if (err) return <p className="muted center pad">{err}</p>
+  if (!data) return <div className="center pad"><div className="spinner" /></div>
+  const sk = SKIN_BY_ID[itemId]
+
+  return (
+    <div className="admin-edicoes">
+      <div className="card">
+        <h3>{t('💎 Lançar edição limitada')}</h3>
+        <p className="muted tiny">{t('Escolha um raro da coleção, defina o estoque e o preço em ovos. O jogador compra em Loja → Raros e recebe o NFT na carteira na hora.')}</p>
+        <div className="edic-form">
+          <label className="field">
+            <span>{t('Item da coleção')}</span>
+            <Picker value={itemId} onChange={setItemId} options={RAROS_SKINS.map((s) => ({ value: s.id, label: `${s.emoji} ${s.name}` }))} />
+          </label>
+          <label className="field">
+            <span>{t('Preço (🥚 ovos)')}</span>
+            <input type="number" min={1} value={price} onChange={(e) => setPrice(e.target.value)} />
+          </label>
+          <label className="field">
+            <span>{t('Estoque (quantos no mundo)')}</span>
+            <input type="number" min={1} value={supply} onChange={(e) => setSupply(e.target.value)} />
+          </label>
+          <label className="field check-field">
+            <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} />
+            <span>{t('Já ativa (à venda)')}</span>
+          </label>
+        </div>
+        {sk && (
+          <div className="edic-preview">
+            <RoosterSvg breedId="caipira" skin={itemId} size={110} anim="idle" />
+            <div className="tiny muted">{sk.desc}</div>
+          </div>
+        )}
+        <button className="btn btn-primary" disabled={busy || !itemId} onClick={create}>
+          {busy ? t('Lançando…') : t('Lançar edição')}
+        </button>
+      </div>
+
+      <div className="card">
+        <h3>{t('Edições')} ({data.editions.length})</h3>
+        {data.editions.length === 0 ? (
+          <p className="muted center">{t('Nenhuma edição ainda.')}</p>
+        ) : (
+          <div className="edic-list">
+            {data.editions.map((e) => {
+              const s = SKIN_BY_ID[e.itemId]
+              return (
+                <div key={e.id} className="edic-row">
+                  <div className="edic-row-item">{s ? `${s.emoji} ${s.name}` : e.itemId}</div>
+                  <div className="edic-row-stat">🥚 {n(e.price)}</div>
+                  <div className="edic-row-stat">{t('{sold} / {total} vendidos', { sold: n(e.sold), total: n(e.total) })}</div>
+                  <div className="edic-row-stat">{e.active ? <span className="pill ok">{t('Ativa')}</span> : <span className="pill">{t('Pausada')}</span>}</div>
+                  <div className="edic-row-actions">
+                    <button className="btn btn-sm" onClick={() => toggle(e)}>{e.active ? t('Pausar') : t('Ativar')}</button>
+                    <button className="btn btn-sm btn-danger" onClick={() => del(e)}>{t('Apagar')}</button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+    </div>
   )
 }

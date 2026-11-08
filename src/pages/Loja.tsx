@@ -1,11 +1,11 @@
 import { WalletBar, confirmBuy } from '../components/BuyConfirm'
-import { useEffect, useState } from 'react'
-import { api, type CatalogItem } from '../api'
+import { useCallback, useEffect, useState } from 'react'
+import { api, ApiError, type CatalogItem, type EditionView } from '../api'
 import { Checkout } from '../components/Checkout'
 import { brl } from '../game/catalog'
 import { RoosterSvg } from '../components/RoosterSvg'
 import { Modal, PageHead, Price, RarityTag, RoosterCard, Tabs, go } from '../components/ui'
-import { ACCESSORIES, BOXES, BREED_BY_ID, CORN_PACKS, ELECTION_ROOSTERS, FOOTBALL_ROOSTERS, BRAZIL_ROOSTERS, ITEMS, SET_BY_ID, SPECIAL_ROOSTERS, RARITY, SLOTS, VIP } from '../game/data'
+import { ACCESSORIES, BOXES, BREED_BY_ID, CORN_PACKS, ELECTION_ROOSTERS, FOOTBALL_ROOSTERS, BRAZIL_ROOSTERS, ITEMS, SET_BY_ID, SKIN_BY_ID, SPECIAL_ROOSTERS, RARITY, SLOTS, VIP } from '../game/data'
 import { bestRoosterLevel, fmt, marketPrice } from '../game/rooster'
 import { sfx } from '../game/sound'
 import { useGame } from '../game/store'
@@ -15,10 +15,10 @@ import { FerramentasTab, SkinsTab } from './LojaExtra'
 import { locale, t, tn, tp, tx } from '../i18n'
 import { FirstBuyBanner, LimitedBadge, useFirstBonus, useLimited } from '../components/Ofertas'
 
-type Tab = 'galos' | 'skins' | 'acessorios' | 'ferramentas' | 'itens' | 'caixas' | 'ovos' | 'trocar'
+type Tab = 'galos' | 'raros' | 'skins' | 'acessorios' | 'ferramentas' | 'itens' | 'caixas' | 'ovos' | 'trocar'
 
 export function Loja({ tab: tabParam }: { tab?: string }) {
-  const tab = (['galos', 'skins', 'acessorios', 'ferramentas', 'itens', 'caixas', 'ovos', 'trocar'].includes(tabParam ?? '') ? tabParam : 'galos') as Tab
+  const tab = (['galos', 'raros', 'skins', 'acessorios', 'ferramentas', 'itens', 'caixas', 'ovos', 'trocar'].includes(tabParam ?? '') ? tabParam : 'galos') as Tab
   return (
     <>
       <PageHead title={t('🛒 Loja')} subtitle={t('Galos, skins, acessórios, ferramentas de luta e muito mais.')} />
@@ -28,6 +28,7 @@ export function Loja({ tab: tabParam }: { tab?: string }) {
         onChange={(v) => go(`/loja/${v}`)}
         tabs={[
           { id: 'galos', label: t('🐓 Galos') },
+          { id: 'raros', label: t('💎 Raros') },
           { id: 'skins', label: t('🎨 Skins') },
           { id: 'acessorios', label: t('🎩 Acessórios') },
           { id: 'ferramentas', label: t('🧰 Ferramentas') },
@@ -38,6 +39,7 @@ export function Loja({ tab: tabParam }: { tab?: string }) {
         ]}
       />
       {tab === 'galos' && <Galos />}
+      {tab === 'raros' && <RarosTab />}
       {tab === 'skins' && <SkinsTab />}
       {tab === 'acessorios' && <Acessorios />}
       {tab === 'ferramentas' && <FerramentasTab />}
@@ -45,6 +47,87 @@ export function Loja({ tab: tabParam }: { tab?: string }) {
       {tab === 'caixas' && <Caixas />}
       {tab === 'ovos' && <Ovos />}
       {tab === 'trocar' && <Trocar />}
+    </>
+  )
+}
+
+// 💎 Loja de Raros: edições limitadas (lançadas no admin), compradas com ovos e mintadas como NFT na hora.
+function RarosTab() {
+  const { actions, toast } = useGame()
+  const [eds, setEds] = useState<EditionView[] | null>(null)
+  const [owned, setOwned] = useState<string[]>([])
+  const [off, setOff] = useState(false)
+  const [busy, setBusy] = useState('')
+
+  const load = useCallback(async () => {
+    try {
+      const r = await api.editions()
+      setEds(r.editions)
+      setOwned(r.owned)
+      setOff(false)
+    } catch (e) {
+      if (e instanceof ApiError && (e.status === 503 || e.status === 404)) setOff(true)
+      setEds([])
+    }
+  }, [])
+  useEffect(() => {
+    load()
+  }, [load])
+
+  const buy = async (e: EditionView) => {
+    const sk = SKIN_BY_ID[e.itemId]
+    if (!sk) return
+    if (!(await confirmBuy({ emoji: sk.emoji, title: sk.name, detail: t('Edição limitada · vira NFT'), price: e.price, currency: 'ovo' }))) return
+    setBusy(e.id)
+    try {
+      await actions.reloadFromServer()
+      const r = await actions.feiraOp(() => api.buyEdition(e.id))
+      if (r.ok) {
+        toast(t('💎 {nome} é seu! NFT criado na sua carteira.', { nome: sk.name }), 'ok')
+        await load()
+      } else toast(tx(r.error), 'erro')
+    } finally {
+      setBusy('')
+    }
+  }
+
+  if (off) return <p className="muted center pad">{t('A loja de raros precisa da carteira cripto ativa.')}</p>
+  if (!eds) return <div className="center pad"><div className="spinner" /></div>
+  if (!eds.length) return <p className="muted center pad">{t('Nenhuma edição à venda agora. Volte depois — são poucas e saem rápido. 💎')}</p>
+
+  return (
+    <>
+      <p className="raros-intro muted">{t('💎 Peças exclusivas, estoque limitado. Compradas com ovos e já viram NFT de verdade na sua carteira — dá para revender na Feira ou no Mercado.')}</p>
+      <div className="raros-grid">
+        {eds.map((e) => {
+          const sk = SKIN_BY_ID[e.itemId]
+          if (!sk) return null
+          const has = owned.includes(e.itemId)
+          return (
+            <div key={e.id} className="raro-card">
+              <div className="raro-art">
+                <RoosterSvg breedId="caipira" skin={e.itemId} size={150} anim="idle" />
+              </div>
+              <div className="raro-name">
+                {sk.emoji} {sk.name}
+              </div>
+              <RarityTag rarity={sk.rarity} />
+              <p className="raro-desc tiny muted">{sk.desc}</p>
+              <div className="raro-stock">{t('Só {n} no mundo · restam {left}', { n: fmt(e.total), left: fmt(e.left) })}</div>
+              <div className="raro-nft tiny">{t('💎 Vira NFT na sua carteira na hora')}</div>
+              {has ? (
+                <button className="btn full" disabled>
+                  {t('✔️ Você já tem')}
+                </button>
+              ) : (
+                <button className="btn btn-primary full" disabled={busy === e.id} onClick={() => buy(e)}>
+                  {busy === e.id ? t('Comprando…') : t('Comprar · 🥚 {n}', { n: fmt(e.price) })}
+                </button>
+              )}
+            </div>
+          )
+        })}
+      </div>
     </>
   )
 }

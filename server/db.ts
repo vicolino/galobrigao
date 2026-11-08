@@ -225,6 +225,19 @@ export function getDb() {
     );
     CREATE INDEX IF NOT EXISTS deposits_user ON deposits(user_id, created_at);
     CREATE INDEX IF NOT EXISTS deposits_status ON deposits(status);
+    -- 💎 Edições Limitadas de Raros: o admin lança uma edição de uma skin da coleção,
+    -- com estoque e preço em ovos. O jogador compra com ovos e recebe o NFT na carteira.
+    CREATE TABLE IF NOT EXISTS editions (
+      id TEXT PRIMARY KEY,
+      item_kind TEXT NOT NULL,
+      item_id TEXT NOT NULL,
+      price_ovos INTEGER NOT NULL,
+      supply_total INTEGER NOT NULL,
+      supply_left INTEGER NOT NULL,
+      active INTEGER NOT NULL DEFAULT 0,
+      created_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS editions_active ON editions(active, created_at);
   `)
   // Moeda de cada aposta: as antigas foram feitas em milho (pagam em milho); as novas usam 🎟️ fichas
   const betCols = (db.prepare('PRAGMA table_info(house_bets)').all() as { name: string }[]).map((c) => c.name)
