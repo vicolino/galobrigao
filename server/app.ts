@@ -647,7 +647,8 @@ export async function handle(req: Req, res: Res) {
     }
 
     // ----- Carteira cripto, NFTs e mercado (server/web3.ts) -----
-    if (path.startsWith('/api/web3') || path.startsWith('/api/market') || path.startsWith('/api/nft/')) {
+    // (usdc-buy é tratado adiante, junto do checkout, porque usa a infra de pedidos/Mercado Pago)
+    if ((path.startsWith('/api/web3') || path.startsWith('/api/market') || path.startsWith('/api/nft/')) && path !== '/api/web3/usdc-buy') {
       const u = path.startsWith('/api/nft/') ? null : needUser(req)
       if (u && method === 'POST') {
         blockIfMaintenance(u)
