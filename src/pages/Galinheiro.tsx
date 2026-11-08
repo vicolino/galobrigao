@@ -71,12 +71,17 @@ function CoopList() {
           {freeAcc.length === 0 ? (
             <p className="muted">{t('Nenhum acessório livre.')} <a href="#/loja/acessorios">{t('Ver na loja →')}</a></p>
           ) : (
-            <div className="chips">
-              {freeAcc.map(([id, n]) => (
-                <span key={id} className="chip">
-                  {ACC_BY_ID[id].emoji} {ACC_BY_ID[id].name} ×{n}
-                </span>
-              ))}
+            <div className="inv-grid">
+              {freeAcc.map(([id, n]) => {
+                const a = ACC_BY_ID[id]
+                return (
+                  <div key={id} className={`inv-tile rar-${a.rarity}`} title={a.name}>
+                    {n > 1 && <span className="inv-qty">×{n}</span>}
+                    <span className="inv-emoji">{a.emoji}</span>
+                    <span className="inv-name">{a.name}</span>
+                  </div>
+                )
+              })}
             </div>
           )}
         </div>
@@ -85,13 +90,15 @@ function CoopList() {
           {items.length === 0 ? (
             <p className="muted">{t('Sem itens.')} <a href="#/loja/itens">{t('Ver na loja →')}</a></p>
           ) : (
-            <div className="chips">
+            <div className="inv-grid">
               {items.map(([id, n]) => {
                 const it = ITEMS.find((i) => i.id === id)!
                 return (
-                  <span key={id} className="chip">
-                    {it.emoji} {it.name} ×{n}
-                  </span>
+                  <div key={id} className="inv-tile" title={it.desc}>
+                    {n > 1 && <span className="inv-qty">×{n}</span>}
+                    <span className="inv-emoji">{it.emoji}</span>
+                    <span className="inv-name">{it.name}</span>
+                  </div>
                 )
               })}
             </div>
