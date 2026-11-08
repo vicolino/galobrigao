@@ -214,7 +214,6 @@ export const api = {
     web3: () => call<AdminWeb3>('/admin/web3'),
     feira: () => call<FeiraAdmin>('/admin/feira'),
     treasury: (source?: string) => call<TreasuryLedger>('/admin/treasury' + (source ? `?source=${encodeURIComponent(source)}` : '')),
-    treasuryWithdraw: (ovos: number, usd: number, reason: string) => call<{ ok: true; ovos: number }>('/admin/treasury/withdraw', { method: 'POST', body: { ovos, usd, reason } }),
     editions: () => call<{ editions: EditionView[]; collection: EditionCollectionItem[] }>('/admin/editions'),
     editionCreate: (itemId: string, price: number, supply: number, active: boolean) => call<EditionView>('/admin/editions', { method: 'POST', body: { itemId, price, supply, active } }),
     editionActive: (id: string, active: boolean) => call<EditionView>(`/admin/editions/${id}`, { method: 'PUT', body: { active } }),

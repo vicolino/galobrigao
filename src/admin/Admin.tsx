@@ -1557,11 +1557,6 @@ function CarteiraAdmin() {
   const [d, setD] = useState<TreasuryLedger | null>(null)
   const [err, setErr] = useState('')
   const [source, setSource] = useState('')
-  const [ovos, setOvos] = useState(0)
-  const [usd, setUsd] = useState(0)
-  const [reason, setReason] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [msg, setMsg] = useState('')
 
   const load = (src: string) =>
     api.admin
@@ -1575,23 +1570,6 @@ function CarteiraAdmin() {
   const SRC: Record<string, string> = { desafio: t('🤝 Desafio'), feira: t('🏪 Feira'), aluguel: t('🔑 Aluguel'), loja: t('🏬 Loja'), saque: t('💸 Retirada'), ajuste: t('⚙️ Ajuste') }
   const srcLabel = (s: string) => SRC[s] ?? s
   const coin = (c: string) => (c === 'milho' ? '🌽' : '🥚')
-
-  const withdraw = async () => {
-    setBusy(true)
-    setMsg('')
-    try {
-      const r = await api.admin.treasuryWithdraw(Math.round(ovos), Number(usd), reason.trim())
-      setMsg(t('Retirada registrada. Saldo agora: 🥚 {n}', { n: n(r.ovos) }))
-      setOvos(0)
-      setUsd(0)
-      setReason('')
-      await load(source)
-    } catch (e) {
-      setMsg(tx((e as Error).message))
-    } finally {
-      setBusy(false)
-    }
-  }
 
   return (
     <>
@@ -1631,29 +1609,6 @@ function CarteiraAdmin() {
                 </tbody>
               </table>
               {d.bySource.length === 0 && <p className="muted center">{t('Nada ainda.')}</p>}
-            </div>
-
-            <div className="card">
-              <h3>{t('💸 Retirar (ovo → USDC)')}</h3>
-              <p className="tiny muted">{t('Registro contábil: debita o saldo em ovos do sistema e guarda o valor em USDC + motivo. O USDC de verdade você transfere da carteira on-chain — isto não move fundos.')}</p>
-              <div className="row gap wrap">
-                <label className="tiny">
-                  {t('Ovos a retirar')}
-                  <input className="input" type="number" min={1} value={ovos || ''} onChange={(e) => setOvos(Math.floor(Number(e.target.value) || 0))} />
-                </label>
-                <label className="tiny">
-                  {t('Valor em USDC')}
-                  <input className="input" type="number" min={0} step="0.01" value={usd || ''} onChange={(e) => setUsd(Number(e.target.value) || 0)} />
-                </label>
-              </div>
-              <label className="tiny">
-                {t('Motivo')}
-                <input className="input" value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t('Ex.: pagamento fornecedor X')} />
-              </label>
-              <button className="btn btn-primary" disabled={busy || ovos <= 0 || !reason.trim()} onClick={withdraw}>
-                {busy ? <span className="spinner" /> : t('Registrar retirada')}
-              </button>
-              {msg && <p className="tiny">{tx(msg)}</p>}
             </div>
           </div>
 
