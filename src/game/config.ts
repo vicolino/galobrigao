@@ -22,6 +22,8 @@ export interface AppConfig {
   mvp: { on: boolean; creditCents: number }
   /** 💵 Depósito de USDC → 🥚 ovos (só ida). Mínimo e limite diário em USDC por jogador. */
   deposit: { eggsPerUsdc: number; minUsdc: number; dailyCapUsdc: number }
+  // 💵 Venda de USDC por PIX (a casa é a contraparte). Preço = brlPerUsdc * (1 + marginPct/100).
+  usdcSale: { on: boolean; marginPct: number; brlPerUsdc: number; minUsdc: number; maxUsdc: number; dailyCapUsdc: number }
   /** 🎁 Drops da Arena (prêmio grátis por vitória). Chances em %; tiers somam 100. */
   drops: DropsConfig
   bets: {
@@ -71,6 +73,7 @@ export const DEFAULT_CONFIG: AppConfig = {
   mvp: { on: true, creditCents: 10000 },
   // (não chama `web3`: /api/config já usa `web3: boolean` para dizer se a carteira está ligada)
   deposit: { eggsPerUsdc: 50, minUsdc: 1, dailyCapUsdc: 500 },
+  usdcSale: { on: false, marginPct: 9, brlPerUsdc: 5.5, minUsdc: 1, maxUsdc: 200, dailyCapUsdc: 500 },
   drops: { on: true, chanceFacil: 6, chanceMedio: 10, chanceDificil: 15, chanceChefao: 22, tierComum: 70, tierRaro: 22, tierEpico: 6.5, tierLendario: 1.5, pity: 15, dailyCap: 3, supplyCap: 500 },
   // Agenda de lutas da casa: uma luta a cada `intervalMin`, apostas fecham `closeSec` antes.
   // Apostas usam 🎟️ fichas (nunca milho/ovos): ganha jogando, não compra, não troca.
@@ -92,6 +95,7 @@ export function mergeConfig(saved: Partial<AppConfig> | null | undefined): AppCo
     onchain: { ...DEFAULT_CONFIG.onchain, ...s.onchain },
     mvp: { ...DEFAULT_CONFIG.mvp, ...s.mvp },
     deposit: { ...DEFAULT_CONFIG.deposit, ...s.deposit },
+    usdcSale: { ...DEFAULT_CONFIG.usdcSale, ...s.usdcSale },
     drops: { ...DEFAULT_CONFIG.drops, ...s.drops },
     bets: { ...DEFAULT_CONFIG.bets, ...s.bets },
   }

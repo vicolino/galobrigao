@@ -1037,7 +1037,7 @@ function Orders() {
 // ---------------- Configurações ----------------
 
 type CfgGroup = Exclude<keyof AppConfig, 'catalog' | 'announcement' | 'maintenance'>
-type CfgSection = 'geral' | 'loja' | 'recompensas' | 'desafios' | 'apostas' | 'drops' | 'deposito' | 'economia'
+type CfgSection = 'geral' | 'loja' | 'recompensas' | 'desafios' | 'apostas' | 'drops' | 'deposito' | 'usdc' | 'economia'
 
 /** Grupos de configuração de cada aba (para contar alterações). */
 const CFG_SECTIONS: { id: CfgSection; label: string; groups: (keyof AppConfig)[] }[] = [
@@ -1048,6 +1048,7 @@ const CFG_SECTIONS: { id: CfgSection; label: string; groups: (keyof AppConfig)[]
   { id: 'apostas', label: t('🎲 Apostas'), groups: ['bets'] },
   { id: 'drops', label: t('🎁 Drops da Arena'), groups: ['drops'] },
   { id: 'deposito', label: t('💵 Depósito USDC'), groups: ['deposit'] },
+  { id: 'usdc', label: t('💵 Venda de USDC (PIX)'), groups: ['usdcSale'] },
   { id: 'economia', label: t('🛡️ Economia e segurança'), groups: ['economy'] },
 ]
 
@@ -1384,6 +1385,22 @@ function Config() {
                 {num('deposit', 'minUsdc', t('Depósito mínimo (USDC)'), { unit: 'USDC' })}
                 {num('deposit', 'dailyCapUsdc', t('Limite diário de depósito (USDC)'), { unit: 'USDC', step: 50, hint: t('Por jogador, por dia') })}
               </div>
+            </div>
+          )}
+
+          {tab === 'usdc' && (
+            <div className="card cfg-section">
+              <h3>{t('💵 Venda de USDC por PIX')}</h3>
+              <p className="tiny muted cfg-desc">{t('A casa vende USDC por PIX. Preço = câmbio base × (1 + margem). Desligado = nada vende (modo staged).')}</p>
+              <CfgSwitch on={cfg.usdcSale.on} onChange={(v) => set('usdcSale', { on: v })} label={t('Ligado — jogadores podem comprar USDC com PIX (dinheiro real sai da tesouraria)')} />
+              <div className="cfg-grid">
+                {num('usdcSale', 'brlPerUsdc', t('Câmbio base: R$ por 1 USDC'), { unit: 'R$', step: 0.1, hint: t('A cotação de mercado do dia') })}
+                {num('usdcSale', 'marginPct', t('Margem (%)'), { unit: '%', step: 1, hint: t('Seu spread sobre o câmbio') })}
+                {num('usdcSale', 'minUsdc', t('Compra mínima (USDC)'), { unit: 'USDC' })}
+                {num('usdcSale', 'maxUsdc', t('Compra máxima (USDC)'), { unit: 'USDC', step: 10 })}
+                {num('usdcSale', 'dailyCapUsdc', t('Limite diário (USDC)'), { unit: 'USDC', step: 50, hint: t('Por jogador, por dia') })}
+              </div>
+              <p className="tiny" style={{ fontWeight: 800 }}>{t('Preço ao jogador agora: R$ {brl} por 1 USDC', { brl: (cfg.usdcSale.brlPerUsdc * (1 + cfg.usdcSale.marginPct / 100)).toFixed(2) })}</p>
             </div>
           )}
 

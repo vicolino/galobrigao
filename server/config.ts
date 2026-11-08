@@ -63,6 +63,13 @@ export function validateConfig(input: AppConfig): AppConfig {
   c.deposit.eggsPerUsdc = num(c.deposit.eggsPerUsdc, 1, 10_000, t('Ovos por 1 USDC (depósito)'))
   c.deposit.minUsdc = num(c.deposit.minUsdc, 1, 1000, t('Depósito mínimo (USDC)'))
   c.deposit.dailyCapUsdc = num(c.deposit.dailyCapUsdc, c.deposit.minUsdc, 100_000, t('Limite diário de depósito (USDC)'))
+  // 💵 Venda de USDC por PIX
+  c.usdcSale.on = !!c.usdcSale.on
+  c.usdcSale.marginPct = num(c.usdcSale.marginPct, 0, 100, t('Margem da venda de USDC (%)'))
+  c.usdcSale.brlPerUsdc = num(c.usdcSale.brlPerUsdc, 1, 100, t('Câmbio base: BRL por USDC'))
+  c.usdcSale.minUsdc = num(c.usdcSale.minUsdc, 1, 10_000, t('Compra mínima de USDC'))
+  c.usdcSale.maxUsdc = num(c.usdcSale.maxUsdc, c.usdcSale.minUsdc, 100_000, t('Compra máxima de USDC'))
+  c.usdcSale.dailyCapUsdc = num(c.usdcSale.dailyCapUsdc, c.usdcSale.minUsdc, 1_000_000, t('Limite diário de compra de USDC'))
   // 🎁 Drops da Arena
   const dr = c.drops
   dr.on = dr.on !== false
