@@ -157,6 +157,11 @@ export function Carteira() {
         right={<TestnetBadge />}
       />
 
+      {/* 💎 NFTs em destaque no topo — é o que o jogador mais quer ver ao abrir a carteira. */}
+      <GaloNftPanel info={info} busy={busy} run={run} okTx={okTx} />
+
+      <MyItems info={info} busy={busy} run={run} okTx={okTx} feeBps={feeBps} />
+
       {/* Endereço + saldos */}
       <div className="card web3-address">
         <span className="tiny muted">{t('Seu endereço')}</span>
@@ -199,10 +204,6 @@ export function Carteira() {
 
       {/* 💵 Depósito USDC → ovos (src/pages/Deposito.tsx) */}
       <DepositoUsdc info={info} busy={busy} run={run} okTx={okTx} />
-
-      <GaloNftPanel info={info} busy={busy} run={run} okTx={okTx} />
-
-      <MyItems info={info} busy={busy} run={run} okTx={okTx} feeBps={feeBps} />
 
       {(info.recent?.length ?? 0) > 0 && (
         <>
