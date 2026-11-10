@@ -42,8 +42,8 @@ function Termos() {
       </ul>
       <h3>4. Compras</h3>
       <ul>
-        <li>Pagamentos são processados por terceiros (ex.: Mercado Pago). Não armazenamos dados de cartão.</li>
-        <li>Os itens são entregues assim que o pagamento é confirmado.</li>
+        <li>Pagamentos são feitos em USDC (stablecoin), a partir da carteira cripto da sua conta no jogo. Não aceitamos Pix nem cartão.</li>
+        <li>Os itens são entregues assim que a rede confirma a transferência.</li>
         <li>
           Direito de arrependimento (art. 49 do CDC): você pode pedir reembolso em até 7 dias da compra se os itens comprados ainda não tiverem sido usados. Escreva para{' '}
           {SUPPORT_EMAIL}.
@@ -69,7 +69,7 @@ function Privacidade() {
       <ul>
         <li>Cadastro: e-mail, nome de criador e senha (guardada de forma criptografada, nunca em texto).</li>
         <li>Jogo: seu progresso, compras feitas e histórico de moedas.</li>
-        <li>Pagamentos: valor, data e situação do pedido. Os dados do cartão ou da conta bancária ficam com o processador de pagamento.</li>
+        <li>Pagamentos: valor, data, situação do pedido e a transação na blockchain.</li>
         <li>Técnicos: endereço IP e cookies de sessão, para manter você conectado e prevenir fraude.</li>
       </ul>
       <h3>2. Para que usamos</h3>
@@ -79,7 +79,7 @@ function Privacidade() {
         <li>Legítimo interesse: prevenir trapaça e fraude, e melhorar o jogo.</li>
       </ul>
       <h3>3. Com quem compartilhamos</h3>
-      <p>Somente com o processador de pagamento (Mercado Pago), o serviço de e-mail e o provedor de hospedagem, na medida do necessário. Não vendemos seus dados.</p>
+      <p>Somente com o provedor de acesso à rede blockchain, o serviço de e-mail e o provedor de hospedagem, na medida do necessário. Transferências em USDC ficam registradas publicamente na blockchain. Não vendemos seus dados.</p>
       <h3>4. Seus direitos</h3>
       <p>
         Você pode acessar, corrigir e excluir seus dados. A exclusão da conta está disponível no Perfil, em "Excluir minha conta". Registros de pagamento são mantidos sem identificação pessoal pelo prazo legal.
@@ -118,8 +118,8 @@ function TermsEn() {
       </ul>
       <h3>4. Purchases</h3>
       <ul>
-        <li>Payments are processed by third parties (e.g. Mercado Pago). We do not store card details.</li>
-        <li>Items are delivered as soon as the payment is confirmed.</li>
+        <li>Payments are made in USDC (a stablecoin), from your account's in-game crypto wallet. We do not accept PIX or cards.</li>
+        <li>Items are delivered as soon as the network confirms the transfer.</li>
         <li>
           Right of withdrawal (art. 49 of the Brazilian Consumer Protection Code — CDC): you may request a refund within 7 days of purchase if the purchased items have not been used yet. Write to{' '}
           {SUPPORT_EMAIL}.
@@ -145,7 +145,7 @@ function PrivacyEn() {
       <ul>
         <li>Sign-up: email, breeder name and password (stored encrypted, never as plain text).</li>
         <li>Game: your progress, purchases made and currency history.</li>
-        <li>Payments: amount, date and order status. Card or bank account details stay with the payment processor.</li>
+        <li>Payments: amount, date, order status and the blockchain transaction.</li>
         <li>Technical: IP address and session cookies, to keep you logged in and prevent fraud.</li>
       </ul>
       <h3>2. What we use it for</h3>
@@ -155,7 +155,7 @@ function PrivacyEn() {
         <li>Legitimate interest: preventing cheating and fraud, and improving the game.</li>
       </ul>
       <h3>3. Who we share it with</h3>
-      <p>Only with the payment processor (Mercado Pago), the email service and the hosting provider, to the extent necessary. We do not sell your data.</p>
+      <p>Only with the blockchain network access provider, the email service and the hosting provider, to the extent necessary. USDC transfers are publicly recorded on the blockchain. We do not sell your data.</p>
       <h3>4. Your rights</h3>
       <p>
         You can access, correct and delete your data. Account deletion is available in your Profile, under "Delete my account". Payment records are kept without personal identification for the legally required period.

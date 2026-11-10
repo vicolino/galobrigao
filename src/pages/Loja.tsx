@@ -2,7 +2,7 @@ import { WalletBar, confirmBuy } from '../components/BuyConfirm'
 import { useCallback, useEffect, useState } from 'react'
 import { api, ApiError, type CatalogItem, type EditionView } from '../api'
 import { Checkout } from '../components/Checkout'
-import { brl } from '../game/catalog'
+import { usdc } from '../game/catalog'
 import { RoosterSvg } from '../components/RoosterSvg'
 import { Modal, PageHead, Price, RarityTag, RoosterCard, Tabs, go } from '../components/ui'
 import { ACCESSORIES, BOXES, BREED_BY_ID, CORN_PACKS, ELECTION_ROOSTERS, FOOTBALL_ROOSTERS, BRAZIL_ROOSTERS, ITEMS, SET_BY_ID, SKIN_BY_ID, SPECIAL_ROOSTERS, RARITY, SLOTS, VIP } from '../game/data'
@@ -35,7 +35,7 @@ export function Loja({ tab: tabParam }: { tab?: string }) {
           { id: 'ferramentas', label: t('🧰 Ferramentas') },
           { id: 'itens', label: t('🍽️ Itens') },
           { id: 'caixas', label: t('🎁 Caixas') },
-          { id: 'ovos', label: t('💎 Comprar (R$)') },
+          { id: 'ovos', label: t('💎 Comprar (USDC)') },
           { id: 'trocar', label: t('🔁 Trocar') },
         ]}
       />
@@ -580,7 +580,7 @@ function Ovos() {
     <>
       {pubConfig?.mvp.on && (
         <div className="mvp-banner">
-          🎁 {tn('{modo} seu crédito de teste é {valor}. Use em qualquer compra abaixo — é por nossa conta!', { modo: <b>{t('MODO MVP:')}</b>, valor: <b>{brl(user?.mvpCreditCents ?? 0)}</b> })}
+          🎁 {tn('{modo} seu crédito de teste é {valor}. Use em qualquer compra abaixo — é por nossa conta!', { modo: <b>{t('MODO MVP:')}</b>, valor: <b>{usdc(user?.mvpCreditCents ?? 0)}</b> })}
         </div>
       )}
       {vip && (
@@ -597,7 +597,7 @@ function Ovos() {
             {isVip && <p className="pos tiny">{tp('Ativo · {n} dia restante', 'Ativo · {n} dias restantes', vipDays)}</p>}
           </div>
           <button className="btn btn-gold btn-lg" onClick={() => setBuying(vip)}>
-            {isVip ? t('Renovar') : t('Assinar')} · {brl(vip.priceCents)}
+            {isVip ? t('Renovar') : t('Assinar')} · {usdc(vip.priceCents)}
           </button>
         </div>
       )}
@@ -615,7 +615,7 @@ function Ovos() {
                 </b>
                 <span className="tiny muted">{tx(p.desc)}</span>
                 <button className="btn btn-gold full" onClick={() => setBuying(p)}>
-                  {brl(p.priceCents)}
+                  {usdc(p.priceCents)}
                 </button>
               </div>
             ))}
@@ -634,16 +634,16 @@ function Ovos() {
             {first && <span className="tiny first-x2">{t('🎁 +{n} na primeira compra', { n: p.ovos!.toLocaleString(locale()) })}</span>}
             <b className="egg-amount">{(p.ovos! + (p.bonus ?? 0)).toLocaleString(locale())}</b>
             {p.bonus ? <span className="pos tiny">{t('+{n} de bônus', { n: p.bonus.toLocaleString(locale()) })}</span> : <span className="tiny">&nbsp;</span>}
-            <span className="tiny muted">{t('{preco} por 100', { preco: brl(Math.round(p.priceCents / ((p.ovos! + (p.bonus ?? 0)) / 100))) })}</span>
+            <span className="tiny muted">{t('{preco} por 100', { preco: usdc(Math.round(p.priceCents / ((p.ovos! + (p.bonus ?? 0)) / 100))) })}</span>
             <button className="btn btn-primary full" onClick={() => setBuying(p)}>
-              {brl(p.priceCents)}
+              {usdc(p.priceCents)}
             </button>
           </div>
         ))}
       </div>
       {user && (
         <p className="tiny muted center">
-          {t('Gasto este mês: {gasto} de {limite} (limite ajustável no Perfil). Ovos de ouro são itens virtuais, sem saque.', { gasto: brl(user.limits.spentCents), limite: brl(user.limits.monthlyCents) })}
+          {t('Gasto este mês: {gasto} de {limite} (limite ajustável no Perfil). Ovos de ouro são itens virtuais, sem saque.', { gasto: usdc(user.limits.spentCents), limite: usdc(user.limits.monthlyCents) })}
         </p>
       )}
       <Checkout

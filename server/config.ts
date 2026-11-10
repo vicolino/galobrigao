@@ -27,7 +27,7 @@ const num = (v: unknown, min: number, max: number, name: string) => {
 export function validateConfig(input: AppConfig): AppConfig {
   const c = mergeConfig(input)
   for (const [id, o] of Object.entries(c.catalog)) {
-    o.priceCents = Math.round(num(o.priceCents, 100, 100000, t('Preço de {id} (centavos)', { id })))
+    o.priceCents = Math.round(num(o.priceCents, 10, 100000, t('Preço de {id} (centavos de USDC)', { id })))
     if (o.ovos !== undefined) o.ovos = Math.round(num(o.ovos, 0, 100000, t('Ovos de {id}', { id })))
     if (o.bonus !== undefined) o.bonus = Math.round(num(o.bonus, 0, 100000, t('Bônus de {id}', { id })))
     o.active = !!o.active
@@ -67,7 +67,7 @@ export function validateConfig(input: AppConfig): AppConfig {
   c.deposit.minUsdc = num(c.deposit.minUsdc, 1, 1000, t('Depósito mínimo (USDC)'))
   c.deposit.dailyCapUsdc = num(c.deposit.dailyCapUsdc, c.deposit.minUsdc, 100_000, t('Limite diário de depósito (USDC)'))
   // 💵 Venda de USDC por PIX
-  c.usdcSale.on = !!c.usdcSale.on
+  c.usdcSale.on = false // desativada: tudo é cripto
   c.usdcSale.autoRate = !!c.usdcSale.autoRate
   c.usdcSale.marginPct = num(c.usdcSale.marginPct, 0, 100, t('Margem da venda de USDC (%)'))
   c.usdcSale.brlPerUsdc = num(c.usdcSale.brlPerUsdc, 1, 100, t('Câmbio base: BRL por USDC'))

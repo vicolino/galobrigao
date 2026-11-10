@@ -22,14 +22,14 @@ import { FeiraError, feiraDeleteUser, handleFeira } from './feira'
 import { AluguelError, aluguelDeleteUser, guardRentals, handleAluguel } from './aluguel'
 import { BetError, creditSave, handleBets, migrateOldBets, plausibleChips, takeCredits, tickBets } from './bets'
 import { applyBetCredit } from '../src/game/bets'
-import { fetchRemoteStatus, parseMpWebhook, providerName, startPayment } from './payments'
+import { fetchRemoteStatus, parseMpWebhook, providerName } from './payments'
 import { t, tx, withLang, type Lang } from '../src/i18n'
 import { appName } from '../src/brand'
 import { SKIN_BY_ID } from '../src/game/data'
 import { grantPassPremium, hasPassPremium, mergeClientPass, PASS_DAILY_XP } from '../src/game/pass'
-import { createUsdcSale, deliverUsdcSales, ensureWalletAddress, handleWeb3, markUsdcSalePaid, usdcBoughtToday, Web3Error, web3Enabled } from './web3'
-import { effectiveBrlPerUsdc } from './usdcRate'
+import { deliverUsdcSales, handleWeb3, markUsdcSalePaid, Web3Error, web3Enabled } from './web3'
 import { handleDeposito } from './deposito'
+import { payOrderWithUsdc, reconcileUsdcOrders, settleUsdcOrder } from './usdcPay'
 import { afterShop, deleteOfferData, firstPurchaseSku, handleOfertas, isFirstPurchase, OfertasError, withStock } from './ofertas'
 import { CriacaoError, handleCriacao } from './criacao'
 import { arenaDeleteUser, EconomiaError, handleEconomia } from './economia'
@@ -100,7 +100,10 @@ function grantMvp(u: UserRow): UserRow {
   return r.changes ? { ...u, mvp_credit_cents: (u.mvp_credit_cents ?? 0) + live.mvp.creditCents, mvp_granted_at: Date.now() } : u
 }
 
-const paymentsLive = () => providerName() !== 'sandbox' || sandboxAllowed()
+// 💵 A rinha é full cripto: Pix e cartão (Mercado Pago) estão DESATIVADOS. Tudo é pago em USDC.
+// O código do Mercado Pago (server/payments.ts, webhook) fica só para terminar pedidos antigos.
+const FIAT_PAYMENTS = false
+const paymentsLive = () => FIAT_PAYMENTS && (providerName() !== 'sandbox' || sandboxAllowed())
 
 /** Versão publicada (dist/build.json), relida no máximo a cada 30 s. */
 let buildCache = { id: null as string | null, at: 0 }
@@ -123,6 +126,11 @@ function blockIfMaintenance(u: UserRow) {
 /** Consulta o provedor de pagamento e entrega se já foi pago. */
 async function recheckOrder(order: OrderRow): Promise<OrderRow> {
   if (order.status !== 'pendente') return order
+  // 💵 Pago em USDC: confere a tx na chain
+  if (order.method === 'usdc') {
+    await settleUsdcOrder(order, fulfill).catch((e) => console.error('[usdc-pay] recheck', e instanceof Error ? e.message.split('\n')[0] : e))
+    return getDb().prepare('SELECT * FROM orders WHERE id = ?').get(order.id) as unknown as OrderRow
+  }
   if (Date.now() - order.created_at > 30 * 60_000 && order.method === 'pix') {
     getDb().prepare("UPDATE orders SET status = 'expirado' WHERE id = ?").run(order.id)
     return { ...order, status: 'expirado' }
@@ -150,7 +158,7 @@ function applyPendingLimit(u: UserRow): UserRow {
 function spentThisMonth(userId: string) {
   const d = new Date()
   const start = new Date(d.getFullYear(), d.getMonth(), 1).getTime()
-  const row = getDb().prepare("SELECT COALESCE(SUM(amount_cents),0) AS s FROM orders WHERE user_id = ? AND status = 'pago' AND provider != 'credito' AND paid_at >= ?").get(userId, start) as { s: number }
+  const row = getDb().prepare("SELECT COALESCE(SUM(amount_cents),0) AS s FROM orders WHERE user_id = ? AND status = 'pago' AND method = 'usdc' AND paid_at >= ?").get(userId, start) as { s: number }
   return row.s
 }
 
@@ -335,6 +343,14 @@ timers.__betsTimer = setInterval(() => {
   }
 }, 5_000)
 timers.__betsTimer.unref?.()
+
+// 💵 Reconciliador dos pagamentos em USDC: termina pedidos assinados que ficaram sem confirmação.
+const usdcTimer = globalThis as unknown as { __usdcPayTimer?: ReturnType<typeof setInterval> }
+if (usdcTimer.__usdcPayTimer) clearInterval(usdcTimer.__usdcPayTimer)
+usdcTimer.__usdcPayTimer = setInterval(() => {
+  reconcileUsdcOrders(fulfill).catch((e) => console.error('[usdc-pay]', e))
+}, 60_000)
+usdcTimer.__usdcPayTimer.unref?.()
 
 export async function handle(req: Req, res: Res) {
   const url = new URL(req.url ?? '/', 'http://localhost')
@@ -797,75 +813,21 @@ export async function handle(req: Req, res: Res) {
         }
       }
 
-      if (!paymentsLive()) throw new HttpError(503, t('Pix e cartão ainda não estão disponíveis. Use seu crédito de teste!'))
-      const payMethod = b.method === 'cartao' ? 'cartao' : 'pix'
-      const spent = spentThisMonth(u.id)
-      if (spent + sku.priceCents > u.monthly_limit_cents)
-        throw new HttpError(402, t('Essa compra passa do seu limite mensal de R$ {valor}. Você pode ajustar o limite no Perfil.', { valor: (u.monthly_limit_cents / 100).toFixed(2) }))
-      const order: OrderRow = {
-        id: randomUUID(),
-        user_id: u.id,
-        sku: sku.id,
-        amount_cents: sku.priceCents,
-        method: payMethod,
-        provider: providerName(),
-        provider_ref: null,
-        status: 'pendente',
-        pix_code: null,
-        pix_qr: null,
-        checkout_url: null,
-        created_at: Date.now(),
-        paid_at: null,
-        fulfilled_at: null,
-      }
-      // Nome do item na tela do Mercado Pago no idioma do comprador
-      const pay = await startPayment(order, { ...sku, name: tx(sku.name, reqLang(req)) }, u)
-      order.provider_ref = pay.providerRef
-      order.pix_code = pay.pixCode ?? null
-      order.pix_qr = pay.pixQr ?? null
-      order.checkout_url = pay.checkoutUrl ?? null
-      db.prepare('INSERT INTO orders (id, user_id, sku, amount_cents, method, provider, provider_ref, status, pix_code, pix_qr, checkout_url, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
-        order.id, order.user_id, order.sku, order.amount_cents, order.method, order.provider, order.provider_ref, order.status, order.pix_code, order.pix_qr, order.checkout_url, order.created_at,
-      )
-      return json(res, 201, { order: publicOrder(order) })
+      // 💵 Pagamento em USDC, direto da carteira cripto do jogador (Pix e cartão desativados)
+      if (b.method !== 'usdc') throw new HttpError(410, t('Pix e cartão foram desativados. Pague com USDC da sua carteira cripto.'))
+      if (!web3Enabled()) throw new HttpError(503, t('Carteira cripto indisponível no momento.'))
+      if (spentThisMonth(u.id) + sku.priceCents > u.monthly_limit_cents)
+        throw new HttpError(402, t('Essa compra passa do seu limite mensal de {valor} USDC. Você pode ajustar o limite no Perfil.', { valor: (u.monthly_limit_cents / 100).toFixed(2) }))
+      const order = await payOrderWithUsdc(u, sku, fulfill)
+      return json(res, order.status === 'pago' ? 201 : 202, { order: publicOrder(order) })
     }
 
-    // 💵 Comprar USDC com PIX (a casa é a contraparte; entrega on-chain após o pagamento)
-    if (path === '/api/web3/usdc-buy' && method === 'POST') {
-      const u = needUser(req)
-      const b = await readBody(req)
-      blockIfMaintenance(u)
-      assertVerified(u)
-      if (!web3Enabled()) throw new HttpError(503, t('Carteira cripto indisponível no momento.'))
-      if (!live.usdcSale.on) throw new HttpError(400, t('A compra de USDC está indisponível no momento.'))
-      if (u.kyc_status !== 'verified') throw new HttpError(403, t('Comprar USDC exige verificação de identidade (KYC).'))
-      if (!paymentsLive()) throw new HttpError(503, t('Pix ainda não está disponível.'))
-      if (!loadSave(u.id)) throw new HttpError(409, t('Crie seu galinheiro antes de comprar'))
-      if (limited(`checkout:${u.id}`, 10, 600_000)) throw new HttpError(429, t('Muitos pedidos seguidos. Espere alguns minutos.'))
-      const cfg = live.usdcSale
-      const usdc = Math.round(Number(b.usdc) * 100) / 100
-      if (!Number.isFinite(usdc) || usdc < cfg.minUsdc || usdc > cfg.maxUsdc) throw new HttpError(400, t('Quantidade inválida (de {min} a {max} USDC).', { min: cfg.minUsdc, max: cfg.maxUsdc }))
-      if (usdcBoughtToday(u.id) + usdc > cfg.dailyCapUsdc) throw new HttpError(429, t('Limite diário de compra de USDC atingido ({n} por dia).', { n: cfg.dailyCapUsdc }))
-      const priceCents = Math.round(usdc * effectiveBrlPerUsdc() * (1 + cfg.marginPct / 100) * 100)
-      if (spentThisMonth(u.id) + priceCents > u.monthly_limit_cents)
-        throw new HttpError(402, t('Essa compra passa do seu limite mensal de R$ {valor}. Você pode ajustar o limite no Perfil.', { valor: (u.monthly_limit_cents / 100).toFixed(2) }))
-      const to = ensureWalletAddress(u.id)
-      const order: OrderRow = { id: randomUUID(), user_id: u.id, sku: 'usdc', amount_cents: priceCents, method: 'pix', provider: providerName(), provider_ref: null, status: 'pendente', pix_code: null, pix_qr: null, checkout_url: null, created_at: Date.now(), paid_at: null, fulfilled_at: null }
-      const sku: Sku = { id: 'usdc', kind: 'ovos', name: `${usdc} USDC`, emoji: '💵', desc: '', priceCents }
-      const pay = await startPayment(order, sku, u)
-      order.provider_ref = pay.providerRef
-      order.pix_code = pay.pixCode ?? null
-      order.pix_qr = pay.pixQr ?? null
-      order.checkout_url = pay.checkoutUrl ?? null
-      db.prepare('INSERT INTO orders (id, user_id, sku, amount_cents, method, provider, provider_ref, status, pix_code, pix_qr, checkout_url, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
-        order.id, order.user_id, order.sku, order.amount_cents, order.method, order.provider, order.provider_ref, order.status, order.pix_code, order.pix_qr, order.checkout_url, order.created_at,
-      )
-      createUsdcSale(order.id, u.id, Math.round(usdc * 1e6), to)
-      return json(res, 201, { order: publicOrder(order), usdc, priceCents })
-    }
+    // 💵 Comprar USDC com PIX: DESATIVADO (a rinha é full cripto; o jogador traz o próprio USDC)
+    if (path === '/api/web3/usdc-buy' && method === 'POST') throw new HttpError(410, t('A compra de USDC com Pix foi desativada. Envie USDC para o endereço da sua carteira.'))
 
     if (path === '/api/orders' && method === 'GET') {
       const u = needUser(req)
+      await reconcileUsdcOrders(fulfill, u.id).catch(() => undefined)
       const rows = db.prepare('SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC LIMIT 50').all(u.id) as unknown as OrderRow[]
       return json(res, 200, { orders: rows.map(publicOrder) })
     }

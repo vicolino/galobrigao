@@ -41,9 +41,9 @@ export interface ApiOrder {
   sku: string
   name: string
   amountCents: number
-  method: 'pix' | 'cartao' | 'credito'
+  method: 'pix' | 'cartao' | 'credito' | 'usdc'
   status: 'pendente' | 'pago' | 'expirado' | 'recusado'
-  provider: 'sandbox' | 'mercadopago'
+  provider: 'sandbox' | 'mercadopago' | 'credito' | 'usdc'
   pixCode: string | null
   pixQr: string | null
   checkoutUrl: string | null
@@ -131,7 +131,7 @@ export const api = {
   deleteSave: () => call('/save', { method: 'DELETE' }),
   startFree: (avatar: string) => call<{ rev: number; state: GameState }>('/onboarding/free', { method: 'POST', body: { avatar } }),
   catalog: () => call<{ items: CatalogItem[]; provider: string; firstBonus?: boolean }>('/catalog'),
-  checkout: (sku: string, method: 'pix' | 'cartao' | 'credito') => call<{ order: ApiOrder }>('/checkout', { method: 'POST', body: { sku, method } }),
+  checkout: (sku: string, method: 'usdc' | 'credito') => call<{ order: ApiOrder }>('/checkout', { method: 'POST', body: { sku, method } }),
   order: (id: string) => call<{ order: ApiOrder }>(`/orders/${id}`),
   simulate: (id: string) => call<{ order: ApiOrder }>(`/orders/${id}/simulate`, { method: 'POST' }),
   orders: () => call<{ orders: ApiOrder[] }>('/orders'),
@@ -241,7 +241,6 @@ export const api = {
   testUsdc: () => call<{ ok: boolean; usdc: number; hash: string }>('/web3/test-usdc', { method: 'POST' }),
   depositEggs: (amount: string) => call<{ rev?: number; state?: GameState; pending?: boolean; message?: string; deposit: DepositView }>('/web3/deposit-eggs', { method: 'POST', body: { amount } }),
   // 💎 Edições Limitadas de Raros (compra em ovos → NFT na carteira)
-  buyUsdc: (usdc: number) => call<{ order: ApiOrder; usdc: number; priceCents: number }>('/web3/usdc-buy', { method: 'POST', body: { usdc } }),
   editions: () => call<{ editions: EditionView[]; owned: string[] }>('/web3/editions'),
   buyEdition: (id: string) => call<{ rev: number; state: GameState; nft: { tokenId: number }; tx: Web3Tx }>('/web3/editions/buy', { method: 'POST', body: { id } }),
   market: () => call<{ listings: MarketListing[]; feeBps: number }>('/market'),

@@ -3,7 +3,7 @@ import { api, type AdminActivity, type AdminWeb3, type EditionView, type KycStat
 import { APP_NAME } from '../brand'
 import { Modal, Picker } from '../components/ui'
 import { RoosterSvg } from '../components/RoosterSvg'
-import { CATALOG, brl } from '../game/catalog'
+import { CATALOG, usdc, orderMoney } from '../game/catalog'
 import type { AppConfig } from '../game/config'
 import { useGame } from '../game/store'
 import { OfertasAdmin } from './OfertasAdmin'
@@ -124,9 +124,9 @@ function Overview() {
       ) : (
         <>
           <div className="kpi-grid">
-            <Kpi label={t('Receita ({n} dias)', { n: days })} value={brl(d.kpis.revenueCents)} current={d.kpis.revenueCents} prev={d.kpis.revenuePrevCents} />
-            <Kpi label={t('Receita hoje')} value={brl(d.kpis.revenueTodayCents)} />
-            <Kpi label={t('Gasto médio por pagante')} value={brl(d.kpis.arppuCents)} hint={t('Receita do período ÷ jogadores que pagaram no período')} />
+            <Kpi label={t('Receita ({n} dias)', { n: days })} value={usdc(d.kpis.revenueCents)} current={d.kpis.revenueCents} prev={d.kpis.revenuePrevCents} />
+            <Kpi label={t('Receita hoje')} value={usdc(d.kpis.revenueTodayCents)} />
+            <Kpi label={t('Gasto médio por pagante')} value={usdc(d.kpis.arppuCents)} hint={t('Receita do período ÷ jogadores que pagaram no período')} />
             <Kpi label={t('Conversão (já pagou)')} value={pct(d.kpis.conversion)} hint={t('Jogadores que já compraram ÷ total de contas')} />
             <Kpi label={t('Novas contas ({n} dias)', { n: days })} value={n(d.kpis.newUsers)} current={d.kpis.newUsers} prev={d.kpis.newUsersPrev} />
             <Kpi label={t('Ativos por dia (média)')} value={n(d.kpis.avgDau)} current={d.kpis.avgDau} prev={d.kpis.avgDauPrev} />
@@ -146,7 +146,7 @@ function Overview() {
           )}
 
           <div className="admin-two">
-            <DailyBars title={t('Receita por dia')} data={d.series.map((s) => ({ day: s.day, value: s.revenueCents }))} format={(v) => brl(v)} />
+            <DailyBars title={t('Receita por dia')} data={d.series.map((s) => ({ day: s.day, value: s.revenueCents }))} format={(v) => usdc(v)} />
             <DailyBars title={t('Jogadores ativos por dia')} data={d.series.map((s) => ({ day: s.day, value: s.active }))} format={n} />
             <DailyBars title={t('Novas contas por dia')} data={d.series.map((s) => ({ day: s.day, value: s.signups }))} format={n} />
             <DailyBars title={t('Desafios entre jogadores por dia')} data={d.series.map((s) => ({ day: s.day, value: s.pvp }))} format={n} />
@@ -155,16 +155,16 @@ function Overview() {
           <div className="admin-two">
             <div className="card">
               <h3>{t('Receita por produto')}</h3>
-              <HBars rows={d.bySku.map((s) => ({ label: tx(s.name), value: s.cents, extra: <span className="tiny muted">· {tp('{n} venda', '{n} vendas', s.count)}</span> }))} format={brl} />
+              <HBars rows={d.bySku.map((s) => ({ label: tx(s.name), value: s.cents, extra: <span className="tiny muted">· {tp('{n} venda', '{n} vendas', s.count)}</span> }))} format={usdc} />
             </div>
             <div className="card">
-              <h3>{t('Pix x Cartão')}</h3>
+              <h3>{t('Forma de pagamento')}</h3>
               <SplitBar
                 parts={[
-                  { label: 'Pix', value: d.byMethod.pix?.cents ?? 0, color: C1 },
-                  { label: t('Cartão'), value: d.byMethod.cartao?.cents ?? 0, color: C2 },
+                  { label: 'USDC', value: d.byMethod.usdc?.cents ?? 0, color: C1 },
+                  { label: t('Pix/cartão (antigos)'), value: (d.byMethod.pix?.cents ?? 0) + (d.byMethod.cartao?.cents ?? 0), color: C2 },
                 ]}
-                format={brl}
+                format={usdc}
               />
               <h3 style={{ marginTop: 18 }}>{t('Funil de jogadores (todo o período)')}</h3>
               <HBars
@@ -181,11 +181,11 @@ function Overview() {
           <div className="kpi-grid small">
             <Kpi label={t('Contas no total')} value={n(d.kpis.totalUsers)} />
             <Kpi label={t('Pagantes (sempre)')} value={n(d.kpis.payingUsersAll)} />
-            <Kpi label={t('Receita total')} value={brl(d.kpis.revenueAllCents)} />
+            <Kpi label={t('Receita total')} value={usdc(d.kpis.revenueAllCents)} />
             <Kpi label={t('Pedidos pendentes')} value={n(d.kpis.pendingOrders)} />
             <Kpi label={t('Vendas ({n} dias)', { n: days })} value={n(d.kpis.orders)} />
             <Kpi label={t('Contas bloqueadas')} value={n(d.kpis.banned)} />
-            <Kpi label={t('Gasto com crédito MVP ({n} dias)', { n: days })} value={brl(d.kpis.creditSpentCents)} hint={t('Compras pagas com crédito de teste — não entram na receita')} />
+            <Kpi label={t('Gasto com crédito MVP ({n} dias)', { n: days })} value={usdc(d.kpis.creditSpentCents)} hint={t('Compras pagas com crédito de teste — não entram na receita')} />
           </div>
           {d.origins && <Origins rows={d.origins} />}
           <OfertasAdmin days={days} />
@@ -436,7 +436,7 @@ function Users() {
                 <td className="right hide-m">{r.roosters}</td>
                 <td className="right hide-m">{r.maxLevel || '—'}</td>
                 <td className="right">{n(r.ovos)}</td>
-                <td className="right">{r.spent ? brl(r.spent) : '—'}</td>
+                <td className="right">{r.spent ? usdc(r.spent) : '—'}</td>
                 <td>{r.banned_at ? <span className="status-perdeu tiny">{t('⛔ Bloqueado')}</span> : r.spent ? <span className="status-ganhou tiny">{t('💎 Pagante')}</span> : null}</td>{/* i18n-ok */}
               </tr>
             ))}
@@ -490,8 +490,8 @@ function UserDetail({ id, onClose, onChange }: { id: string | null; onClose: () 
           <div className="ud-stats cols-4">
             <Stat label={t('📅 Dias jogados')} value={n(d.activeDays)} />
             <Stat label={t('🤝 Desafios')} value={n(d.pvpFights)} />
-            <Stat label={t('💳 Limite mensal')} value={brl(d.user.monthlyLimitCents)} />
-            <Stat label={t('🎁 Crédito MVP')} value={brl(d.user.mvpCreditCents)} />
+            <Stat label={t('💳 Limite mensal')} value={usdc(d.user.monthlyLimitCents)} />
+            <Stat label={t('🎁 Crédito MVP')} value={usdc(d.user.mvpCreditCents)} />
           </div>
           {d.user.bannedAt && (
             <div className="warn">
@@ -546,7 +546,7 @@ function UserDetail({ id, onClose, onChange }: { id: string | null; onClose: () 
                     <td className="tiny">{dt(o.created_at)}</td>
                     <td>{CATALOG.find((c) => c.id === o.sku)?.name ?? o.sku}</td>
                     <td className="tiny">{methodLabel(o.method)}</td>
-                    <td className="right">{brl(o.amount_cents)}</td>
+                    <td className="right">{orderMoney(o.amount_cents, o.method)}</td>
                     <td>
                       <span className={`tiny status-${o.status === 'pago' ? 'ganhou' : o.status === 'pendente' ? 'pendente' : 'perdeu'}`}>{statusLabel(o.status)}</span>{/* i18n-ok */}
                     </td>
@@ -570,7 +570,7 @@ function UserDetail({ id, onClose, onChange }: { id: string | null; onClose: () 
                   <input type="number" value={milho} onChange={(e) => setMilho(Number(e.target.value))} />
                 </label>
                 <label className="field">
-                  <span>{t('🎁 Crédito MVP (R$)')}</span>
+                  <span>{t('🎁 Crédito MVP (USDC)')}</span>
                   <input type="number" step="1" value={credit} onChange={(e) => setCredit(Number(e.target.value))} />
                 </label>
                 <label className="field grant-reason">
@@ -650,7 +650,7 @@ function UserDetail({ id, onClose, onChange }: { id: string | null; onClose: () 
   )
 }
 
-const methodLabel = (m: string) => (m === 'pix' ? '⚡ Pix' : m === 'credito' ? t('🎁 Crédito MVP') : t('💳 Cartão'))
+const methodLabel = (m: string) => (m === 'usdc' ? '💵 USDC' : m === 'pix' ? '⚡ Pix' : m === 'credito' ? t('🎁 Crédito MVP') : t('💳 Cartão'))
 
 const USER_FILTER_LABEL: Record<string, string> = { todos: t('Todos'), pagantes: t('Pagantes'), bloqueados: t('Bloqueados') }
 
@@ -980,7 +980,7 @@ function Orders() {
         </div>
       </div>
       <p className="tiny muted">
-        {tp('{n} pedido na lista · pagos somam {total}', '{n} pedidos na lista · pagos somam {total}', rows.length, { total: brl(total) })}
+        {tp('{n} pedido na lista · pagos somam {total}', '{n} pedidos na lista · pagos somam {total}', rows.length, { total: usdc(total) })}
       </p>
       <div className="card">
         <table className="table admin-table">
@@ -1005,7 +1005,7 @@ function Orders() {
                 <td className="tiny hide-m">
                   {methodLabel(o.method)} <span className="muted">({o.provider})</span>
                 </td>
-                <td className="right">{brl(o.amount_cents)}</td>
+                <td className="right">{orderMoney(o.amount_cents, o.method)}</td>
                 <td>
                   <span className={`tiny status-${o.status === 'pago' ? 'ganhou' : o.status === 'pendente' ? 'pendente' : 'perdeu'}`}>{statusLabel(o.status)}</span>{/* i18n-ok */}
                 </td>
@@ -1036,7 +1036,7 @@ function Orders() {
 
 // ---------------- Configurações ----------------
 
-type CfgGroup = Exclude<keyof AppConfig, 'catalog' | 'announcement' | 'maintenance'>
+type CfgGroup = Exclude<keyof AppConfig, 'catalog' | 'announcement' | 'maintenance' | 'priceUnit'>
 type CfgSection = 'geral' | 'loja' | 'recompensas' | 'desafios' | 'apostas' | 'drops' | 'deposito' | 'usdc' | 'economia'
 
 /** Grupos de configuração de cada aba (para contar alterações). */
@@ -1048,7 +1048,7 @@ const CFG_SECTIONS: { id: CfgSection; label: string; groups: (keyof AppConfig)[]
   { id: 'apostas', label: t('🎲 Apostas'), groups: ['bets'] },
   { id: 'drops', label: t('🎁 Drops da Arena'), groups: ['drops'] },
   { id: 'deposito', label: t('💵 Depósito USDC'), groups: ['deposit'] },
-  { id: 'usdc', label: t('💵 Venda de USDC (PIX)'), groups: ['usdcSale'] },
+  // 💵 Venda de USDC por PIX: desativada (a rinha é full cripto), aba escondida
   { id: 'economia', label: t('🛡️ Economia e segurança'), groups: ['economy'] },
 ]
 
@@ -1061,7 +1061,8 @@ function Config() {
   const [usdcRate, setUsdcRate] = useState<number | null>(null)
   const [tab, setTab] = useState<CfgSection>(() => {
     try {
-      return (localStorage.getItem('gb.admin.cfgTab') as CfgSection) || 'geral'
+      const v = localStorage.getItem('gb.admin.cfgTab') as CfgSection | null
+      return v && v !== 'usdc' ? v : 'geral'
     } catch {
       return 'geral'
     }
@@ -1080,7 +1081,7 @@ function Config() {
   if (!cfg || !defaults) return <p className="muted">{t('Carregando...')}</p>
   const base = JSON.parse(saved) as AppConfig
   const dirty = JSON.stringify(cfg) !== saved
-  const set = <K extends keyof AppConfig>(k: K, v: Partial<AppConfig[K]>) => setCfg({ ...cfg, [k]: { ...cfg[k], ...v } })
+  const set = <K extends Exclude<keyof AppConfig, 'priceUnit'>>(k: K, v: Partial<AppConfig[K]>) => setCfg({ ...cfg, [k]: { ...cfg[k], ...v } })
   const setSku = (id: string, v: Partial<AppConfig['catalog'][string]>) => setCfg({ ...cfg, catalog: { ...cfg.catalog, [id]: { ...cfg.catalog[id], ...v } } })
   const go = (id: CfgSection) => {
     setTab(id)
@@ -1197,7 +1198,7 @@ function Config() {
               <div className="card cfg-section">
                 <h3>{t('🎁 Modo MVP (crédito de teste)')}</h3>
                 <CfgSwitch on={cfg.mvp.on} onChange={(v) => set('mvp', { on: v })} label={t('Ligado — cada conta recebe o crédito uma única vez (no cadastro ou no próximo acesso) e pode gastar na loja sem pagar')} />
-                <div className="cfg-grid">{num('mvp', 'creditCents', t('Crédito por conta'), { unit: 'R$', step: 10, scale: 100 })}</div>
+                <div className="cfg-grid">{num('mvp', 'creditCents', t('Crédito por conta'), { unit: 'USDC', step: 1, scale: 100 })}</div>
                 <p className="tiny muted">{t('Compras com crédito não contam como receita. Mudar o valor vale só para quem ainda não recebeu.')}</p>
               </div>
 
@@ -1234,13 +1235,13 @@ function Config() {
           {tab === 'loja' && (
             <div className="card cfg-section">
               <h3>{t('💎 Produtos e preços')}</h3>
-              <p className="tiny muted cfg-desc">{t('Pacotes vendidos com dinheiro. Desmarque "À venda" para tirar da loja.')}</p>
+              <p className="tiny muted cfg-desc">{t('Pacotes vendidos em USDC. Desmarque "À venda" para tirar da loja.')}</p>
               <div className="table-scroll">
                 <table className="table cfg-table">
                   <thead>
                     <tr>
                       <th>{t('Produto')}</th>
-                      <th className="right">{t('Preço (R$)')}</th>
+                      <th className="right">{t('Preço (USDC)')}</th>
                       <th className="right">{t('Ovos')}</th>
                       <th className="right">{t('Bônus')}</th>
                       <th className="right">{t('À venda')}</th>
@@ -1431,7 +1432,7 @@ function Config() {
                   {num('economy', 'arenaMilhoCapPerDay', t('Teto de milho da Arena por dia'), { unit: '🏟️', step: 10000, hint: t('Acima do teto a luta rende só 15% de milho (ovos/XP/drop seguem normais). 0 = sem limite') })}
                   {num('economy', 'milhoSinkMult', t('Custo de milho na loja (×)'), { unit: '💹', step: 0.1, hint: t('Multiplica o preço em milho de caixas e mercado de galos. 1 = sem mudança; 1,5 = +50% (milho vale mais, contém inflação). Ex.: caixa 1.200 → {n}', { n: Math.round(1200 * (cfg.economy.milhoSinkMult ?? 1)).toLocaleString('pt-BR') }) })}
                   {num('economy', 'ovoToMilhoMult', t('Taxa de troca ovo→milho (×)'), { unit: '💹', step: 0.1, hint: t('Multiplica o milho recebido ao trocar ovos. 1 = sem mudança; 0,6 = −40%. Ex.: 100 ovos → {n} milho', { n: Math.round(25000 * (cfg.economy.ovoToMilhoMult ?? 1)).toLocaleString('pt-BR') }) })}
-                  {num('economy', 'defaultSpendLimitCents', t('Limite de gasto padrão (R$)'), { unit: 'R$', step: 10, scale: 100, hint: t('Vale para contas novas') })}
+                  {num('economy', 'defaultSpendLimitCents', t('Limite de gasto padrão (USDC)'), { unit: 'USDC', step: 10, scale: 100, hint: t('Vale para contas novas') })}
                 </div>
               </div>
               <div className="card cfg-section">

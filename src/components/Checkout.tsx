@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { api, type ApiOrder, type CatalogItem } from '../api'
-import { brl } from '../game/catalog'
+import { api, type ApiOrder, type CatalogItem, type DepositInfo } from '../api'
+import { usdc } from '../game/catalog'
 import { sfx } from '../game/sound'
 import { useGame } from '../game/store'
 import { Modal } from './ui'
@@ -8,28 +8,41 @@ import { t, tn, tx } from '../i18n'
 
 type Step = 'metodo' | 'aguardando' | 'pago' | 'erro'
 
-/** Pagamento de qualquer produto do catálogo via Pix ou cartão. */
+/** Pagamento de qualquer produto do catálogo em USDC, direto da carteira cripto (Pix e cartão desativados). */
 export function Checkout({ item, onClose, onPaid }: { item: CatalogItem | null; onClose: () => void; onPaid?: (o: ApiOrder) => void }) {
-  const { actions, toast, provider, user, pubConfig, paymentsLive } = useGame()
+  const { actions, user, pubConfig } = useGame()
   const mvp = !!pubConfig?.mvp.on
+  const web3 = !!pubConfig?.web3
   const credit = user?.mvpCreditCents ?? 0
   const [step, setStep] = useState<Step>('metodo')
   const [order, setOrder] = useState<ApiOrder | null>(null)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
-  const [copied, setCopied] = useState(false)
+  const [wallet, setWallet] = useState<DepositInfo | null>(null)
+  const [walletErr, setWalletErr] = useState(false)
   const poll = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  const loadWallet = () => {
+    if (!web3) return
+    setWalletErr(false)
+    api
+      .deposit()
+      .then(setWallet)
+      .catch(() => setWalletErr(true))
+  }
 
   useEffect(() => {
     if (item) {
       setStep('metodo')
       setOrder(null)
       setError('')
+      loadWallet()
     }
     return () => {
       if (poll.current) clearInterval(poll.current)
     }
-  }, [item])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [item, web3])
 
   const paid = async (o: ApiOrder) => {
     if (poll.current) clearInterval(poll.current)
@@ -49,13 +62,13 @@ export function Checkout({ item, onClose, onPaid }: { item: CatalogItem | null; 
         if (r.order.status === 'pago') void paid(r.order)
         else if (r.order.status !== 'pendente') {
           if (poll.current) clearInterval(poll.current)
-          setError(r.order.status === 'expirado' ? t('O Pix expirou. Gere um novo.') : t('Pagamento recusado.'))
+          setError(t('A rede recusou a transferência. Nenhum USDC saiu e nada foi cobrado.'))
           setStep('erro')
         }
       } catch {
         /* tenta de novo */
       }
-    }, 3000)
+    }, 4000)
   }
 
   const payWithCredit = async () => {
@@ -72,31 +85,21 @@ export function Checkout({ item, onClose, onPaid }: { item: CatalogItem | null; 
     }
   }
 
-  const start = async (method: 'pix' | 'cartao') => {
+  const payWithUsdc = async () => {
     if (!item) return
     setBusy(true)
     try {
-      const r = await api.checkout(item.id, method)
-      setOrder(r.order)
-      setStep('aguardando')
-      if (r.order.checkoutUrl) window.open(r.order.checkoutUrl, '_blank', 'noopener')
-      watch(r.order)
+      const r = await api.checkout(item.id, 'usdc')
+      if (r.order.status === 'pago') await paid(r.order)
+      else {
+        // Assinada e enviada, esperando a rede confirmar
+        setOrder(r.order)
+        setStep('aguardando')
+        watch(r.order)
+      }
     } catch (e) {
       setError((e as Error).message)
       setStep('erro')
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  const simulate = async () => {
-    if (!order) return
-    setBusy(true)
-    try {
-      const r = await api.simulate(order.id)
-      await paid(r.order)
-    } catch (e) {
-      toast((e as Error).message, 'erro')
     } finally {
       setBusy(false)
     }
@@ -107,8 +110,16 @@ export function Checkout({ item, onClose, onPaid }: { item: CatalogItem | null; 
     onClose()
   }
 
+  const priceUsdc = item ? item.priceCents / 100 : 0
+  const balance = wallet?.balance ?? null
+  const enough = balance != null && balance + 1e-9 >= priceUsdc
+  const goWallet = () => {
+    close()
+    window.location.hash = '#/carteira'
+  }
+
   return (
-    <Modal open={!!item} onClose={close} title={'💳 ' + t('Finalizar compra')}>
+    <Modal open={!!item} onClose={close} title={'💵 ' + t('Finalizar compra')}>
       {item && (
         <div className="checkout">
           <div className="co-item">
@@ -117,7 +128,7 @@ export function Checkout({ item, onClose, onPaid }: { item: CatalogItem | null; 
               <b>{tx(item.name)}</b>
               <div className="tiny muted">{tx(item.desc)}</div>
             </div>
-            <b className="co-price">{brl(item.priceCents)}</b>
+            <b className="co-price">{usdc(item.priceCents)}</b>
           </div>
 
           {step === 'metodo' && (
@@ -127,78 +138,45 @@ export function Checkout({ item, onClose, onPaid }: { item: CatalogItem | null; 
                   <span className="big-emoji">🎁</span>
                   <b>{t('Usar crédito de teste')}</b>
                   <span className="tiny">
-                    {tn('Saldo: {v}', { v: <b key="v">{brl(credit)}</b> })}
-                    {credit >= item.priceCents ? t(' → fica {v}', { v: brl(credit - item.priceCents) }) : t(' · saldo insuficiente')}
+                    {tn('Saldo: {v}', { v: <b key="v">{usdc(credit)}</b> })}
+                    {credit >= item.priceCents ? t(' → fica {v}', { v: usdc(credit - item.priceCents) }) : t(' · saldo insuficiente')}
                   </span>
                 </button>
               )}
               <div className="co-methods">
-                <button className="co-method" disabled={busy || !paymentsLive} onClick={() => start('pix')}>
-                  <span className="big-emoji">⚡</span>
-                  <b>Pix</b>
-                  <span className="tiny muted">{paymentsLive ? t('Aprovação na hora') : t('Em breve')}</span>
-                </button>
-                <button className="co-method" disabled={busy || !paymentsLive} onClick={() => start('cartao')}>
-                  <span className="big-emoji">💳</span>
-                  <b>{t('Cartão de crédito')}</b>
-                  <span className="tiny muted">{!paymentsLive ? t('Em breve') : provider === 'mercadopago' ? t('Pagamento seguro no Mercado Pago') : 'Visa, Master, Elo'}</span>
+                <button className="co-method" disabled={busy || !web3 || !enough || (wallet?.kycRequired ?? false)} onClick={payWithUsdc}>
+                  <span className="big-emoji">💵</span>
+                  <b>{busy ? t('Enviando USDC...') : t('Pagar com USDC')}</b>
+                  <span className="tiny muted">
+                    {!web3
+                      ? t('Carteira cripto indisponível no momento.')
+                      : walletErr
+                        ? t('Não deu para ler sua carteira agora.')
+                        : !wallet
+                          ? t('Lendo sua carteira...')
+                          : wallet.kycRequired
+                            ? t('Pagamentos em USDC exigem verificação de identidade (KYC).')
+                            : balance == null
+                              ? t('Abra a Carteira para criar seu endereço USDC.')
+                              : tn('Saldo: {v}', { v: <b key="v">{usdc(Math.round(balance * 100))}</b> })}
+                    {wallet && balance != null && !enough && t(' · faltam {n} USDC', { n: (priceUsdc - balance).toFixed(2) })}
+                  </span>
                 </button>
               </div>
-              <p className="tiny muted center">{t('Itens digitais entregues na hora após a confirmação. Sem saque: moedas do jogo não viram dinheiro.')}</p>
+              {web3 && wallet && !enough && (
+                <button className="btn full" onClick={goWallet}>
+                  ➕ {t('Adicionar USDC na Carteira')}
+                </button>
+              )}
+              {wallet?.network.testnet && <p className="tiny muted center">🧪 {t('Rede de teste: o USDC aqui não tem valor real.')}</p>}
+              <p className="tiny muted center">{t('Pago em USDC da sua carteira cripto. Itens entregues assim que a rede confirma. Sem saque: moedas do jogo não viram dinheiro.')}</p>
             </>
           )}
 
           {step === 'aguardando' && order && (
-            <>
-              {order.method === 'pix' ? (
-                <div className="pix">
-                  {order.pixQr ? (
-                    <img className="qr-img" src={`data:image/png;base64,${order.pixQr}`} alt={t('QR Code Pix')} />
-                  ) : (
-                    <FakeQr seed={order.id} />
-                  )}
-                  <p className="tiny muted">{t('Abra o app do seu banco, escolha Pix e leia o QR Code — ou use o copia e cola:')}</p>
-                  <div className="copy-row">
-                    <input readOnly value={order.pixCode ?? ''} onFocus={(e) => e.currentTarget.select()} />
-                    <button
-                      className="btn btn-sm"
-                      onClick={() => {
-                        void navigator.clipboard?.writeText(order.pixCode ?? '')
-                        setCopied(true)
-                        setTimeout(() => setCopied(false), 1500)
-                      }}
-                    >
-                      {copied ? '✅ ' + t('Copiado') : '📋 ' + t('Copiar')}
-                    </button>
-                  </div>
-                  <p className="tiny muted">{t('O código vale por 30 minutos.')}</p>
-                </div>
-              ) : (
-                <div className="center">
-                  {order.checkoutUrl ? (
-                    <>
-                      <p>{t('Abrimos o pagamento do Mercado Pago em outra aba.')}</p>
-                      <a className="btn btn-primary" href={order.checkoutUrl} target="_blank" rel="noopener noreferrer">
-                        {t('Abrir pagamento de novo')}
-                      </a>
-                    </>
-                  ) : (
-                    <p className="muted">{t('No modo de teste não há tela de cartão. Use o botão abaixo para simular a aprovação.')}</p>
-                  )}
-                </div>
-              )}
-              <div className="waiting">
-                <span className="spinner" /> {t('Aguardando confirmação do pagamento...')}
-              </div>
-              {order.provider === 'sandbox' && (
-                <div className="sandbox">
-                  <span className="tiny">🧪 {t('Modo de teste — nenhuma cobrança real')}</span>
-                  <button className="btn btn-gold full" disabled={busy} onClick={simulate}>
-                    ✅ {t('Simular pagamento aprovado')}
-                  </button>
-                </div>
-              )}
-            </>
+            <div className="waiting">
+              <span className="spinner" /> {t('USDC enviado. Aguardando a rede confirmar...')}
+            </div>
           )}
 
           {step === 'pago' && (
@@ -206,7 +184,7 @@ export function Checkout({ item, onClose, onPaid }: { item: CatalogItem | null; 
               <div className="prize-emoji">🎉</div>
               <h2>{t('Pagamento aprovado!')}</h2>
               <p className="muted">{t('{item} já está na sua conta.', { item: tx(item.name) })}</p>
-              {order?.method === 'credito' && <p className="tiny">{tn('Crédito de teste restante: {v}', { v: <b key="v">{brl(user?.mvpCreditCents ?? 0)}</b> })}</p>}
+              {order?.method === 'credito' && <p className="tiny">{tn('Crédito de teste restante: {v}', { v: <b key="v">{usdc(user?.mvpCreditCents ?? 0)}</b> })}</p>}
               <button className="btn btn-primary btn-lg" onClick={close}>
                 {t('Bora jogar')}
               </button>
@@ -224,29 +202,5 @@ export function Checkout({ item, onClose, onPaid }: { item: CatalogItem | null; 
         </div>
       )}
     </Modal>
-  )
-}
-
-function FakeQr({ seed }: { seed: string }) {
-  let h = 0
-  for (const c of seed) h = (h * 31 + c.charCodeAt(0)) >>> 0
-  const cells = Array.from({ length: 21 * 21 }).map((_, i) => {
-    const x = i % 21
-    const y = Math.floor(i / 21)
-    const finder = (x < 7 && y < 7) || (x > 13 && y < 7) || (x < 7 && y > 13)
-    if (finder) {
-      const fx = x > 13 ? x - 14 : x
-      const fy = y > 13 ? y - 14 : y
-      return fx === 0 || fx === 6 || fy === 0 || fy === 6 || (fx >= 2 && fx <= 4 && fy >= 2 && fy <= 4)
-    }
-    h = (h * 1103515245 + 12345) >>> 0
-    return (h >> 16) % 2 === 0
-  })
-  return (
-    <div className="qr21" title={t('QR ilustrativo (modo de teste)')}>
-      {cells.map((on, i) => (
-        <span key={i} className={on ? 'on' : ''} />
-      ))}
-    </div>
   )
 }

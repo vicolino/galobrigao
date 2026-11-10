@@ -3,7 +3,7 @@ import { api, type CatalogItem } from '../api'
 import { Checkout } from '../components/Checkout'
 import { RoosterSvg } from '../components/RoosterSvg'
 import { Bar, PageHead } from '../components/ui'
-import { brl, SKU_BY_ID } from '../game/catalog'
+import { usdc, SKU_BY_ID } from '../game/catalog'
 import { BREED_BY_ID, SKIN_BY_ID } from '../game/data'
 import {
   currentPass,
@@ -197,7 +197,7 @@ export function Passe() {
           </div>
           <div className="pass-actions">
             <button className="btn btn-gold btn-lg" disabled={!item} onClick={() => item && setBuying(item)}>
-              {t('Comprar Passe Premium · {preco}', { preco: brl(item?.priceCents ?? SKU_BY_ID[PASS_SKU].priceCents) })}
+              {t('Comprar Passe Premium · {preco}', { preco: usdc(item?.priceCents ?? SKU_BY_ID[PASS_SKU].priceCents) })}
             </button>
             <button className="btn btn-sm" disabled={busy || s.ovos < PASS_PRICE_OVOS} onClick={buyOvos}>
               {t('ou 🥚 {n} ovos', { n: PASS_PRICE_OVOS })}

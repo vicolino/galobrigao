@@ -1,4 +1,5 @@
-// Catálogo de produtos pagos com dinheiro real. Preço sempre em centavos (BRL).
+// Catálogo de produtos pagos com dinheiro real. Preço sempre em centavos de USDC (100 = 1 USDC).
+// 💵 Tudo é pago em USDC, direto da carteira cripto do jogador (Pix/cartão desativados).
 // Fonte única de verdade: o servidor usa estes valores para cobrar e entregar.
 
 import { locale, t } from '../i18n'
@@ -27,15 +28,15 @@ export interface Sku {
 
 export const CATALOG: Sku[] = [
   // Pacotes de ovos de ouro (moeda premium)
-  { id: 'ovos-50', kind: 'ovos', name: t('{n} ovos de ouro', { n: num(50) }), emoji: '🥚', desc: t('Para começar.'), priceCents: 490, ovos: 50 },
-  { id: 'ovos-120', kind: 'ovos', name: t('{n} ovos de ouro', { n: num(130) }), emoji: '🥚', desc: t('{a} + {b} de bônus.', { a: num(120), b: num(10) }), priceCents: 990, ovos: 120, bonus: 10 },
-  { id: 'ovos-300', kind: 'ovos', name: t('{n} ovos de ouro', { n: num(345) }), emoji: '🥚', desc: t('{a} + {b} de bônus.', { a: num(300), b: num(45) }), priceCents: 2290, ovos: 300, bonus: 45, tag: t('Mais vendido') },
-  { id: 'ovos-700', kind: 'ovos', name: t('{n} ovos de ouro', { n: num(850) }), emoji: '🥚', desc: t('{a} + {b} de bônus.', { a: num(700), b: num(150) }), priceCents: 4990, ovos: 700, bonus: 150 },
-  { id: 'ovos-1600', kind: 'ovos', name: t('{n} ovos de ouro', { n: num(2000) }), emoji: '🥚', desc: t('{a} + {b} de bônus.', { a: num(1600), b: num(400) }), priceCents: 9990, ovos: 1600, bonus: 400, tag: t('Melhor valor') },
+  { id: 'ovos-50', kind: 'ovos', name: t('{n} ovos de ouro', { n: num(50) }), emoji: '🥚', desc: t('Para começar.'), priceCents: 99, ovos: 50 },
+  { id: 'ovos-120', kind: 'ovos', name: t('{n} ovos de ouro', { n: num(130) }), emoji: '🥚', desc: t('{a} + {b} de bônus.', { a: num(120), b: num(10) }), priceCents: 199, ovos: 120, bonus: 10 },
+  { id: 'ovos-300', kind: 'ovos', name: t('{n} ovos de ouro', { n: num(345) }), emoji: '🥚', desc: t('{a} + {b} de bônus.', { a: num(300), b: num(45) }), priceCents: 449, ovos: 300, bonus: 45, tag: t('Mais vendido') },
+  { id: 'ovos-700', kind: 'ovos', name: t('{n} ovos de ouro', { n: num(850) }), emoji: '🥚', desc: t('{a} + {b} de bônus.', { a: num(700), b: num(150) }), priceCents: 999, ovos: 700, bonus: 150 },
+  { id: 'ovos-1600', kind: 'ovos', name: t('{n} ovos de ouro', { n: num(2000) }), emoji: '🥚', desc: t('{a} + {b} de bônus.', { a: num(1600), b: num(400) }), priceCents: 1999, ovos: 1600, bonus: 400, tag: t('Melhor valor') },
   // Assinatura
-  { id: 'vip-30', kind: 'vip', name: t('Assinatura VIP ({n} dias)', { n: 30 }), emoji: '👑', desc: t('{a} ovos na hora, +{b} ovos/dia e +{p}% de milho.', { a: 100, b: 10, p: 25 }), priceCents: 1990, ovos: 100 },
+  { id: 'vip-30', kind: 'vip', name: t('Assinatura VIP ({n} dias)', { n: 30 }), emoji: '👑', desc: t('{a} ovos na hora, +{b} ovos/dia e +{p}% de milho.', { a: 100, b: 10, p: 25 }), priceCents: 399, ovos: 100 },
   // Passe da Temporada (premium do mês atual; uma vez por temporada)
-  { id: 'passe-temporada', kind: 'pass', name: t('Passe da Temporada'), emoji: '🎫', desc: t('Trilha premium da temporada: skins e galo exclusivos, ovos e itens raros.'), priceCents: 1990 },
+  { id: 'passe-temporada', kind: 'pass', name: t('Passe da Temporada'), emoji: '🎫', desc: t('Trilha premium da temporada: skins e galo exclusivos, ovos e itens raros.'), priceCents: 399 },
   // Pacotes iniciais (uma vez por conta)
   {
     id: 'starter-raro',
@@ -43,7 +44,7 @@ export const CATALOG: Sku[] = [
     name: t('Kit Brigão'),
     emoji: '🐓',
     desc: t('Índio Gigante ★★★ + {n} ovos + {f} ferramentas.', { n: 120, f: 9 }),
-    priceCents: 990,
+    priceCents: 199,
     breedId: 'indio',
     stars: 3,
     roosterName: 'Brigão', // i18n-ok (nome próprio)
@@ -57,7 +58,7 @@ export const CATALOG: Sku[] = [
     name: t('Kit Campeão'),
     emoji: '🔥',
     desc: t('Aurora ★★★★ + skin Camuflado + {n} ovos + ferramentas raras.', { n: 350 }),
-    priceCents: 2490,
+    priceCents: 499,
     breedId: 'aurora',
     stars: 4,
     roosterName: 'Aurora',
@@ -73,7 +74,7 @@ export const CATALOG: Sku[] = [
     name: t('Kit Lenda'),
     emoji: '👑',
     desc: t('Galo de Ouro ★★★★★ + skin Fênix de Fogo + {n} ovos + Kit Campeão de ferramentas.', { n: 800 }),
-    priceCents: 4990,
+    priceCents: 999,
     breedId: 'dourado',
     stars: 5,
     roosterName: 'Midas',
@@ -87,9 +88,14 @@ export const CATALOG: Sku[] = [
 
 export const SKU_BY_ID: Record<string, Sku> = Object.fromEntries(CATALOG.map((s) => [s.id, s]))
 
+/** Preço em USDC (centavos → "1,99 USDC"). */
+export const usdc = (cents: number) => `${(cents / 100).toLocaleString(locale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDC`
+/** Só para pedidos antigos pagos em Pix/cartão (centavos de real). */
 export const brl = (cents: number) => (cents / 100).toLocaleString(locale(), { style: 'currency', currency: 'BRL' })
+/** Formata o valor de um pedido conforme a moeda em que foi pago. */
+export const orderMoney = (cents: number, method: string) => (method === 'pix' || method === 'cartao' ? brl(cents) : usdc(cents))
 
-/** Limites de gasto mensal oferecidos ao usuário (centavos). */
+/** Limites de gasto mensal oferecidos ao usuário (centavos de USDC). */
 export const SPEND_LIMITS = [5000, 10000, 25000, 50000, 100000]
 export const DEFAULT_SPEND_LIMIT = 50000
 /** Quanto de ovos um jogador pode ganhar jogando por dia (missões, bônus, conquistas, liga). */

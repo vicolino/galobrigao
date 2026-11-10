@@ -188,6 +188,10 @@ export function getDb() {
     db.exec('ALTER TABLE users ADD COLUMN email_verified_at INTEGER')
     db.exec('UPDATE users SET email_verified_at = created_at WHERE email_verified_at IS NULL')
   }
+  // 💵 Pedidos pagos em USDC: tx assinada (para retransmitir/reconciliar) e carteira de origem
+  const ocols = (db.prepare('PRAGMA table_info(orders)').all() as { name: string }[]).map((c) => c.name)
+  if (!ocols.includes('tx_raw')) db.exec('ALTER TABLE orders ADD COLUMN tx_raw TEXT')
+  if (!ocols.includes('from_addr')) db.exec('ALTER TABLE orders ADD COLUMN from_addr TEXT')
   // Origem do cadastro (UTM do primeiro acesso)
   for (const c of ['utm_source', 'utm_medium', 'utm_campaign', 'ref']) if (!cols.includes(c)) db.exec(`ALTER TABLE users ADD COLUMN ${c} TEXT`)
   // Web3: carteiras custodiais, NFTs de itens e registro de todas as operações na chain
@@ -360,7 +364,7 @@ export interface OrderRow {
   user_id: string
   sku: string
   amount_cents: number
-  method: 'pix' | 'cartao' | 'credito'
+  method: 'pix' | 'cartao' | 'credito' | 'usdc'
   provider: string
   provider_ref: string | null
   status: 'pendente' | 'pago' | 'expirado' | 'recusado'
@@ -370,4 +374,6 @@ export interface OrderRow {
   created_at: number
   paid_at: number | null
   fulfilled_at: number | null
+  tx_raw?: string | null
+  from_addr?: string | null
 }

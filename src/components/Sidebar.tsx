@@ -5,7 +5,7 @@ import { sfx } from '../game/sound'
 import { titleFor, useGame } from '../game/store'
 import { Modal, go } from './ui'
 import { DAILY_OVOS } from '../game/rewards'
-import { brl } from '../game/catalog'
+import { usdc } from '../game/catalog'
 import { APP_NAME, ARENA } from '../brand'
 import { t, tp } from '../i18n'
 import { LangSwitch } from './LangSwitch'
@@ -102,7 +102,7 @@ export function Sidebar({ route, open, onClose }: { route: string; open: boolean
             {pubConfig?.mvp.on && (
               <div className="wallet-row credit-row" onClick={() => go('/loja/ovos')} title={t('Crédito de teste do Modo MVP (sem valor real)')}>
                 <span>🎁 {t('Crédito MVP')}</span>
-                <b>{brl(user?.mvpCreditCents ?? 0)}</b>
+                <b>{usdc(user?.mvpCreditCents ?? 0)}</b>
               </div>
             )}
             <a className="btn btn-sm btn-gold" href="#/loja/ovos">💎 {t('Comprar ovos')}</a>

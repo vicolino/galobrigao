@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
-import { api, ApiError, type ApiOrder, type GaloLook, type KycStatus, type Web3Asset, type Web3Info, type Web3Nft, type Web3Tx } from '../api'
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
+import { api, ApiError, type GaloLook, type KycStatus, type Web3Asset, type Web3Info, type Web3Nft, type Web3Tx } from '../api'
 import { Empty, Modal, PageHead, Picker, RarityTag, Tabs } from '../components/ui'
 import { ACC_BY_ID, BREED_BY_ID, SKIN_BY_ID } from '../game/data'
 import { GaloNftPanel, NftArt } from './GaloNft'
@@ -201,9 +201,6 @@ export function Carteira() {
         <Bridge info={info} busy={busy} run={run} okTx={okTx} />
         <Send info={info} kyc={kyc} busy={busy} run={run} okTx={okTx} />
       </div>
-
-      {/* 💵 Comprar USDC com PIX (a casa é a contraparte) */}
-      <UsdcBuy info={info} />
 
       {/* 💵 Depósito USDC → ovos (src/pages/Deposito.tsx) */}
       <DepositoUsdc info={info} busy={busy} run={run} okTx={okTx} />
@@ -597,127 +594,3 @@ function MyItems({ info, busy, run, okTx, feeBps }: PanelProps & { feeBps: numbe
   )
 }
 
-// 💵 Comprar USDC com PIX: a casa é a contraparte; o USDC cai na carteira após o pagamento.
-function UsdcBuy({ info }: { info: Web3Info }) {
-  const sale = info.usdcSale
-  const { toast, actions } = useGame()
-  const [amount, setAmount] = useState('')
-  const [order, setOrder] = useState<ApiOrder | null>(null)
-  const [busy, setBusy] = useState(false)
-  const [copied, setCopied] = useState(false)
-  const poll = useRef<ReturnType<typeof setInterval> | null>(null)
-  const stop = () => {
-    if (poll.current) clearInterval(poll.current)
-    poll.current = null
-  }
-  useEffect(() => stop, [])
-  if (!sale?.on) return null
-  const price = sale.pricePerUsdc ?? 0
-  const min = sale.minUsdc ?? 1
-  const max = sale.maxUsdc ?? 1e9
-  const usdc = parseAmount(amount)
-  const ok = Number.isFinite(usdc) && usdc >= min && usdc <= max
-
-  const done = async (msg: string) => {
-    stop()
-    setOrder(null)
-    setAmount('')
-    toast(msg, 'ok')
-    await actions.reloadFromServer()
-  }
-  const watch = (o: ApiOrder) => {
-    stop()
-    poll.current = setInterval(async () => {
-      try {
-        const r = await api.order(o.id)
-        if (r.order.status === 'pago') void done(t('✅ Pago! Seu USDC está indo para a carteira.'))
-        else if (r.order.status !== 'pendente') {
-          stop()
-          setOrder(null)
-          toast(r.order.status === 'expirado' ? t('O Pix expirou. Gere um novo.') : t('Pagamento não concluído.'), 'erro')
-        }
-      } catch {
-        /* tenta de novo */
-      }
-    }, 3000)
-  }
-  const buy = async () => {
-    setBusy(true)
-    try {
-      const r = await api.buyUsdc(usdc)
-      setOrder(r.order)
-      if (r.order.checkoutUrl) window.open(r.order.checkoutUrl, '_blank', 'noopener')
-      watch(r.order)
-    } catch (e) {
-      toast(errMsg(e), 'erro')
-    } finally {
-      setBusy(false)
-    }
-  }
-  const simulate = async () => {
-    if (!order) return
-    setBusy(true)
-    try {
-      await api.simulate(order.id)
-      void done(t('✅ Pago! Seu USDC está indo para a carteira.'))
-    } catch (e) {
-      toast(errMsg(e), 'erro')
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  return (
-    <div className="card">
-      <h3>💵 {t('Comprar USDC com PIX')}</h3>
-      <p className="tiny muted">{t('R$ {p} por 1 USDC. Cai na sua carteira cripto logo após o pagamento.', { p: price.toFixed(2) })}</p>
-      {!order ? (
-        <>
-          <label className="field">
-            <span>
-              {t('Quantidade')} <span className="tiny muted">· {t('de {min} a {max} USDC', { min, max })}</span>
-            </span>
-            <input type="number" min={min} step={1} inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder={String(min)} />
-          </label>
-          {ok && (
-            <p className="tiny" style={{ fontWeight: 800 }}>
-              {t('Você paga R$ {brl} por {n} USDC', { brl: (usdc * price).toFixed(2), n: usdc })}
-            </p>
-          )}
-          <button className="btn btn-primary full" disabled={!ok || busy} onClick={buy}>
-            {busy ? t('Gerando Pix...') : t('Pagar com Pix')}
-          </button>
-        </>
-      ) : (
-        <div className="pix">
-          {order.pixQr && <img className="qr-img" src={`data:image/png;base64,${order.pixQr}`} alt={t('QR Code Pix')} />}
-          <p className="tiny muted">{t('Abra o app do banco, escolha Pix e leia o QR — ou use o copia e cola:')}</p>
-          <div className="copy-row">
-            <input readOnly value={order.pixCode ?? ''} onFocus={(e) => e.currentTarget.select()} />
-            <button
-              className="btn btn-sm"
-              onClick={() => {
-                void navigator.clipboard?.writeText(order.pixCode ?? '')
-                setCopied(true)
-                setTimeout(() => setCopied(false), 1500)
-              }}
-            >
-              {copied ? '✅' : '📋'}
-            </button>
-          </div>
-          <div className="waiting">
-            <span className="spinner" /> {t('Aguardando o pagamento...')}
-          </div>
-          {order.provider === 'sandbox' && (
-            <button className="btn btn-gold full" disabled={busy} onClick={simulate}>
-              ✅ {t('Simular pagamento (teste)')}
-            </button>
-          )}
-          <button className="btn btn-ghost full" onClick={() => { stop(); setOrder(null) }}>
-            {t('Cancelar')}
-          </button>
-        </div>
-      )}
-    </div>
-  )
-}

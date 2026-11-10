@@ -53,7 +53,7 @@ function usedTodayUnits(userId: string) {
 
 /** Tesouraria que recebe os depósitos: WEB3_DEPOSIT_TREASURY ou a tesouraria do contrato do Mercado. */
 let treasuryCache: { addr: Address; at: number } | null = null
-async function depositTreasury(): Promise<Address> {
+export async function depositTreasury(): Promise<Address> {
   const env = (process.env.WEB3_DEPOSIT_TREASURY ?? '').trim()
   if (env) return isAddress(env, { strict: false }) ? getAddress(env) : fail(503, t('Depósitos indisponíveis no momento.'))
   if (treasuryCache && Date.now() - treasuryCache.at < 10 * 60_000) return treasuryCache.addr

@@ -18,7 +18,11 @@ npm start              # http://localhost:8787
 ```
 
 Conta, save, pedidos e pagamentos ficam no SQLite em `data/rinha.sqlite`.
-Para cobrar de verdade (Mercado Pago, Pix e cartão), veja `docs/MONETIZACAO.md`, seção 7.
+
+> 💵 **Full cripto:** toda compra e todo depósito é em **USDC**, direto da carteira cripto do jogador
+> (`server/usdcPay.ts` para a loja, `server/deposito.ts` para USDC → ovos). Preços do catálogo em centavos de USDC.
+> Pix e cartão (Mercado Pago) estão **desativados** (`FIAT_PAYMENTS = false` em `server/app.ts`); o código
+> continua lá só para terminar pedidos antigos. A venda de USDC por Pix também está desligada.
 
 Produção (Google Cloud), atualização, logs, backups e segurança: [`docs/DEPLOY.md`](docs/DEPLOY.md).
 

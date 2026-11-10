@@ -11,6 +11,8 @@ export interface SkuOverride {
 }
 
 export interface AppConfig {
+  /** 💵 Moeda dos preços do catálogo. Configs salvas antes da virada para USDC (sem este campo) tinham preços em centavos de real e são ignoradas. */
+  priceUnit: 'usdc'
   catalog: Record<string, SkuOverride>
   rewards: { dailyOvos: number; day7Ovos: number; arenaHardWinOvos: number; missionOvosMultiplier: number }
   pvp: { maxLevelDiff: number; dailyRewards: number; challengeTtlSec: number; feePct: number; minStakeOvo: number; maxStakeOvo: number }
@@ -22,7 +24,7 @@ export interface AppConfig {
   mvp: { on: boolean; creditCents: number }
   /** 💵 Depósito de USDC → 🥚 ovos (só ida). Mínimo e limite diário em USDC por jogador. */
   deposit: { eggsPerUsdc: number; minUsdc: number; dailyCapUsdc: number }
-  // 💵 Venda de USDC por PIX (a casa é a contraparte). Preço = base * (1 + marginPct/100),
+  // 💵 Venda de USDC por PIX — DESATIVADA (tudo é cripto; o servidor recusa a rota). (a casa é a contraparte). Preço = base * (1 + marginPct/100),
   // onde base = cotação viva (autoRate) ou brlPerUsdc (manual, também é o fallback).
   usdcSale: { on: boolean; autoRate: boolean; marginPct: number; brlPerUsdc: number; minUsdc: number; maxUsdc: number; dailyCapUsdc: number }
   /** 🎁 Drops da Arena (prêmio grátis por vitória). Chances em %; tiers somam 100. */
@@ -62,6 +64,7 @@ export interface DropsConfig {
 }
 
 export const DEFAULT_CONFIG: AppConfig = {
+  priceUnit: 'usdc',
   catalog: Object.fromEntries(CATALOG.map((s) => [s.id, { priceCents: s.priceCents, ovos: s.ovos, bonus: s.bonus, active: true }])),
   rewards: { dailyOvos: 6, day7Ovos: 35, arenaHardWinOvos: 2, missionOvosMultiplier: 1 },
   pvp: { maxLevelDiff: 1, dailyRewards: 20, challengeTtlSec: 60, feePct: 10, minStakeOvo: 1, maxStakeOvo: 100 },
@@ -84,9 +87,16 @@ export const DEFAULT_CONFIG: AppConfig = {
 /** Junta o que foi salvo com os padrões (campos novos sempre têm valor). */
 export function mergeConfig(saved: Partial<AppConfig> | null | undefined): AppConfig {
   const s = saved ?? {}
+  // Preços salvos em real (antes da virada para USDC) não valem mais: mantém só ovos/bônus/ativo.
+  const legacyPrices = s.priceUnit !== 'usdc'
   const catalog: Record<string, SkuOverride> = {}
-  for (const sku of CATALOG) catalog[sku.id] = { ...DEFAULT_CONFIG.catalog[sku.id], ...(s.catalog?.[sku.id] ?? {}) }
+  for (const sku of CATALOG) {
+    const o = { ...(s.catalog?.[sku.id] ?? {}) } as Partial<SkuOverride>
+    if (legacyPrices) delete o.priceCents
+    catalog[sku.id] = { ...DEFAULT_CONFIG.catalog[sku.id], ...o }
+  }
   return {
+    priceUnit: 'usdc',
     catalog,
     rewards: { ...DEFAULT_CONFIG.rewards, ...s.rewards },
     pvp: { ...DEFAULT_CONFIG.pvp, ...s.pvp },
@@ -96,7 +106,7 @@ export function mergeConfig(saved: Partial<AppConfig> | null | undefined): AppCo
     onchain: { ...DEFAULT_CONFIG.onchain, ...s.onchain },
     mvp: { ...DEFAULT_CONFIG.mvp, ...s.mvp },
     deposit: { ...DEFAULT_CONFIG.deposit, ...s.deposit },
-    usdcSale: { ...DEFAULT_CONFIG.usdcSale, ...s.usdcSale },
+    usdcSale: { ...DEFAULT_CONFIG.usdcSale, ...s.usdcSale, on: false },
     drops: { ...DEFAULT_CONFIG.drops, ...s.drops },
     bets: { ...DEFAULT_CONFIG.bets, ...s.bets },
   }

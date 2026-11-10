@@ -4,7 +4,7 @@ import { Checkout } from '../components/Checkout'
 import { RoosterSvg } from '../components/RoosterSvg'
 import { RarityTag, Stars } from '../components/ui'
 import { AVATARS, BREED_BY_ID, SKIN_BY_ID, TOOL_BY_ID } from '../game/data'
-import { brl } from '../game/catalog'
+import { usdc } from '../game/catalog'
 import { sfx } from '../game/sound'
 import { useGame } from '../game/store'
 import { APP_NAME, APP_TAGLINE } from '../brand'
@@ -185,7 +185,7 @@ export function StarterScreen() {
               {user && !user.emailVerified ? (
                 <>✉️ {t('confirme seu e-mail para ganhar o seu crédito de teste e escolher um kit. Por enquanto, você pode começar de graça com o Galo Livre.')}</>
               ) : (
-                <>{tn('você ganhou {valor} de crédito de teste para gastar na loja. Escolha um kit abaixo!', { valor: <b key="v">{brl(user?.mvpCreditCents ?? 0)}</b> })}</>
+                <>{tn('você ganhou {valor} de crédito de teste para gastar na loja. Escolha um kit abaixo!', { valor: <b key="v">{usdc(user?.mvpCreditCents ?? 0)}</b> })}</>
               )}
             </div>
           )}
@@ -238,14 +238,14 @@ export function StarterScreen() {
                   {it.tools && <li>🧰 {Object.entries(it.tools).map(([tid, q]) => `${TOOL_BY_ID[tid].emoji}×${q}`).join(' ')}</li>}
                 </ul>
                 <button className="btn btn-gold full btn-lg" onClick={() => setBuying(it)}>
-                  {mvp ? t('🎁 Usar crédito · {preco}', { preco: brl(it.priceCents) }) : t('⚡ {preco} no Pix', { preco: brl(it.priceCents) })}
+                  {mvp ? t('🎁 Usar crédito · {preco}', { preco: usdc(it.priceCents) }) : '💵 ' + usdc(it.priceCents)}
                 </button>
               </div>
             )
           })}
         </div>
         <p className="tiny muted center">
-          {t('Pagamento por Pix ou cartão. Itens virtuais, sem valor em dinheiro e sem saque. Você pode trocar de ideia: o kit também aparece depois na Loja (uma vez por conta).')}
+          {t('Pagamento em USDC pela sua carteira cripto. Itens virtuais, sem valor em dinheiro e sem saque. Você pode trocar de ideia: o kit também aparece depois na Loja (uma vez por conta).')}
         </p>
         <div className="center">
           <button className="btn btn-ghost btn-sm" onClick={() => actions.logout()}>

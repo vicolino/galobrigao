@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api, type ApiOrder } from '../api'
-import { brl } from '../game/catalog'
+import { usdc, orderMoney } from '../game/catalog'
 import { Modal, PageHead, Picker } from '../components/ui'
 import { ACHIEVEMENTS, AVATARS } from '../game/data'
 import { fmt } from '../game/rooster'
@@ -103,14 +103,14 @@ export function Perfil() {
                 <div className="bar-fill" style={{ width: `${Math.min(100, (user.limits.spentCents / user.limits.monthlyCents) * 100)}%` }} />
               </div>
               <span className="bar-label">
-                {t('{gasto} / {limite} no mês', { gasto: brl(user.limits.spentCents), limite: brl(user.limits.monthlyCents) })}
+                {t('{gasto} / {limite} no mês', { gasto: usdc(user.limits.spentCents), limite: usdc(user.limits.monthlyCents) })}
               </span>
             </div>
             <label className="field">
               <span>{t('Limite mensal')}</span>
               <Picker
                 value={String(user.limits.monthlyCents)}
-                options={user.limits.options.map((c) => ({ value: String(c), label: brl(c) }))}
+                options={user.limits.options.map((c) => ({ value: String(c), label: usdc(c) }))}
                 onChange={async (v) => {
                   const r = await api.setLimit(Number(v))
                   actions.setUser(r.user)
@@ -120,7 +120,7 @@ export function Perfil() {
             </label>
             {user.limits.pendingCents && (
               <p className="tiny warn">
-                {t('Novo limite de {valor} vale a partir de {data}.', { valor: brl(user.limits.pendingCents), data: new Date(user.limits.pendingAt!).toLocaleString(locale()) })}
+                {t('Novo limite de {valor} vale a partir de {data}.', { valor: usdc(user.limits.pendingCents), data: new Date(user.limits.pendingAt!).toLocaleString(locale()) })}
               </p>
             )}
             <p className="tiny muted">{t('Reduzir vale na hora. Aumentar leva 24h, para evitar compras por impulso.')}</p>
@@ -144,8 +144,8 @@ export function Perfil() {
                     <tr key={o.id}>
                       <td className="tiny muted">{new Date(o.createdAt).toLocaleDateString(locale())}</td>
                       <td>{tx(o.name)}</td>
-                      <td className="tiny">{o.method === 'pix' ? t('⚡ Pix') : o.method === 'credito' ? t('🎁 Crédito') : t('💳 Cartão')}</td>
-                      <td className="right">{brl(o.amountCents)}</td>
+                      <td className="tiny">{o.method === 'usdc' ? '💵 USDC' : o.method === 'pix' ? t('⚡ Pix') : o.method === 'credito' ? t('🎁 Crédito') : t('💳 Cartão')}</td>
+                      <td className="right">{orderMoney(o.amountCents, o.method)}</td>
                       <td className={`tiny status-${o.status === 'pago' ? 'ganhou' : o.status === 'pendente' ? 'pendente' : 'perdeu'}`}>{ORDER_STATUS[o.status] ?? o.status}</td>
                     </tr>
                   ))}

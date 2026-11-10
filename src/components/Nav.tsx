@@ -7,7 +7,7 @@ import { Modal, go } from './ui'
 import { Icon, type IconName } from './Icon'
 import { Logo } from './Logo'
 import { DAILY_OVOS } from '../game/rewards'
-import { brl } from '../game/catalog'
+import { usdc } from '../game/catalog'
 import { ARENA } from '../brand'
 import { t, tp } from '../i18n'
 import { LangSwitch } from './LangSwitch'
@@ -230,7 +230,7 @@ export function Nav({ route }: { route: string }) {
             {pubConfig?.mvp.on && (
               <button className="wcard" onClick={() => { setSheet(false); go('/loja/ovos') }} title={t('Crédito de teste do Modo MVP (sem valor real)')}>
                 <span>🎁 {t('Crédito MVP')}</span>
-                <b>{brl(user?.mvpCreditCents ?? 0)}</b>
+                <b>{usdc(user?.mvpCreditCents ?? 0)}</b>
               </button>
             )}
           </div>
