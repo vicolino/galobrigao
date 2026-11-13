@@ -52,7 +52,7 @@ export function normalizeCode(raw: unknown): string {
   return s
 }
 
-function newCode(): string {
+export function newCode(): string {
   const pick = (n: number) => Array.from({ length: n }, () => ALPHABET[randomInt(ALPHABET.length)]).join('')
   for (;;) {
     const c = `GALO-${pick(4)}-${pick(4)}`
@@ -126,7 +126,7 @@ const view = (r: InviteRow) => ({
 
 const usedBy = (code: string) => db().prepare('SELECT name, email, created_at FROM users WHERE invite_code = ? ORDER BY created_at').all(code) as { name: string; email: string; created_at: number }[]
 
-async function sendInviteEmail(to: string, code: string, fromName: string, lang: Lang) {
+export async function sendInviteEmail(to: string, code: string, fromName: string, lang: Lang) {
   const link = inviteLink(code)
   await sendMail(
     to,

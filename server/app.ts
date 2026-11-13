@@ -38,6 +38,7 @@ import { economyViolation, serverEconomy } from '../src/game/economia'
 import { currentPass } from '../src/game/pass'
 import { handleTorneios, torneioDeleteUser, TorneioError } from './torneios'
 import { galoNftViolation, keepRoosterServerFields } from '../src/game/galonft'
+import { handleEspera, handleEsperaAdmin } from './espera'
 import { ConviteError, consumeInvite, convitesDeleteUser, handleConvites, handleConvitesAdmin, markInvitedUser } from './convites'
 
 try {
@@ -372,6 +373,8 @@ export async function handle(req: Req, res: Res) {
     if (path.startsWith('/api/admin/')) {
       const u = needUser(req)
       const body = method === 'GET' ? {} : await readBody(req)
+      const esp = await handleEsperaAdmin(path, method, url, body, u)
+      if (esp) return json(res, esp.status ?? 200, esp.body)
       const conv = await handleConvitesAdmin(path, method, url, body, u)
       if (conv) return json(res, conv.status ?? 200, conv.body)
       const out = await handleAdmin(path, method, url, body, u, { fulfill, recheck: recheckOrder })
@@ -541,6 +544,7 @@ export async function handle(req: Req, res: Res) {
       arenaDeleteUser(u.id)
       dropsDeleteUser(u.id)
       convitesDeleteUser(u.id)
+      db.prepare('DELETE FROM waitlist WHERE email = ?').run(u.email)
       // Pedidos pagos são mantidos anonimizados por obrigação fiscal; os dados pessoais saem.
       // Web3: carteira, NFTs, web3_tx e deposits ficam (ativos na chain + auditoria; só têm o id, sem dados pessoais).
       // Anúncios do jogador somem do mercado porque a listagem exige a conta existir.
@@ -712,6 +716,9 @@ export async function handle(req: Req, res: Res) {
       const out = handleCriacao(path, method, needUser(req))
       if (out) return json(res, out.status ?? 200, out.body)
     }
+
+    // ----- 📝 Lista de espera da whitelist (server/espera.ts, rota pública) -----
+    if (path === '/api/espera' && method === 'POST') return json(res, 200, handleEspera(await readBody(req), ip, reqLang(req)))
 
     // ----- 🎟️ Convites do jogador (server/convites.ts) -----
     if (path === '/api/convites') {

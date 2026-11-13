@@ -92,6 +92,11 @@ export interface AdminInvites {
   invites: (InviteView & { owner: { name: string | null; email: string | null } | null; createdBy: string | null; usedBy: { name: string; email: string; created_at: number }[] })[]
 }
 
+export interface AdminWaitlist {
+  counts: { pendente: number; aprovado: number; recusado: number }
+  list: { id: number; email: string; name: string; reason: string | null; discord: string | null; status: 'pendente' | 'aprovado' | 'recusado'; inviteCode: string | null; createdAt: number; decidedAt: number | null; decidedBy: string | null; hasAccount: boolean }[]
+}
+
 export class ApiError extends Error {
   constructor(
     public status: number,
@@ -224,6 +229,8 @@ export const api = {
     adminStart: (id: string, skipLive: boolean) => call<{ ok: true }>('/torneios/admin/start', { method: 'POST', body: { id, skipLive } }),
   },
   config: () => call<PublicConfig>('/config'),
+  /** 📝 Lista de espera (sem login) */
+  espera: (b: { email: string; name: string; reason?: string; discord?: string; adult: boolean }) => call<{ ok: true; position: number | null }>('/espera', { method: 'POST', body: b }),
   /** 🎟️ Convites do jogador (whitelist) */
   convites: {
     list: () => call<MyInvites>('/convites'),
@@ -234,6 +241,10 @@ export const api = {
     convitesCreate: (b: { count?: number; maxUses?: number; expiresDays?: number; note?: string; code?: string; emails?: string; sendEmail?: boolean }) =>
       call<{ created: { code: string; email: string | null; link: string }[]; mailed: number }>('/admin/convites', { method: 'POST', body: b }),
     convitesRevoke: (code: string) => call<{ ok: true }>('/admin/convites/revoke', { method: 'POST', body: { code } }),
+    espera: (status: string, q: string) => call<AdminWaitlist>(`/admin/convites/espera?status=${status}&q=${encodeURIComponent(q)}`),
+    esperaAprovar: (ids: number[], sendEmail: boolean, expiresDays: number) =>
+      call<{ approved: number; mailed: number; codes: { email: string; code: string }[] }>('/admin/convites/espera/aprovar', { method: 'POST', body: { ids, sendEmail, expiresDays } }),
+    esperaRecusar: (ids: number[]) => call<{ refused: number }>('/admin/convites/espera/recusar', { method: 'POST', body: { ids } }),
     overview: (days: number) => call<AdminOverview>(`/admin/overview?days=${days}`),
     activity: (days: number) => call<AdminActivity>(`/admin/activity?days=${days}`),
     users: (q: string, filter: string, page = 1, sort = 'cadastro', dir: 'asc' | 'desc' = 'desc') =>

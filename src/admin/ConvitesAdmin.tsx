@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { api, type AdminInvites } from '../api'
 import { useGame } from '../game/store'
 import { locale, t, tx } from '../i18n'
+import { EsperaAdmin } from './EsperaAdmin'
 
 const STATUS: Record<string, string> = {
   ativo: t('🟢 ativo'),
@@ -18,7 +19,21 @@ const FILTERS: { id: string; label: string }[] = [
 ]
 const date = (ms: number | null) => (ms ? new Date(ms).toLocaleDateString(locale()) : '—')
 
+/** Aba Convites: códigos (whitelist) e lista de espera. */
 export function ConvitesAdmin() {
+  const [view, setView] = useState<'codigos' | 'espera'>(() => (location.hash.includes('espera') ? 'espera' : 'codigos'))
+  return (
+    <>
+      <div className="tabs" style={{ marginBottom: 12 }}>
+        <button className={`tab ${view === 'codigos' ? 'active' : ''}`} onClick={() => setView('codigos')}>{t('🎟️ Códigos')}</button>
+        <button className={`tab ${view === 'espera' ? 'active' : ''}`} onClick={() => setView('espera')}>{t('📝 Lista de espera')}</button>
+      </div>
+      {view === 'codigos' ? <Codigos /> : <EsperaAdmin />}
+    </>
+  )
+}
+
+function Codigos() {
   const { toast } = useGame()
   const [d, setD] = useState<AdminInvites | null>(null)
   const [q, setQ] = useState('')

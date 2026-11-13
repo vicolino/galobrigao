@@ -207,6 +207,20 @@ export function getDb() {
       revoked_at INTEGER
     );
     CREATE INDEX IF NOT EXISTS invites_owner ON invites(owner_id, created_at);
+    CREATE TABLE IF NOT EXISTS waitlist (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      email TEXT UNIQUE NOT NULL,
+      name TEXT NOT NULL,
+      reason TEXT,
+      discord TEXT,
+      lang TEXT NOT NULL DEFAULT 'pt',
+      status TEXT NOT NULL DEFAULT 'pendente',
+      invite_code TEXT,
+      created_at INTEGER NOT NULL,
+      decided_at INTEGER,
+      decided_by TEXT
+    );
+    CREATE INDEX IF NOT EXISTS waitlist_status ON waitlist(status, id);
   `)
   if (!cols.includes('invite_code')) db.exec('ALTER TABLE users ADD COLUMN invite_code TEXT')
   // Origem do cadastro (UTM do primeiro acesso)

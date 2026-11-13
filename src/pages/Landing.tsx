@@ -4,6 +4,8 @@ import { LangSwitch } from '../components/LangSwitch'
 import { go } from '../components/ui'
 import { APP_NAME, COMPANY, SUPPORT_EMAIL } from '../brand'
 import { t } from '../i18n'
+import { useGame } from '../game/store'
+import { WaitlistForm } from '../components/Espera'
 
 /** Galo animado que entra "voando" ao aparecer na tela. */
 function Peek({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
@@ -54,8 +56,19 @@ function Showcase({
 }
 
 export function Landing() {
+  const { pubConfig } = useGame()
+  // 🎟️ Acesso antecipado: com a whitelist ligada, o CTA principal vira "Tenho um convite" + lista de espera
+  const fechado = pubConfig?.invites?.on !== false
   const criar = () => go('/criar')
   const entrar = () => go('/entrar')
+  const espera = () => document.getElementById('espera')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  // Link #/?espera (vindo do cadastro) rola direto até o formulário
+  useEffect(() => {
+    const check = () => location.hash.includes('espera') && setTimeout(espera, 300)
+    check()
+    window.addEventListener('hashchange', check)
+    return () => window.removeEventListener('hashchange', check)
+  }, [])
 
   const steps = [
     { emoji: '🥚', title: t('1. Crie'), text: t('Escolha sua raça e ganhe seu primeiro galo de graça, na hora.'), breed: 'caipira' },
@@ -85,6 +98,7 @@ export function Landing() {
   ]
 
   const faqs = [
+    ...(fechado ? [{ q: t('Como consigo um convite?'), a: t('Entre na lista de espera aqui na página e o convite chega no seu e-mail. Também dá para pedir a um amigo que já joga (cada jogador tem convites para dar) ou no nosso Discord.') }] : []),
     { q: t('É de graça pra jogar?'), a: t('É sim. Você cria a conta e ganha um galo na hora, sem pagar nada. Itens e skins premium são opcionais, pra quem quiser turbinar.') },
     { q: t('Preciso baixar alguma coisa?'), a: t('Não. Roda direto no navegador, no celular ou no computador. Abriu, jogou.') },
     { q: t('Dá pra jogar contra meus amigos?'), a: t('Dá. No modo Desafios você encara o galo de outros jogadores de verdade em PvP, e ainda disputa os torneios do terreiro.') },
@@ -107,7 +121,11 @@ export function Landing() {
           <div className="lp-top-right">
             <span className="lp-top-lang"><LangSwitch compact /></span>
             <button className="btn btn-ghost" onClick={entrar}>{t('Entrar')}</button>
-            <button className="btn btn-primary" onClick={criar}>{t('Criar meu galo')}</button>
+            {fechado ? (
+              <button className="btn btn-primary" onClick={espera}>{t('Quero um convite')}</button>
+            ) : (
+              <button className="btn btn-primary" onClick={criar}>{t('Criar meu galo')}</button>
+            )}
           </div>
         </div>
       </header>
@@ -116,12 +134,22 @@ export function Landing() {
       <section className="lp-hero">
         <div className="lp-hero-grid">
           <div className="lp-hero-copy">
-            <span className="lp-eyebrow">🐓 {t('Grátis pra jogar · roda no navegador')}</span>
+            <span className="lp-eyebrow">{fechado ? `🎟️ ${t('Acesso antecipado · só por convite')}` : `🐓 ${t('Grátis pra jogar · roda no navegador')}`}</span>
             <h1 className="title-font lp-h1">{t('Crie seu galo. Treine. Vista. Domine a arena.')}</h1>
             <p className="lp-lead">{t('O terreiro mais brabo da internet. Monte seu galo campeão, encare outros jogadores no desafio, aposte, cruze raças lendárias e suba no ranking.')}</p>
             <div className="lp-cta-row">
-              <button className="btn btn-primary btn-lg lp-cta pulse" onClick={criar}>🐓 {t('Criar meu galo grátis')}</button>
-              <button className="btn btn-lg lp-cta-ghost" onClick={entrar}>{t('Já tenho conta')}</button>
+              {fechado ? (
+                <>
+                  <button className="btn btn-primary btn-lg lp-cta pulse" onClick={espera}>📝 {t('Quero um convite')}</button>
+                  <button className="btn btn-lg lp-cta-ghost" onClick={criar}>🎟️ {t('Tenho um convite')}</button>
+                  <button className="btn btn-lg lp-cta-ghost" onClick={entrar}>{t('Já tenho conta')}</button>
+                </>
+              ) : (
+                <>
+                  <button className="btn btn-primary btn-lg lp-cta pulse" onClick={criar}>🐓 {t('Criar meu galo grátis')}</button>
+                  <button className="btn btn-lg lp-cta-ghost" onClick={entrar}>{t('Já tenho conta')}</button>
+                </>
+              )}
             </div>
             <div className="lp-proof">
               <div><b>20+</b><span>{t('raças')}</span></div>
@@ -237,6 +265,26 @@ export function Landing() {
         </div>
       </section>
 
+      {/* ---------- 🎟️ Acesso antecipado (lista de espera) ---------- */}
+      {fechado && (
+        <section className="lp-sec lp-sec-dark" id="espera">
+          <div className="lp-split lp-wait">
+            <div className="lp-split-copy">
+              <span className="lp-eyebrow">🎟️ {t('Acesso antecipado')}</span>
+              <h2 className="title-font">{t('O terreiro está fechado. Por enquanto.')}</h2>
+              <p className="lp-lead">{t('Estamos abrindo aos poucos para montar uma comunidade boa e testar a economia com calma. Por isso, só entra quem tem convite.')}</p>
+              <ul className="lp-perks">
+                <li>📝 {t('Entre na lista de espera: o convite chega no seu e-mail')}</li>
+                <li>🤝 {t('Ou peça a um amigo que já joga: cada jogador tem convites para dar')}</li>
+                <li>🏅 {t('Quem entra agora é dos primeiros criadores do jogo')}</li>
+              </ul>
+              <button className="btn btn-lg lp-cta-ghost" onClick={criar}>🎟️ {t('Já tenho um convite')}</button>
+            </div>
+            <WaitlistForm />
+          </div>
+        </section>
+      )}
+
       {/* ---------- FAQ ---------- */}
       <section className="lp-sec lp-sec-tint">
         <div className="lp-sec-head">
@@ -259,8 +307,12 @@ export function Landing() {
             <RoosterSvg breedId="dourado" skin="fogo" equipped={{ cabeca: 'coroa' }} anim="win" size={150} />
           </div>
           <h2 className="title-font">{t('Pronto pra soltar o galo?')}</h2>
-          <p className="lp-lead">{t('Leva menos de um minuto pra criar o seu e entrar na primeira rinha.')}</p>
-          <button className="btn btn-primary btn-lg lp-cta pulse" onClick={criar}>🐓 {t('Criar meu galo grátis')}</button>
+          <p className="lp-lead">{fechado ? t('Garanta seu lugar na lista de espera e seja dos primeiros no terreiro.') : t('Leva menos de um minuto pra criar o seu e entrar na primeira rinha.')}</p>
+          {fechado ? (
+            <button className="btn btn-primary btn-lg lp-cta pulse" onClick={espera}>📝 {t('Quero um convite')}</button>
+          ) : (
+            <button className="btn btn-primary btn-lg lp-cta pulse" onClick={criar}>🐓 {t('Criar meu galo grátis')}</button>
+          )}
         </div>
       </section>
 

@@ -1977,3 +1977,12 @@ tr.muted td { opacity: 0.55; }
 .ledger-dates { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .ledger-dates label { display: inline-flex; align-items: center; gap: 6px; font-weight: 800; }
 .ledger-dates input[type='date'] { padding: 6px 9px; }
+
+/* 📝 Acesso antecipado / lista de espera (Landing) */
+.lp-wait { align-items: center; }
+.lp-wait-form, .lp-wait-done { padding: 22px; display: grid; gap: 10px; max-width: 460px; width: 100%; justify-self: center; }
+.lp-wait-form textarea { width: 100%; resize: vertical; }
+.lp-wait-done { text-align: center; justify-items: center; }
+#espera { scroll-margin-top: 72px; }
+.lp-wait-form textarea { font: inherit; }
+.lp-wait-form, .lp-wait-done { color: var(--ink, #173753); }

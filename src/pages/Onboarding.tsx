@@ -86,7 +86,8 @@ export function AuthScreen({ initialMode = 'login' }: { initialMode?: 'cadastro'
               />
               {inviteOnly && (
                 <small className="tiny muted">
-                  {t('O acesso está fechado: só entra quem foi convidado. Peça um convite a um amigo que já joga ou entre no nosso Discord.')}
+                  {t('O acesso está fechado: só entra quem foi convidado. Peça um convite a um amigo que já joga ou entre no nosso Discord.')}{' '}
+                  <a href="#/?espera">{t('Não tenho convite: entrar na lista de espera')}</a>
                   {DISCORD_URL && (
                     <>
                       {' '}

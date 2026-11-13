@@ -1,0 +1,63 @@
+// Dicionário inglês da área "espera" (lista de espera da whitelist). Chave = texto original em português.
+const dict: Record<string, string> = {
+  // Página inicial
+  'Como consigo um convite?': 'How do I get an invite?',
+  'Entre na lista de espera aqui na página e o convite chega no seu e-mail. Também dá para pedir a um amigo que já joga (cada jogador tem convites para dar) ou no nosso Discord.':
+    'Join the waitlist on this page and the invite arrives by email. You can also ask a friend who already plays (every player has invites to give) or ask on our Discord.',
+  'Quero um convite': 'Get an invite',
+  'Acesso antecipado · só por convite': 'Early access · invite only',
+  'Tenho um convite': 'I have an invite',
+  'Acesso antecipado': 'Early access',
+  'O terreiro está fechado. Por enquanto.': 'The yard is closed. For now.',
+  'Estamos abrindo aos poucos para montar uma comunidade boa e testar a economia com calma. Por isso, só entra quem tem convite.':
+    "We're opening slowly to build a good community and test the economy carefully. That's why you need an invite to join.",
+  'Entre na lista de espera: o convite chega no seu e-mail': 'Join the waitlist: your invite arrives by email',
+  'Ou peça a um amigo que já joga: cada jogador tem convites para dar': 'Or ask a friend who plays: every player has invites to give',
+  'Quem entra agora é dos primeiros criadores do jogo': 'Join now and be one of the very first breeders',
+  'Já tenho um convite': 'I already have an invite',
+  'Garanta seu lugar na lista de espera e seja dos primeiros no terreiro.': 'Save your spot on the waitlist and be among the first in the yard.',
+  'Não tenho convite: entrar na lista de espera': "No invite? Join the waitlist",
+  // Formulário
+  'Você está na lista!': "You're on the list!",
+  'Sua posição na fila: {n}.': 'Your place in line: {n}.',
+  'Quando chegar sua vez, o convite chega no seu e-mail. Fique de olho na caixa de spam também.': "When it's your turn, the invite will arrive by email. Check your spam folder too.",
+  'Entrar no Discord enquanto isso': 'Join the Discord meanwhile',
+  'Como podemos te chamar?': 'What should we call you?',
+  'Usuário do Discord (opcional)': 'Discord username (optional)',
+  'Por que quer jogar? (opcional)': 'Why do you want to play? (optional)',
+  'Ex.: curto jogo de criar bicho e PvP': 'e.g. I love creature-raising games and PvP',
+  '📝 Entrar na lista de espera': '📝 Join the waitlist',
+  'Usamos seu e-mail só para mandar o convite. Nada de spam.': 'We only use your email to send the invite. No spam.',
+  // Servidor
+  'Muitos pedidos agora. Tente de novo mais tarde.': 'Too many requests right now. Try again later.',
+  'Diga como podemos te chamar': 'Tell us what to call you',
+  'Escolha pelo menos um pedido': 'Pick at least one request',
+  'Lista de espera': 'Waitlist',
+  'A equipe do {brand}': 'The {brand} team',
+  // Backoffice
+  '🎟️ Códigos': '🎟️ Codes',
+  '📝 Lista de espera': '📝 Waitlist',
+  '⏳ Pendentes': '⏳ Pending',
+  '✅ Aprovados': '✅ Approved',
+  '⛔ Recusados': '⛔ Refused',
+  '{n} aprovados · {m} e-mails enviados': '{n} approved · {m} emails sent',
+  '{n} aprovados': '{n} approved',
+  'Recusar {n} pedidos? A pessoa não é avisada.': "Refuse {n} requests? They won't be notified.",
+  '{n} recusados': '{n} refused',
+  'Pedidos feitos na página inicial por quem ainda não tem convite. Aprovar cria um convite de 1 uso preso ao e-mail da pessoa e manda por e-mail.':
+    "Requests from the home page by people without an invite. Approving creates a single-use invite tied to the person's email and sends it by email.",
+  'Buscar e-mail, nome ou Discord': 'Search email, name or Discord',
+  '{n} selecionados': '{n} selected',
+  'Validade (dias)': 'Expiry (days)',
+  '✅ Aprovar': '✅ Approve',
+  'Selecionar todos': 'Select all',
+  Discord: 'Discord',
+  'Por que quer jogar': 'Why they want to play',
+  'Pediu em': 'Requested on',
+  'já tem conta': 'already has an account',
+  '⏳ pendente': '⏳ pending',
+  '✅ aprovado': '✅ approved',
+  '⛔ recusado': '⛔ refused',
+  'Nenhum pedido aqui.': 'No requests here.',
+}
+export default dict
