@@ -12,13 +12,15 @@ import { locale, t, tp, tx } from '../i18n'
 import { C1, C2, DailyBars, HBars, Kpi, SplitBar } from './Charts'
 import type { FeiraAdmin, TreasuryLedger } from '../game/feira'
 import { TorneiosAdmin } from './TorneiosAdmin'
+import { ConvitesAdmin } from './ConvitesAdmin'
 
-type Tab = 'geral' | 'atividade' | 'jogadores' | 'pedidos' | 'config' | 'auditoria' | 'cripto' | 'feira' | 'carteira' | 'torneios' | 'edicoes'
+type Tab = 'geral' | 'atividade' | 'jogadores' | 'pedidos' | 'config' | 'auditoria' | 'cripto' | 'feira' | 'carteira' | 'torneios' | 'edicoes' | 'convites'
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'geral', label: t('📈 Visão geral') },
   { id: 'atividade', label: t('📊 Atividade') },
   { id: 'jogadores', label: t('👥 Jogadores') },
+  { id: 'convites', label: t('🎟️ Convites') },
   { id: 'pedidos', label: t('💳 Pedidos') },
   { id: 'config', label: t('⚙️ Configurações') },
   { id: 'auditoria', label: t('🧾 Auditoria') },
@@ -77,6 +79,7 @@ export function Admin({ tab: tabParam }: { tab?: string }) {
         {tab === 'geral' && <Overview />}
         {tab === 'atividade' && <Activity />}
         {tab === 'jogadores' && <Users />}
+        {tab === 'convites' && <ConvitesAdmin />}
         {tab === 'pedidos' && <Orders />}
         {tab === 'config' && <Config />}
         {tab === 'auditoria' && <Audit />}
@@ -1041,7 +1044,7 @@ type CfgSection = 'geral' | 'loja' | 'recompensas' | 'desafios' | 'apostas' | 'd
 
 /** Grupos de configuração de cada aba (para contar alterações). */
 const CFG_SECTIONS: { id: CfgSection; label: string; groups: (keyof AppConfig)[] }[] = [
-  { id: 'geral', label: t('📢 Geral'), groups: ['announcement', 'mvp', 'maintenance'] },
+  { id: 'geral', label: t('📢 Geral'), groups: ['announcement', 'invites', 'mvp', 'maintenance'] },
   { id: 'loja', label: t('💎 Loja e preços'), groups: ['catalog'] },
   { id: 'recompensas', label: t('🎁 Recompensas'), groups: ['rewards'] },
   { id: 'desafios', label: t('🤝 Desafios'), groups: ['pvp'] },
@@ -1193,6 +1196,15 @@ function Config() {
                   </label>
                 </div>
                 {cfg.announcement.text && <div className={`announce announce-${cfg.announcement.kind}`}>{cfg.announcement.text}</div>}
+              </div>
+
+              <div className="card cfg-section">
+                <h3>{t('🎟️ Whitelist (acesso por convite)')}</h3>
+                <CfgSwitch on={cfg.invites.on} onChange={(v) => set('invites', { on: v })} label={t('Ligado — só cria conta quem tem um código de convite válido (quem já tem conta continua entrando normalmente)')} />
+                <div className="cfg-grid">{num('invites', 'perPlayer', t('Convites por jogador'), { step: 1, hint: t('Cada jogador com e-mail confirmado gera até esse número de convites de 1 uso. 0 = só a equipe convida.') })}</div>
+                <p className="tiny muted">
+                  <a href="#/admin/convites">{t('Criar e acompanhar convites →')}</a>
+                </p>
               </div>
 
               <div className="card cfg-section">

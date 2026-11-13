@@ -192,6 +192,23 @@ export function getDb() {
   const ocols = (db.prepare('PRAGMA table_info(orders)').all() as { name: string }[]).map((c) => c.name)
   if (!ocols.includes('tx_raw')) db.exec('ALTER TABLE orders ADD COLUMN tx_raw TEXT')
   if (!ocols.includes('from_addr')) db.exec('ALTER TABLE orders ADD COLUMN from_addr TEXT')
+  // 🎟️ Whitelist por convite (server/convites.ts): códigos e qual convite cada conta usou
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS invites (
+      code TEXT PRIMARY KEY,
+      owner_id TEXT,
+      created_by TEXT NOT NULL,
+      email TEXT,
+      note TEXT,
+      max_uses INTEGER NOT NULL DEFAULT 1,
+      uses INTEGER NOT NULL DEFAULT 0,
+      created_at INTEGER NOT NULL,
+      expires_at INTEGER,
+      revoked_at INTEGER
+    );
+    CREATE INDEX IF NOT EXISTS invites_owner ON invites(owner_id, created_at);
+  `)
+  if (!cols.includes('invite_code')) db.exec('ALTER TABLE users ADD COLUMN invite_code TEXT')
   // Origem do cadastro (UTM do primeiro acesso)
   for (const c of ['utm_source', 'utm_medium', 'utm_campaign', 'ref']) if (!cols.includes(c)) db.exec(`ALTER TABLE users ADD COLUMN ${c} TEXT`)
   // Web3: carteiras custodiais, NFTs de itens e registro de todas as operações na chain

@@ -7,14 +7,15 @@ import { AVATARS, BREED_BY_ID, SKIN_BY_ID, TOOL_BY_ID } from '../game/data'
 import { usdc } from '../game/catalog'
 import { sfx } from '../game/sound'
 import { useGame } from '../game/store'
-import { APP_NAME, APP_TAGLINE } from '../brand'
+import { storedInvite } from '../game/social'
+import { APP_NAME, APP_TAGLINE, DISCORD_URL } from '../brand'
 import { LangSwitch } from '../components/LangSwitch'
 import { locale, t, tn, tx } from '../i18n'
 
 // ---------------- Cadastro / Login ----------------
 
 export function AuthScreen({ initialMode = 'login' }: { initialMode?: 'cadastro' | 'login' } = {}) {
-  const { actions } = useGame()
+  const { actions, pubConfig } = useGame()
   const [mode, setMode] = useState<'cadastro' | 'login' | 'esqueci'>(initialMode)
   const [sent, setSent] = useState(false)
   const [email, setEmail] = useState('')
@@ -22,6 +23,9 @@ export function AuthScreen({ initialMode = 'login' }: { initialMode?: 'cadastro'
   const [name, setName] = useState('')
   const [adult, setAdult] = useState(false)
   const [terms, setTerms] = useState(false)
+  const [invite, setInvite] = useState(storedInvite)
+  // 🎟️ Whitelist: com o acesso fechado, o cadastro pede o código (o servidor confere de verdade)
+  const inviteOnly = pubConfig?.invites?.on !== false
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
 
@@ -35,7 +39,7 @@ export function AuthScreen({ initialMode = 'login' }: { initialMode?: 'cadastro'
       setSent(true)
       return
     }
-    const r = mode === 'cadastro' ? await actions.signup({ email, password, name, adult, terms }) : await actions.login(email, password)
+    const r = mode === 'cadastro' ? await actions.signup({ email, password, name, adult, terms, invite: invite.trim() || undefined }) : await actions.login(email, password)
     setBusy(false)
     if (!r.ok) setError(tx(r.error))
     else sfx.crow()
@@ -68,6 +72,33 @@ export function AuthScreen({ initialMode = 'login' }: { initialMode?: 'cadastro'
         </div>
 
         <form onSubmit={submit}>
+          {mode === 'cadastro' && (inviteOnly || invite) && (
+            <label className="field">
+              <span>{inviteOnly ? t('🎟️ Código de convite') : t('🎟️ Código de convite (opcional)')}</span>
+              <input
+                value={invite}
+                onChange={(e) => setInvite(e.target.value.toUpperCase())}
+                placeholder={t('Ex.: GALO-AB12-CD34')}
+                autoComplete="off"
+                spellCheck={false}
+                maxLength={32}
+                required={inviteOnly}
+              />
+              {inviteOnly && (
+                <small className="tiny muted">
+                  {t('O acesso está fechado: só entra quem foi convidado. Peça um convite a um amigo que já joga ou entre no nosso Discord.')}
+                  {DISCORD_URL && (
+                    <>
+                      {' '}
+                      <a href={DISCORD_URL} target="_blank" rel="noreferrer">
+                        {t('Entrar no Discord')}
+                      </a>
+                    </>
+                  )}
+                </small>
+              )}
+            </label>
+          )}
           {mode === 'cadastro' && (
             <label className="field">
               <span>{t('Nome de criador')}</span>

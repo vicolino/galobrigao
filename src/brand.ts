@@ -9,3 +9,5 @@ export const APP_TAGLINE = t('Crie seu galo, treine, vista e domine a arena. �
 export const ARENA = t('Arena')
 export const COMPANY = 'Galo Brigão Jogos Digitais LTDA' // i18n-ok razão social (preencher)
 export const SUPPORT_EMAIL = 'suporte@galobrigao.com.br' // i18n-ok e-mail de atendimento (preencher)
+// 💬 Link de convite permanente do Discord oficial (docs/DISCORD.md). Vazio = não mostra o link no jogo.
+export const DISCORD_URL = ''

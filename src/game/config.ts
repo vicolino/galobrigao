@@ -19,6 +19,8 @@ export interface AppConfig {
   economy: { freeOvosPerDay: number; freeMilhoPerDay: number; defaultSpendLimitCents: number; /** 🌽 Milho/XP/prêmios só pelo servidor (desligar = volta ao modo antigo). */ serverAuthoritative: boolean; /** 🏟️ Teto de milho que a Arena dá a cada jogador por dia (0 = sem limite). Acima do teto a luta rende só 15% de milho (ovos/XP/drop seguem normais). */ arenaMilhoCapPerDay: number; /** 💹 Multiplicador do preço em MILHO da loja (caixas, mercado de galos). 1 = sem mudança; >1 = milho vale mais (contém inflação). */ milhoSinkMult: number; /** 💹 Multiplicador do milho recebido na troca ovo→milho. 1 = sem mudança; <1 = torneira menor. */ ovoToMilhoMult: number }
   announcement: { text: string; kind: 'info' | 'promo' | 'alerta' }
   maintenance: { on: boolean; message: string }
+  /** 🎟️ Whitelist: `on` = só cria conta quem tem código de convite. `perPlayer` = convites que cada jogador (e-mail confirmado) pode gerar. */
+  invites: { on: boolean; perPlayer: number }
   /** ⛓️ Rede on-chain (chave do back-office): '' = usa o env; 'off' | 'testnet' | 'mainnet'. */
   onchain: { network: string }
   mvp: { on: boolean; creditCents: number }
@@ -71,6 +73,8 @@ export const DEFAULT_CONFIG: AppConfig = {
   economy: { freeOvosPerDay: FREE_OVOS_PER_DAY, freeMilhoPerDay: 3_000_000, defaultSpendLimitCents: DEFAULT_SPEND_LIMIT, serverAuthoritative: true, arenaMilhoCapPerDay: 100_000, milhoSinkMult: 1, ovoToMilhoMult: 1 },
   announcement: { text: '', kind: 'info' },
   maintenance: { on: false, message: t('Estamos ajeitando o terreiro. Voltamos já!') },
+  // 🎟️ Acesso fechado por padrão: só entra quem tem convite (códigos no backoffice → Convites)
+  invites: { on: true, perPlayer: 3 },
   // ⛓️ Rede on-chain: '' = usa o WEB3_NETWORK do env (padrão). A chave no admin troca para off/testnet/mainnet.
   onchain: { network: '' },
   // Modo MVP: cada conta ganha crédito de teste (sem valor real) para comprar na loja
@@ -103,6 +107,7 @@ export function mergeConfig(saved: Partial<AppConfig> | null | undefined): AppCo
     economy: { ...DEFAULT_CONFIG.economy, ...s.economy },
     announcement: { ...DEFAULT_CONFIG.announcement, ...s.announcement },
     maintenance: { ...DEFAULT_CONFIG.maintenance, ...s.maintenance },
+    invites: { ...DEFAULT_CONFIG.invites, ...s.invites },
     onchain: { ...DEFAULT_CONFIG.onchain, ...s.onchain },
     mvp: { ...DEFAULT_CONFIG.mvp, ...s.mvp },
     deposit: { ...DEFAULT_CONFIG.deposit, ...s.deposit },
@@ -136,5 +141,5 @@ export function effectiveSku(id: string): (Sku & { active: boolean }) | undefine
 export const effectiveCatalog = () => CATALOG.map((s) => effectiveSku(s.id)!)
 
 /** Parte da configuração que o navegador precisa conhecer. */
-export const publicConfig = (c: AppConfig) => ({ economy: c.economy, rewards: c.rewards, pvp: c.pvp, announcement: c.announcement, maintenance: c.maintenance, mvp: c.mvp, bets: c.bets, drops: c.drops })
+export const publicConfig = (c: AppConfig) => ({ economy: c.economy, rewards: c.rewards, pvp: c.pvp, announcement: c.announcement, maintenance: c.maintenance, invites: c.invites, mvp: c.mvp, bets: c.bets, drops: c.drops })
 export type PublicConfig = ReturnType<typeof publicConfig> & { build?: string | null; web3?: boolean }

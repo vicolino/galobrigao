@@ -90,6 +90,8 @@ export function validateConfig(input: AppConfig): AppConfig {
   dr.dailyCap = Math.round(num(dr.dailyCap, 0, 100, t('Máximo de drops por dia')))
   dr.supplyCap = Math.round(num(dr.supplyCap, 0, 1_000_000, t('Tiragem máxima por item (0 = sem limite)')))
   c.maintenance.on = !!c.maintenance.on
+  c.invites.on = !!c.invites.on
+  c.invites.perPlayer = Math.round(num(c.invites.perPlayer, 0, 100, t('Convites por jogador')))
   c.maintenance.message = String(c.maintenance.message ?? '').slice(0, 200)
   // ⛓️ Chave da rede on-chain: só valores conhecidos (vazio = usa o env).
   {

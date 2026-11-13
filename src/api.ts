@@ -65,6 +65,33 @@ export interface OffersAdmin {
   stock: LimitedStock[]
 }
 
+export type InviteStatus = 'ativo' | 'usado' | 'expirado' | 'cancelado'
+export interface InviteView {
+  code: string
+  link: string
+  uses: number
+  maxUses: number
+  email: string | null
+  note: string | null
+  createdAt: number
+  expiresAt: number | null
+  revokedAt: number | null
+  status: InviteStatus
+}
+export interface MyInvites {
+  on: boolean
+  perPlayer: number
+  left: number
+  verified: boolean
+  codes: (InviteView & { usedBy: string[] })[]
+}
+export interface AdminInvites {
+  on: boolean
+  perPlayer: number
+  stats: { total: number; used: number; active: number; fromPlayers: number; invitedUsers: number }
+  invites: (InviteView & { owner: { name: string | null; email: string | null } | null; createdBy: string | null; usedBy: { name: string; email: string; created_at: number }[] })[]
+}
+
 export class ApiError extends Error {
   constructor(
     public status: number,
@@ -117,7 +144,7 @@ export interface EditionCollectionItem {
 
 export const api = {
   me: () => call<{ user: ApiUser | null; provider: string; paymentsLive?: boolean }>('/me'),
-  signup: (b: { email: string; password: string; name: string; adult: boolean; terms: boolean; utm?: Record<string, string | undefined> }) => call<{ user: ApiUser }>('/auth/signup', { method: 'POST', body: b }),
+  signup: (b: { email: string; password: string; name: string; adult: boolean; terms: boolean; invite?: string; utm?: Record<string, string | undefined> }) => call<{ user: ApiUser }>('/auth/signup', { method: 'POST', body: b }),
   login: (email: string, password: string) => call<{ user: ApiUser }>('/auth/login', { method: 'POST', body: { email, password } }),
   changePassword: (current: string, next: string) => call('/auth/password', { method: 'POST', body: { current, next } }),
   forgot: (email: string) => call('/auth/forgot', { method: 'POST', body: { email } }),
@@ -197,7 +224,16 @@ export const api = {
     adminStart: (id: string, skipLive: boolean) => call<{ ok: true }>('/torneios/admin/start', { method: 'POST', body: { id, skipLive } }),
   },
   config: () => call<PublicConfig>('/config'),
+  /** 🎟️ Convites do jogador (whitelist) */
+  convites: {
+    list: () => call<MyInvites>('/convites'),
+    create: () => call<MyInvites>('/convites', { method: 'POST' }),
+  },
   admin: {
+    convites: (q: string, filter: string) => call<AdminInvites>(`/admin/convites?q=${encodeURIComponent(q)}&filter=${filter}`),
+    convitesCreate: (b: { count?: number; maxUses?: number; expiresDays?: number; note?: string; code?: string; emails?: string; sendEmail?: boolean }) =>
+      call<{ created: { code: string; email: string | null; link: string }[]; mailed: number }>('/admin/convites', { method: 'POST', body: b }),
+    convitesRevoke: (code: string) => call<{ ok: true }>('/admin/convites/revoke', { method: 'POST', body: { code } }),
     overview: (days: number) => call<AdminOverview>(`/admin/overview?days=${days}`),
     activity: (days: number) => call<AdminActivity>(`/admin/activity?days=${days}`),
     users: (q: string, filter: string, page = 1, sort = 'cadastro', dir: 'asc' | 'desc' = 'desc') =>

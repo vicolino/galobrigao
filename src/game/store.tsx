@@ -11,7 +11,7 @@ import { live, setLiveConfig, type PublicConfig } from './config'
 import type { Difficulty } from './engine'
 import { applyBetCredit, type BetCredit, type BetView, type ScheduledFight } from './bets'
 import { locale, t, tx } from '../i18n'
-import { storedUtm } from './social'
+import { clearInvite, storedUtm } from './social'
 
 import type { DropResult } from './drops'
 import {
@@ -386,9 +386,10 @@ async function shop<T = unknown>(op: ShopOp, sound?: () => void): Promise<Result
   }
 
   const actions = {
-    async signup(b: { email: string; password: string; name: string; adult: boolean; terms: boolean }): Promise<Result> {
+    async signup(b: { email: string; password: string; name: string; adult: boolean; terms: boolean; invite?: string }): Promise<Result> {
       try {
         const r = await api.signup({ ...b, utm: storedUtm() })
+        clearInvite()
         setUser(r.user)
         adopt(await api.getSave())
         return { ok: true }

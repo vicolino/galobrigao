@@ -38,6 +38,7 @@ import { economyViolation, serverEconomy } from '../src/game/economia'
 import { currentPass } from '../src/game/pass'
 import { handleTorneios, torneioDeleteUser, TorneioError } from './torneios'
 import { galoNftViolation, keepRoosterServerFields } from '../src/game/galonft'
+import { ConviteError, consumeInvite, convitesDeleteUser, handleConvites, handleConvitesAdmin, markInvitedUser } from './convites'
 
 try {
   process.loadEnvFile?.('.env')
@@ -371,6 +372,8 @@ export async function handle(req: Req, res: Res) {
     if (path.startsWith('/api/admin/')) {
       const u = needUser(req)
       const body = method === 'GET' ? {} : await readBody(req)
+      const conv = await handleConvitesAdmin(path, method, url, body, u)
+      if (conv) return json(res, conv.status ?? 200, conv.body)
       const out = await handleAdmin(path, method, url, body, u, { fulfill, recheck: recheckOrder })
       if (out) return json(res, 200, out)
       throw new HttpError(404, t('Rota não encontrada'))
@@ -392,7 +395,18 @@ export async function handle(req: Req, res: Res) {
       const { hash, salt } = await hashPassword(password)
       const id = randomUUID()
       const now = Date.now()
-      db.prepare('INSERT INTO users (id, email, name, pass_hash, salt, created_at, adult_confirmed_at, terms_accepted_at, monthly_limit_cents, lang) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(id, email, name, hash, salt, now, now, now, live.economy.defaultSpendLimitCents, reqLang(req))
+      // 🎟️ Whitelist: consome o convite e cria a conta na mesma transação (síncrona: nada intercala entre BEGIN e COMMIT)
+      db.exec('BEGIN')
+      try {
+        if (db.prepare('SELECT 1 FROM users WHERE email = ?').get(email)) throw new HttpError(409, t('Esse e-mail já tem conta. Faça login.'))
+        const inviteCode = consumeInvite(b.invite, email)
+        db.prepare('INSERT INTO users (id, email, name, pass_hash, salt, created_at, adult_confirmed_at, terms_accepted_at, monthly_limit_cents, lang) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(id, email, name, hash, salt, now, now, now, live.economy.defaultSpendLimitCents, reqLang(req))
+        markInvitedUser(id, inviteCode)
+        db.exec('COMMIT')
+      } catch (e) {
+        db.exec('ROLLBACK')
+        throw e
+      }
       // Origem do cadastro (UTM): minúsculas, [a-z0-9_-], até 40 caracteres
       const utm = (v: unknown) => String(v ?? '').toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 40) || null
       const o = (b.utm ?? {}) as Record<string, unknown>
@@ -526,6 +540,7 @@ export async function handle(req: Req, res: Res) {
       deleteOfferData(u.id)
       arenaDeleteUser(u.id)
       dropsDeleteUser(u.id)
+      convitesDeleteUser(u.id)
       // Pedidos pagos são mantidos anonimizados por obrigação fiscal; os dados pessoais saem.
       // Web3: carteira, NFTs, web3_tx e deposits ficam (ativos na chain + auditoria; só têm o id, sem dados pessoais).
       // Anúncios do jogador somem do mercado porque a listagem exige a conta existir.
@@ -695,6 +710,12 @@ export async function handle(req: Req, res: Res) {
     // ----- Ranking de galinheiros e vitrine (server/criacao.ts) -----
     if (path === '/api/ranking' || path.startsWith('/api/players/')) {
       const out = handleCriacao(path, method, needUser(req))
+      if (out) return json(res, out.status ?? 200, out.body)
+    }
+
+    // ----- 🎟️ Convites do jogador (server/convites.ts) -----
+    if (path === '/api/convites') {
+      const out = handleConvites(path, method, needUser(req))
       if (out) return json(res, out.status ?? 200, out.body)
     }
 
@@ -892,6 +913,7 @@ export async function handle(req: Req, res: Res) {
     if (e instanceof OfertasError) return json(res, e.status, { error: e.message })
     if (e instanceof EconomiaError) return json(res, e.status, { error: e.message, ...e.extra })
     if (e instanceof TorneioError) return json(res, e.status, { error: e.message })
+    if (e instanceof ConviteError) return json(res, e.status, { error: e.message })
     console.error('[api]', e)
     return json(res, 500, { error: t('Erro interno. Tente de novo.') })
   }

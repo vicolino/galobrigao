@@ -7,6 +7,7 @@ import { fmt } from '../game/rooster'
 import { titleFor, useGame } from '../game/store'
 import { LangSwitch } from '../components/LangSwitch'
 import { MyShowcaseCard } from './Ranking'
+import { MyInvitesCard } from '../components/Convites'
 import { locale, t, tx } from '../i18n'
 
 const ORDER_STATUS: Record<ApiOrder['status'], string> = {
@@ -91,6 +92,7 @@ export function Perfil() {
       </div>
       <div style={{ marginTop: 16 }}>
         <MyShowcaseCard />
+        <MyInvitesCard />
       </div>
 
       {user && (

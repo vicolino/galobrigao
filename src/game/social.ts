@@ -37,6 +37,41 @@ export function captureUtm() {
   }
 }
 
+// ---------- 🎟️ Convite (whitelist) ----------
+
+const INVITE_KEY = 'gb.convite'
+
+/** Guarda o código de convite que veio no link (?convite=X ou #/criar?convite=X). O mais recente vale. */
+export function captureInvite() {
+  if (typeof location === 'undefined') return
+  try {
+    const hashQuery = location.hash.includes('?') ? location.hash.slice(location.hash.indexOf('?')) : ''
+    const code = new URLSearchParams(location.search).get('convite') ?? new URLSearchParams(hashQuery).get('convite')
+    const v = (code ?? '').toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 32)
+    if (v) localStorage.setItem(INVITE_KEY, v)
+  } catch {
+    /* sem storage */
+  }
+}
+
+/** Código de convite guardado (para preencher o cadastro). */
+export function storedInvite(): string {
+  try {
+    return localStorage.getItem(INVITE_KEY) ?? ''
+  } catch {
+    return ''
+  }
+}
+
+/** Esquece o convite depois que a conta foi criada. */
+export function clearInvite() {
+  try {
+    localStorage.removeItem(INVITE_KEY)
+  } catch {
+    /* sem storage */
+  }
+}
+
 /** Origem guardada, para mandar junto com o cadastro. */
 export function storedUtm(): Utm | undefined {
   try {
